@@ -1,0 +1,43 @@
+# Builds Traywise and runs every check on Windows (the only platform it supports).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Type-checks with tsc, then builds the UI into dist/ (the Rust build embeds it).
+      - run: pnpm build
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Clippy (warnings fail the build)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      # Includes bindings_are_up_to_date, which fails if src/bindings.ts is stale.
+      - name: Tests
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Release build
+        run: pnpm tauri build --no-bundle
