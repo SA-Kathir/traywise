@@ -1,0 +1,223 @@
+/* Liquid: an app-drawn background with glass cards and controls on top. backdrop-filter can
+   only blur what's inside our own window, so we draw the thing being blurred. Nothing is
+   read from the desktop. */
+
+:root {
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  color: #f4f4f6;
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+.panel {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  isolation: isolate;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- Background presets ---------------------------------------------------------------- */
+
+/* One hue per preset, muted, so the background stays quiet behind the glass. */
+.bg-ocean { --base: #0a121c; --c1: #2c5487; --c2: #1d3a63; --c3: #44709f; --accent: #a9c8ee; }
+.bg-graphite { --base: #111214; --c1: #4a4c52; --c2: #303237; --c3: #65686f; --accent: #d7dce4; }
+
+.liquid-bg {
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  background: var(--base);
+}
+/* Soft blobs are plain radial gradients (no filter: blur), and only `transform` animates,
+   so each frame is a cheap GPU composite rather than a repaint. */
+.blob {
+  position: absolute;
+  width: 75%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c) 0%, transparent 65%);
+  opacity: 0.6;
+  will-change: transform;
+}
+/* Starts paused; LiquidBackground.tsx plays it after each open, then slows it to a stop.
+   Paused, never removed: removing the animation would snap the blobs back to the start.
+   (Higher specificity than .b1–.b3, whose `animation` shorthand would reset it to running.) */
+.liquid-bg .blob { animation-play-state: paused; }
+.b1 { --c: var(--c1); top: 2%; left: -8%; animation: drift-a 16s ease-in-out infinite alternate; }
+.b2 { --c: var(--c2); top: 30%; right: -12%; animation: drift-b 19s ease-in-out infinite alternate; }
+.b3 { --c: var(--c3); bottom: -4%; left: 12%; animation: drift-c 17s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate(30%, 34%) scale(1.18); } }
+@keyframes drift-b { to { transform: translate(-34%, -24%) scale(0.84); } }
+@keyframes drift-c { to { transform: translate(24%, -36%) scale(1.14); } }
+@media (prefers-reduced-motion: reduce) {
+  .blob { animation: none; }
+}
+
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* ---- Glass cards ----------------------------------------------------------------------- */
+
+/* Distort, then blur and boost colour, of whatever sits behind the card. */
+section {
+  position: relative;
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09));
+  backdrop-filter: url(#liquid-refract) blur(14px) saturate(1.7);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45), /* lit top rim */
+    inset 0 -1px 1px rgba(0, 0, 0, 0.18), /* shaded bottom rim */
+    inset 0 0 18px rgba(255, 255, 255, 0.05), /* thickness */
+    0 10px 28px rgba(0, 0, 0, 0.28); /* lift */
+}
+/* Specular highlight: light catching the top-left curve of the glass. */
+section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.28), transparent 55%);
+  mix-blend-mode: screen;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+h2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 0;
+}
+
+.icon,
+.icon-button {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-weight: normal;
+}
+.icon {
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.icon-button {
+  padding: 6px 8px;
+  line-height: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+label.row {
+  cursor: pointer;
+}
+label.row + label.row {
+  margin-top: 10px;
+}
+.grow {
+  flex: 1;
+}
+.segmented + h2 {
+  margin-top: 12px;
+}
+
+.hint {
+  color: rgba(255, 255, 255, 0.7);
+}
+.error {
+  font-size: 12px;
+  color: #ffb4b4;
+}
+
+/* ---- Controls -------------------------------------------------------------------------- */
+
+button {
+  font: inherit;
+  color: inherit;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.on {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.segmented button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
