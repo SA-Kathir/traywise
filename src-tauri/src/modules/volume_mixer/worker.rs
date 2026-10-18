@@ -17,32 +17,21 @@ use windows::Win32::Media::Audio::{
     AUDIO_VOLUME_NOTIFICATION_DATA, AudioSessionDisconnectReason, AudioSessionState, AudioSessionStateExpired,
     DEVICE_STATE, EDataFlow, ERole, IAudioSessionControl, IAudioSessionControl2, IAudioSessionEvents,
     IAudioSessionEvents_Impl, IAudioSessionManager2, IAudioSessionNotification, IAudioSessionNotification_Impl,
-    IMMDeviceEnumerator, IMMNotificationClient, IMMNotificationClient_Impl, ISimpleAudioVolume, MMDeviceEnumerator,
-    eMultimedia, eRender,
+    IMMDeviceEnumerator, IMMNotificationClient, IMMNotificationClient_Impl, ISimpleAudioVolume, eMultimedia, eRender,
 };
-use windows::Win32::System::Com::{
-    CLSCTX_ALL, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize,
-};
-use windows::core::{BOOL, GUID, Interface, PCWSTR, PWSTR, Ref, Result, implement};
+use windows::Win32::System::Com::CLSCTX_ALL;
+use windows::core::{BOOL, GUID, Interface, PCWSTR, Ref, Result, implement};
 
 use super::app_info::{self, AppInfo};
+use crate::audio;
 use super::{AppAudio, Level, MixerChanged, MixerState, Msg, Shared, Target};
 
 pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
-    unsafe {
-        if let Err(e) = CoInitializeEx(None, COINIT_MULTITHREADED).ok() {
-            eprintln!("volume-mixer: COM init failed: {e}");
-            return;
-        }
-    }
-    if let Err(e) = serve(&app, &tx, &rx) {
-        eprintln!("volume-mixer stopped on an error: {e}");
-    }
-    unsafe { CoUninitialize() };
+    audio::with_com("volume-mixer", || serve(&app, &tx, &rx));
 }
 
 fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
-    let enumerator: IMMDeviceEnumerator = unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)? };
+    let enumerator = audio::enumerator()?;
     let device_events: IMMNotificationClient = DeviceEvents(tx.clone()).into();
     unsafe { enumerator.RegisterEndpointNotificationCallback(&device_events)? };
 
@@ -156,7 +145,7 @@ impl Device {
         for i in 0..unsafe { list.GetCount()? } {
             let control = unsafe { list.GetSession(i)? };
             let control2: IAudioSessionControl2 = control.cast()?;
-            let id = take_string(unsafe { control2.GetSessionInstanceIdentifier()? });
+            let id = audio::take_string(unsafe { control2.GetSessionInstanceIdentifier()? });
             seen.push(id.clone());
             if !self.sessions.contains_key(&id) {
                 let events: IAudioSessionEvents = Notify(self.tx.clone()).into();
@@ -231,13 +220,6 @@ impl Drop for Device {
             let _ = self.endpoint.UnregisterControlChangeNotify(&self.endpoint_events);
         }
     }
-}
-
-/// Copies a string Windows allocated for us, then frees it.
-fn take_string(s: PWSTR) -> String {
-    let text = unsafe { s.to_string() }.unwrap_or_default();
-    unsafe { CoTaskMemFree(Some(s.0 as *const _)) };
-    text
 }
 
 // ---- Callbacks: each one just posts `Refresh` to the worker thread. ---------------------------

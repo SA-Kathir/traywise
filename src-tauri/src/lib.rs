@@ -1,3 +1,4 @@
+mod audio;
 mod module;
 mod modules;
 mod settings;
