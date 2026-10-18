@@ -65,8 +65,8 @@ function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) 
       </div>
       {shortcut &&
         (shortcut.error ? (
-          <p className="error">
-            Shortcut {shortcut.keys} isn't available: {shortcut.error}
+          <p className="error" title={shortcut.error}>
+            {shortcut.keys} is already used by another app. Pick other keys in Settings › Shortcuts.
           </p>
         ) : (
           <p className="hint">Shortcut: {shortcut.keys}</p>
