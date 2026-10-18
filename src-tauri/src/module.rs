@@ -9,6 +9,7 @@ use tauri::AppHandle;
 
 use crate::modules::audio_devices::AudioDevices;
 use crate::modules::keep_awake::KeepAwake;
+use crate::modules::quick_toggles::QuickToggles;
 use crate::modules::system_monitor::SystemMonitor;
 use crate::modules::volume_mixer::VolumeMixer;
 use crate::settings::Settings;
@@ -21,6 +22,7 @@ pub enum ModuleId {
     KeepAwake,
     AudioDevices,
     SystemMonitor,
+    QuickToggles,
 }
 
 pub trait Module: Send {
@@ -42,6 +44,7 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(KeepAwake::new(app.clone())),
         Box::new(AudioDevices::new(app.clone())),
         Box::new(SystemMonitor::new(app.clone())),
+        Box::new(QuickToggles::new(app.clone())),
     ]
 }
 

@@ -26,6 +26,10 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::audio_devices::audio_devices_set_output,
             modules::audio_devices::audio_devices_mute_mics,
             modules::system_monitor::system_monitor_state,
+            modules::quick_toggles::quick_toggles_state,
+            modules::quick_toggles::quick_toggles_set_dark,
+            modules::quick_toggles::quick_toggles_set_desktop_icons,
+            modules::quick_toggles::quick_toggles_lock,
         ])
         .events(collect_events![
             shell::panel::PanelShown,
@@ -33,6 +37,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::keep_awake::KeepAwakeChanged,
             modules::audio_devices::AudioDevicesChanged,
             modules::system_monitor::SystemSampled,
+            modules::quick_toggles::QuickTogglesChanged,
         ])
 }
 

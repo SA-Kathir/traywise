@@ -83,6 +83,7 @@ function App() {
 
 function ModulePage({ id }: { id: ModuleId }) {
   const { Panel } = modules[id];
+  if (!Panel) return null;
   return (
     <section>
       <Suspense fallback={null}>

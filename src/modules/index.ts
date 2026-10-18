@@ -2,6 +2,7 @@ import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
 import audioDevices from "./audio-devices";
 import keepAwake from "./keep-awake";
+import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
 
@@ -12,8 +13,8 @@ export type ModuleUi = {
   icon: string;
   /** Its piece of the home view: tiles (`Tile`) or one full-width row (class `wide`). */
   Summary: LazyExoticComponent<ComponentType<{ open: () => void }>>;
-  /** Its own page, opened from the summary. */
-  Panel: LazyExoticComponent<ComponentType>;
+  /** Its own page, opened from the summary. Quick toggles has none. */
+  Panel?: LazyExoticComponent<ComponentType>;
 };
 
 /** Every module's UI, keyed by the ids Rust defines. TypeScript errors if one is missing.
@@ -21,6 +22,7 @@ export type ModuleUi = {
 export const modules: Record<ModuleId, ModuleUi> = {
   "keep-awake": keepAwake,
   "audio-devices": audioDevices,
+  "quick-toggles": quickToggles,
   "volume-mixer": volumeMixer,
   "system-monitor": systemMonitor,
 };

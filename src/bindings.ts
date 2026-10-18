@@ -34,6 +34,11 @@ export const commands = {
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
 	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
+	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
+	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
+	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
+	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
+	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
 };
 
 /** Events */
@@ -42,6 +47,7 @@ export const events = {
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
+	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 };
 
@@ -125,7 +131,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles";
 
 export type OutputDevice = {
 	/**  Windows' id for the device. Stays the same across restarts. */
@@ -150,6 +156,15 @@ export type Point = {
  *  (An old file's `motion` field, from when the background moved, is ignored.)
  */
 export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
+
+/**  Sent after a toggle, and each time the panel opens. */
+export type QuickTogglesChanged = QuickTogglesState;
+
+export type QuickTogglesState = {
+	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
+	dark: boolean,
+	desktopIcons: boolean,
+};
 
 export type Settings = {
 	enabledModules: ModuleId[],
