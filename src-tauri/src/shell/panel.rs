@@ -71,6 +71,15 @@ pub fn toggle(app: &AppHandle) {
     }
 }
 
+/// Opens the panel if it isn't already open. Used when Traywise is launched a second time.
+pub fn open(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(LABEL)
+        && !win.is_visible().unwrap_or(false)
+    {
+        show(&win);
+    }
+}
+
 fn show(win: &WebviewWindow) {
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);

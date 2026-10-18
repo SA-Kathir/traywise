@@ -49,6 +49,8 @@ pub fn run() {
     export_bindings(&bindings);
 
     tauri::Builder::default()
+        // Must be the first plugin. A second launch exits at once and opens this copy's panel.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| shell::panel::open(app)))
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .invoke_handler(bindings.invoke_handler())
         .setup(move |app| {
