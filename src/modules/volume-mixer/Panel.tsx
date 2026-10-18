@@ -4,6 +4,10 @@ import { commands, events, type MixerState, type Target } from "../../bindings";
 // Segoe Fluent Icons glyphs.
 const SPEAKER = String.fromCodePoint(0xe767);
 const MUTED = String.fromCodePoint(0xe74f);
+// Stand-ins where there's no app icon: the output device, Windows' sounds, any other app.
+const DEVICE = String.fromCodePoint(0xe7f5);
+const BELL = String.fromCodePoint(0xea8f);
+const APP = String.fromCodePoint(0xecaa);
 
 /** At most one volume change per frame (~60 a second) while a slider is dragged. */
 const SEND_EVERY_MS = 16;
@@ -28,12 +32,13 @@ export default function Panel() {
 
   return (
     <>
-      <Row name="Master" volume={state.master.volume} muted={state.master.muted} target="master" />
+      <Row name="Master" glyph={DEVICE} volume={state.master.volume} muted={state.master.muted} target="master" />
       {state.apps.map((app) => (
         <Row
           key={app.pid}
           name={app.name}
           icon={app.icon}
+          glyph={app.systemSounds ? BELL : APP}
           volume={app.volume}
           muted={app.muted}
           target={{ app: app.pid }}
@@ -44,9 +49,17 @@ export default function Panel() {
   );
 }
 
-type RowProps = { name: string; icon?: string | null; volume: number; muted: boolean; target: Target };
+type RowProps = {
+  name: string;
+  /** PNG data URL; `glyph` is shown when there is none. */
+  icon?: string | null;
+  glyph: string;
+  volume: number;
+  muted: boolean;
+  target: Target;
+};
 
-function Row({ name, icon, volume, muted, target }: RowProps) {
+function Row({ name, icon, glyph, volume, muted, target }: RowProps) {
   return (
     <div className="mixer-row">
       <button
@@ -57,7 +70,13 @@ function Row({ name, icon, volume, muted, target }: RowProps) {
       >
         {muted ? MUTED : SPEAKER}
       </button>
-      {icon ? <img className="app-icon" src={icon} alt="" /> : <span className="app-icon" />}
+      {icon ? (
+        <img className="app-icon" src={icon} alt="" />
+      ) : (
+        <span className="app-icon glyph" aria-hidden>
+          {glyph}
+        </span>
+      )}
       <span className="mixer-name" title={name}>
         {name}
       </span>

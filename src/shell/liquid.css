@@ -167,6 +167,17 @@ label.row + label.row {
   height: 20px;
   flex: none;
 }
+.app-icon.glyph {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 18px;
+  line-height: 20px;
+  text-align: center;
+}
+/* A range input won't shrink below the browser's default width (~130px) unless told to,
+   which pushed the number past the card's edge. */
+.mixer-row input[type="range"] {
+  min-width: 0;
+}
 .mixer-name {
   width: 84px;
   flex: none;
@@ -176,6 +187,7 @@ label.row + label.row {
 }
 .mixer-value {
   width: 3ch;
+  flex: none;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
