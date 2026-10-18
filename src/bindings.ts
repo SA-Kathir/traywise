@@ -21,10 +21,16 @@ export const commands = {
 	/**  Sets a volume, in percent (0 to 100). */
 	mixerSetVolume: (target: Target, volume: number) => typedError<null, string>(__TAURI_INVOKE("mixer_set_volume", { target, volume })),
 	mixerSetMute: (target: Target, muted: boolean) => typedError<null, string>(__TAURI_INVOKE("mixer_set_mute", { target, muted })),
+	/**  The latest state. Default (off) while the module is switched off. */
+	keepAwakeState: () => __TAURI_INVOKE<KeepAwakeState>("keep_awake_state"),
+	/**  Picking a timed mode (again) restarts its timer. */
+	keepAwakeSetMode: (mode: Mode) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_mode", { mode })),
+	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
 };
 
 /** Events */
 export const events = {
+	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 };
@@ -41,6 +47,20 @@ export type AppAudio = {
 	/**  Percent, 0 to 100. */
 	volume: number,
 	muted: boolean,
+};
+
+/**  Sent to the UI whenever the state changes. */
+export type KeepAwakeChanged = KeepAwakeState;
+
+/**  Everything the panel shows. */
+export type KeepAwakeState = {
+	mode: Mode,
+	/**  Also keep the display on. */
+	display: boolean,
+	/**  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery. */
+	active: boolean,
+	/**  Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`). */
+	endsAt: number | null,
 };
 
 export type Level = {
@@ -62,8 +82,16 @@ export type MixerState = {
 	apps: AppAudio[],
 };
 
+export type Mode = "off" | 
+/**  Until turned off. */
+"on" | 
+/**  For this many minutes, then off. */
+{ minutes: number } | 
+/**  Only while the PC runs on mains power. */
+"whilePluggedIn";
+
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer";
+export type ModuleId = "volume-mixer" | "keep-awake";
 
 /**  Background motion: `onOpen` drifts for a while after each open, `still` never moves. */
 export type Motion = "still" | "onOpen";

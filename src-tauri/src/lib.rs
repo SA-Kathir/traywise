@@ -18,8 +18,15 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::volume_mixer::mixer_state,
             modules::volume_mixer::mixer_set_volume,
             modules::volume_mixer::mixer_set_mute,
+            modules::keep_awake::keep_awake_state,
+            modules::keep_awake::keep_awake_set_mode,
+            modules::keep_awake::keep_awake_set_display,
         ])
-        .events(collect_events![shell::panel::PanelShown, modules::volume_mixer::MixerChanged])
+        .events(collect_events![
+            shell::panel::PanelShown,
+            modules::volume_mixer::MixerChanged,
+            modules::keep_awake::KeepAwakeChanged,
+        ])
 }
 
 /// Rewrites `src/bindings.ts` if it no longer matches the Rust side. Returns whether it changed.

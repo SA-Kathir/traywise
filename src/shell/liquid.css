@@ -152,6 +152,11 @@ label.row + label.row {
 .segmented + h2 {
   margin-top: 12px;
 }
+.segmented + .segmented,
+.segmented + label.row,
+label.row + .hint {
+  margin-top: 8px;
+}
 
 .mixer-row {
   display: flex;
