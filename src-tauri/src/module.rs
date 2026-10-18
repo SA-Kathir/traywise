@@ -2,6 +2,7 @@
 //! or off. A disabled module is never started: no threads, hooks or subscriptions.
 
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
@@ -49,7 +50,11 @@ struct Slot {
     running: bool,
 }
 
-pub struct Modules(Mutex<Vec<Slot>>);
+pub struct Modules {
+    slots: Mutex<Vec<Slot>>,
+    /// Whether the panel is open, so a module switched on while it's open knows at once.
+    visible: AtomicBool,
+}
 
 impl Modules {
     pub fn new(app: &AppHandle) -> Self {
@@ -57,16 +62,22 @@ impl Modules {
     }
 
     fn with(modules: Vec<Box<dyn Module>>) -> Self {
-        Self(Mutex::new(modules.into_iter().map(|module| Slot { module, running: false }).collect()))
+        let slots = modules.into_iter().map(|module| Slot { module, running: false }).collect();
+        Self { slots: Mutex::new(slots), visible: AtomicBool::new(false) }
     }
 
     /// Starts the enabled modules that aren't running, and stops the running ones that were disabled.
     pub fn apply(&self, settings: &Settings) {
-        for slot in self.0.lock().unwrap().iter_mut() {
+        for slot in self.slots.lock().unwrap().iter_mut() {
             let wanted = settings.enabled_modules.contains(&slot.module.id());
             if wanted && !slot.running {
                 match slot.module.start() {
-                    Ok(()) => slot.running = true,
+                    Ok(()) => {
+                        slot.running = true;
+                        if self.visible.load(Ordering::Relaxed) {
+                            slot.module.panel_visible(true);
+                        }
+                    }
                     Err(e) => eprintln!("module {:?} failed to start: {e}", slot.module.id()),
                 }
             } else if !wanted && slot.running {
@@ -80,7 +91,9 @@ impl Modules {
     }
 
     pub fn panel_visible(&self, visible: bool) {
-        for slot in self.0.lock().unwrap().iter_mut().filter(|s| s.running) {
+        let mut slots = self.slots.lock().unwrap();
+        self.visible.store(visible, Ordering::Relaxed);
+        for slot in slots.iter_mut().filter(|s| s.running) {
             slot.module.panel_visible(visible);
         }
     }
@@ -106,6 +119,9 @@ mod tests {
         fn apply_settings(&mut self, _: &Settings) {
             self.0.lock().unwrap().push("settings");
         }
+        fn panel_visible(&mut self, visible: bool) {
+            self.0.lock().unwrap().push(if visible { "shown" } else { "hidden" });
+        }
     }
 
     #[test]
@@ -119,5 +135,15 @@ mod tests {
         modules.apply(&enabled(vec![]));
         modules.apply(&enabled(vec![])); // already stopped: no second stop
         assert_eq!(*calls.lock().unwrap(), ["start", "settings", "settings", "stop"]);
+    }
+
+    #[test]
+    fn started_while_open_is_told_at_once() {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let modules = Modules::with(vec![Box::new(Fake(calls.clone()))]);
+        modules.panel_visible(true); // not running yet: nothing to tell
+        modules.apply(&Settings { enabled_modules: vec![ModuleId::VolumeMixer], ..Settings::default() });
+        modules.panel_visible(false);
+        assert_eq!(*calls.lock().unwrap(), ["start", "shown", "settings", "hidden"]);
     }
 }
