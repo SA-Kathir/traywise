@@ -313,3 +313,17 @@ impl IMMNotificationClient_Impl for DeviceEvents_Impl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn percent_rounds_and_clamps() {
+        assert_eq!(super::percent(0.0), 0);
+        assert_eq!(super::percent(0.064), 6); // Windows reports 6% as about 0.06
+        assert_eq!(super::percent(0.995), 100);
+        assert_eq!(super::percent(1.0), 100);
+        assert_eq!(super::percent(-0.1), 0);
+        assert_eq!(super::percent(1.5), 100);
+        assert_eq!(super::percent(f32::NAN), 0);
+    }
+}
