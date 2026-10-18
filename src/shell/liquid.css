@@ -244,6 +244,15 @@ button.on {
   background: transparent;
   box-shadow: none;
 }
+.segmented.vertical {
+  flex-direction: column;
+}
+.segmented.vertical button {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .pill {
   font-size: 11px;

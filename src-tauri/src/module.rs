@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
+use crate::modules::audio_devices::AudioDevices;
 use crate::modules::keep_awake::KeepAwake;
 use crate::modules::volume_mixer::VolumeMixer;
 
@@ -15,6 +16,7 @@ use crate::modules::volume_mixer::VolumeMixer;
 pub enum ModuleId {
     VolumeMixer,
     KeepAwake,
+    AudioDevices,
 }
 
 pub trait Module: Send {
@@ -27,7 +29,11 @@ pub trait Module: Send {
 
 /// All built-in modules, created but not started. Creating one must be cheap and do nothing.
 fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
-    vec![Box::new(VolumeMixer::new(app.clone())), Box::new(KeepAwake::new(app.clone()))]
+    vec![
+        Box::new(VolumeMixer::new(app.clone())),
+        Box::new(KeepAwake::new(app.clone())),
+        Box::new(AudioDevices::new(app.clone())),
+    ]
 }
 
 struct Slot {

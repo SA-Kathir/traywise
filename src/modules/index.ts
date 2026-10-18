@@ -1,5 +1,6 @@
 import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
+import audioDevices from "./audio-devices";
 import keepAwake from "./keep-awake";
 import volumeMixer from "./volume-mixer";
 
@@ -14,5 +15,6 @@ export type ModuleUi = {
 /** Every module's UI, keyed by the ids Rust defines. TypeScript errors if one is missing. */
 export const modules: Record<ModuleId, ModuleUi> = {
   "volume-mixer": volumeMixer,
+  "audio-devices": audioDevices,
   "keep-awake": keepAwake,
 };

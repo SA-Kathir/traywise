@@ -26,10 +26,15 @@ export const commands = {
 	/**  Picking a timed mode (again) restarts its timer. */
 	keepAwakeSetMode: (mode: Mode) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_mode", { mode })),
 	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
+	/**  The latest snapshot. Empty while the module is off. */
+	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
+	/**  Makes this output the default for everything: apps, games, and calls. */
+	audioDevicesSetOutput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_output", { id })),
 };
 
 /** Events */
 export const events = {
+	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
@@ -47,6 +52,14 @@ export type AppAudio = {
 	/**  Percent, 0 to 100. */
 	volume: number,
 	muted: boolean,
+};
+
+/**  Sent to the UI whenever a device is plugged in, removed, or becomes the default. */
+export type AudioDevicesChanged = AudioDevicesState;
+
+/**  Everything the panel shows. */
+export type AudioDevicesState = {
+	outputs: OutputDevice[],
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -91,10 +104,18 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices";
 
 /**  Background motion: `onOpen` drifts for a while after each open, `still` never moves. */
 export type Motion = "still" | "onOpen";
+
+export type OutputDevice = {
+	/**  Windows' id for the device. Stays the same across restarts. */
+	id: string,
+	name: string,
+	/**  The one apps play through. */
+	isDefault: boolean,
+};
 
 /**  Sent to the UI each time the panel opens. */
 export type PanelShown = null;
