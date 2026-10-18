@@ -8,14 +8,19 @@ use sysinfo::{Networks, System};
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+use windows::Win32::System::Performance::{
+    PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_HCOUNTER, PDH_HQUERY, PdhAddEnglishCounterW, PdhCloseQuery,
+    PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
+};
 use windows::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
-use windows::core::HSTRING;
+use windows::core::{HSTRING, PCWSTR, w};
 
 use super::{Battery, Msg, Point, Shared, SystemSample, SystemSampled, mib, per_second, push_history};
 
 pub fn run(app: AppHandle, rx: Receiver<Msg>) {
     let mut sampler = Sampler {
         system: System::new(),
+        cpu: None,
         networks: Networks::new(),
         last: Instant::now(),
         history: VecDeque::new(),
@@ -30,6 +35,7 @@ pub fn run(app: AppHandle, rx: Receiver<Msg>) {
             }
             Ok(Msg::PanelVisible(false)) => {
                 visible = false;
+                sampler.cpu = None; // closes the counter: nothing is measured while hidden
                 sampler.history.clear();
                 SystemSample::default()
             }
@@ -45,7 +51,10 @@ pub fn run(app: AppHandle, rx: Receiver<Msg>) {
 }
 
 struct Sampler {
+    /// Memory only; CPU comes from `cpu`.
     system: System,
+    /// Open only while the panel is.
+    cpu: Option<Cpu>,
     networks: Networks,
     /// When CPU and network counters were last read; rates are measured from here.
     last: Instant,
@@ -55,7 +64,7 @@ struct Sampler {
 impl Sampler {
     /// The panel just opened: start the CPU and network counters, and show what doesn't need them.
     fn begin(&mut self) -> SystemSample {
-        self.system.refresh_cpu_usage();
+        self.cpu = Cpu::open();
         self.networks.refresh(true);
         self.last = Instant::now();
         self.history.clear();
@@ -63,17 +72,16 @@ impl Sampler {
     }
 
     fn sample(&mut self) -> SystemSample {
-        self.system.refresh_cpu_usage();
+        let cpu = self.cpu.as_ref().and_then(Cpu::read);
         self.networks.refresh(true);
         let elapsed = self.last.elapsed();
         self.last = Instant::now();
         // shortcut: virtual adapters (VPNs, Hyper-V) can count the same traffic twice; skip them by
         // type if the numbers look doubled.
         let (received, sent) = self.networks.values().fold((0, 0), |(r, s), n| (r + n.received(), s + n.transmitted()));
-        let cpu = self.system.global_cpu_usage().clamp(0.0, 100.0).round() as u8;
         let (download, upload) = (per_second(received, elapsed), per_second(sent, elapsed));
-        push_history(&mut self.history, Point { cpu, download, upload });
-        self.read(Some(cpu), Some(download), Some(upload))
+        push_history(&mut self.history, Point { cpu: cpu.unwrap_or(0), download, upload });
+        self.read(cpu, Some(download), Some(upload))
     }
 
     fn read(&mut self, cpu: Option<u8>, download: Option<u32>, upload: Option<u32>) -> SystemSample {
@@ -91,6 +99,57 @@ impl Sampler {
             history: self.history.clone(),
         }
     }
+}
+
+/// Total CPU use as Task Manager counts it: Windows' "% Processor Utility" counter, which scales
+/// busy time by clock speed. sysinfo's figure ("% Processor Time") ignores clock speed, so on a
+/// laptop it read up to ~15 points off from Task Manager.
+struct Cpu {
+    query: PDH_HQUERY,
+    counter: PDH_HCOUNTER,
+}
+
+impl Cpu {
+    /// Opens the counter and takes the first reading; `read` reports use since then.
+    fn open() -> Option<Self> {
+        let mut query = PDH_HQUERY::default();
+        let status = unsafe { PdhOpenQueryW(PCWSTR::null(), 0, &mut query) };
+        if status != 0 {
+            return report_pdh(status);
+        }
+        let mut cpu = Self { query, counter: PDH_HCOUNTER::default() }; // dropping it closes the query
+        let path = w!(r"\Processor Information(_Total)\% Processor Utility");
+        let status = unsafe { PdhAddEnglishCounterW(cpu.query, path, 0, &mut cpu.counter) };
+        if status != 0 {
+            return report_pdh(status);
+        }
+        unsafe { PdhCollectQueryData(cpu.query) };
+        Some(cpu)
+    }
+
+    /// Percent, 0 to 100 (Windows caps it, like Task Manager), since the previous reading.
+    fn read(&self) -> Option<u8> {
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let status = unsafe {
+            PdhCollectQueryData(self.query);
+            PdhGetFormattedCounterValue(self.counter, PDH_FMT_DOUBLE, None, &mut value)
+        };
+        if status != 0 || value.CStatus != 0 {
+            return None;
+        }
+        Some(unsafe { value.Anonymous.doubleValue }.clamp(0.0, 100.0).round() as u8)
+    }
+}
+
+impl Drop for Cpu {
+    fn drop(&mut self) {
+        unsafe { PdhCloseQuery(self.query) };
+    }
+}
+
+fn report_pdh<T>(status: u32) -> Option<T> {
+    eprintln!("system-monitor: couldn't open the CPU counter (PDH error {status:#x})");
+    None
 }
 
 fn battery() -> Option<Battery> {
