@@ -4,6 +4,7 @@
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 use crate::modules::volume_mixer::VolumeMixer;
 
@@ -23,8 +24,8 @@ pub trait Module: Send {
 }
 
 /// All built-in modules, created but not started. Creating one must be cheap and do nothing.
-fn registry() -> Vec<Box<dyn Module>> {
-    vec![Box::new(VolumeMixer)]
+fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
+    vec![Box::new(VolumeMixer::new(app.clone()))]
 }
 
 struct Slot {
@@ -35,8 +36,8 @@ struct Slot {
 pub struct Modules(Mutex<Vec<Slot>>);
 
 impl Modules {
-    pub fn new() -> Self {
-        Self::with(registry())
+    pub fn new(app: &AppHandle) -> Self {
+        Self::with(registry(app))
     }
 
     fn with(modules: Vec<Box<dyn Module>>) -> Self {

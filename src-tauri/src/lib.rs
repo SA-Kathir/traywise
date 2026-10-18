@@ -15,8 +15,11 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             settings::set_settings,
             settings::get_autostart,
             settings::set_autostart,
+            modules::volume_mixer::mixer_state,
+            modules::volume_mixer::mixer_set_volume,
+            modules::volume_mixer::mixer_set_mute,
         ])
-        .events(collect_events![shell::panel::PanelShown])
+        .events(collect_events![shell::panel::PanelShown, modules::volume_mixer::MixerChanged])
 }
 
 /// Rewrites `src/bindings.ts` if it no longer matches the Rust side. Returns whether it changed.
@@ -52,7 +55,7 @@ pub fn run() {
             bindings.mount_events(app);
             // Settings and modules first: the panel's UI asks for settings as soon as it loads.
             let settings = settings::SettingsState::load(app.handle())?;
-            let modules = module::Modules::new();
+            let modules = module::Modules::new(app.handle());
             modules.apply(&settings.get().enabled_modules);
             app.manage(settings);
             app.manage(modules);

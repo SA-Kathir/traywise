@@ -16,14 +16,50 @@ export const commands = {
 	/**  Whether Traywise starts with Windows. Windows keeps this (in the registry's Run list), not settings.json. */
 	getAutostart: () => typedError<boolean, string>(__TAURI_INVOKE("get_autostart")),
 	setAutostart: (enabled: boolean) => typedError<null, string>(__TAURI_INVOKE("set_autostart", { enabled })),
+	/**  The latest snapshot. Empty while the module is off. */
+	mixerState: () => __TAURI_INVOKE<MixerState>("mixer_state"),
+	/**  Sets a volume, in percent (0 to 100). */
+	mixerSetVolume: (target: Target, volume: number) => typedError<null, string>(__TAURI_INVOKE("mixer_set_volume", { target, volume })),
+	mixerSetMute: (target: Target, muted: boolean) => typedError<null, string>(__TAURI_INVOKE("mixer_set_mute", { target, muted })),
 };
 
 /** Events */
 export const events = {
+	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 };
 
 /* Types */
+/**  One app with audio on the default output device (all of its audio sessions together). */
+export type AppAudio = {
+	pid: number,
+	name: string,
+	/**  The app's icon as a PNG data URL, if it has one. */
+	icon: string | null,
+	/**  Percent, 0 to 100. */
+	volume: number,
+	muted: boolean,
+};
+
+export type Level = {
+	/**
+	 *  Percent, 0 to 100. Whole numbers, like Windows' own mixer (and a float would reach
+	 *  TypeScript as `number | null`, since JSON has no NaN).
+	 */
+	volume: number,
+	muted: boolean,
+};
+
+/**  Sent to the UI whenever anything in the mixer changes, here or elsewhere in Windows. */
+export type MixerChanged = MixerState;
+
+/**  Everything the panel shows. Sent whole on every change: it's a handful of rows. */
+export type MixerState = {
+	/**  None when there's no output device. */
+	master: Level | null,
+	apps: AppAudio[],
+};
+
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
 export type ModuleId = "volume-mixer";
 
@@ -41,6 +77,11 @@ export type Settings = {
 	preset: Preset,
 	motion: Motion,
 };
+
+/**  What a volume or mute change applies to. */
+export type Target = "master" | 
+/**  An app, by process id. */
+{ app: number };
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
