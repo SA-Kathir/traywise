@@ -9,9 +9,10 @@ use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 use windows::Win32::System::Power::{
-    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, GetSystemPowerStatus, HPOWERNOTIFY, POWER_REQUEST_TYPE, PowerClearRequest,
+    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, GetPwrCapabilities, GetSystemPowerStatus, HPOWERNOTIFY, POWER_REQUEST_TYPE, PowerClearRequest,
     PowerCreateRequest, PowerRequestDisplayRequired, PowerRequestSystemRequired, PowerSetRequest,
-    PowerSettingRegisterNotification, PowerSettingUnregisterNotification, SYSTEM_POWER_STATUS,
+    PowerSettingRegisterNotification, PowerSettingUnregisterNotification, SYSTEM_POWER_CAPABILITIES,
+    SYSTEM_POWER_STATUS,
 };
 use windows::Win32::System::SystemServices::{GUID_ACDC_POWER_SOURCE, POWER_REQUEST_CONTEXT_VERSION};
 use windows::Win32::System::Threading::{POWER_REQUEST_CONTEXT_SIMPLE_STRING, REASON_CONTEXT, REASON_CONTEXT_0};
@@ -27,11 +28,12 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     };
     let _power_events = PowerEvents::register(tx);
     let mut wish = Wish { mode: Mode::Off, display: false, since: Instant::now() };
+    let screen_off_sleeps = modern_standby();
 
     loop {
         let (system, display) = wish.wanted(plugged_in());
         request.set(system, display);
-        publish(&app, &wish, system);
+        publish(&app, &wish, system, screen_off_sleeps);
 
         // Sleeps until a message arrives or the timer runs out.
         // shortcut: the timer counts awake time only, so a PC put to sleep by hand runs late
@@ -53,18 +55,25 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     // `request` is dropped here, which releases it.
 }
 
-fn publish(app: &AppHandle, wish: &Wish, active: bool) {
+fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool) {
     let ends_at = wish.deadline().map(|end| {
         let end = SystemTime::now() + end.saturating_duration_since(Instant::now());
         end.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs_f64() * 1000.0
     });
-    let state = KeepAwakeState { mode: wish.mode, display: wish.display, active, ends_at };
+    let state = KeepAwakeState { mode: wish.mode, display: wish.display, active, ends_at, screen_off_sleeps };
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
         *current = state.clone();
         let _ = KeepAwakeChanged(state).emit(app);
     }
+}
+
+/// Modern Standby ("S0 low power idle", what `powercfg /a` lists), common on recent laptops.
+fn modern_standby() -> bool {
+    let mut caps = SYSTEM_POWER_CAPABILITIES::default();
+    let read = unsafe { GetPwrCapabilities(&mut caps) };
+    read && caps.AoAc
 }
 
 /// On mains power. A desktop PC (no battery) or an unknown state counts as plugged in.

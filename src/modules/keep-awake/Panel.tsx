@@ -68,6 +68,12 @@ export default function Panel() {
         <input type="checkbox" checked={state.display} onChange={(e) => commands.keepAwakeSetDisplay(e.target.checked)} />
       </label>
       <p className="hint">{status(state)}</p>
+      {state.screenOffSleeps && state.active && !state.display && (
+        <p className="hint">
+          This PC goes to sleep when its screen turns off, whatever apps ask (it uses Windows' Modern Standby). To
+          keep it awake, also keep the display on.
+        </p>
+      )}
     </>
   );
 }

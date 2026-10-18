@@ -90,6 +90,11 @@ export type KeepAwakeState = {
 	active: boolean,
 	/**  Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`). */
 	endsAt: number | null,
+	/**
+	 *  A Modern Standby PC: Windows goes to standby when the screen turns off, whatever apps ask,
+	 *  so only keeping the display on keeps it awake.
+	 */
+	screenOffSleeps: boolean,
 };
 
 export type Level = {

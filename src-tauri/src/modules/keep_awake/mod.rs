@@ -40,6 +40,9 @@ pub struct KeepAwakeState {
     pub active: bool,
     /// Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`).
     pub ends_at: Option<f64>,
+    /// A Modern Standby PC: Windows goes to standby when the screen turns off, whatever apps ask,
+    /// so only keeping the display on keeps it awake.
+    pub screen_off_sleeps: bool,
 }
 
 /// Sent to the UI whenever the state changes.
