@@ -30,6 +30,8 @@ export const commands = {
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
 	audioDevicesSetOutput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_output", { id })),
+	/**  Mutes or unmutes every microphone. */
+	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 };
 
 /** Events */
@@ -60,6 +62,10 @@ export type AudioDevicesChanged = AudioDevicesState;
 /**  Everything the panel shows. */
 export type AudioDevicesState = {
 	outputs: OutputDevice[],
+	/**  Whether every microphone is muted. None when there are no microphones. */
+	micsMuted: boolean | null,
+	/**  The mute-all shortcut. None until it has been set up. */
+	shortcut: ShortcutStatus | null,
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -127,6 +133,15 @@ export type Settings = {
 	enabledModules: ModuleId[],
 	preset: Preset,
 	motion: Motion,
+	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
+	micShortcut: string,
+};
+
+export type ShortcutStatus = {
+	/**  Like "Ctrl+Alt+M". */
+	keys: string,
+	/**  Why it couldn't be set up, for example another app already uses it. */
+	error: string | null,
 };
 
 /**  What a volume or mute change applies to. */

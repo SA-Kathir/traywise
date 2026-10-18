@@ -1,4 +1,5 @@
-//! Audio devices: pick the output device every app plays through.
+//! Audio devices: pick the output device every app plays through, and mute every microphone at
+//! once, from the panel or with a global shortcut.
 //!
 //! One background thread (`worker.rs`) owns the Windows audio objects. It sleeps until Windows
 //! reports a device change or the UI asks for one, so it costs nothing while nothing happens.
@@ -12,13 +13,28 @@ use std::thread::JoinHandle;
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use crate::module::{Module, ModuleId};
+use crate::settings::Settings;
 
 /// Everything the panel shows.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AudioDevicesState {
     pub outputs: Vec<OutputDevice>,
+    /// Whether every microphone is muted. None when there are no microphones.
+    pub mics_muted: Option<bool>,
+    /// The mute-all shortcut. None until it has been set up.
+    pub shortcut: Option<ShortcutStatus>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
+pub struct ShortcutStatus {
+    /// Like "Ctrl+Alt+M".
+    pub keys: String,
+    /// Why it couldn't be set up, for example another app already uses it.
+    pub error: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
@@ -37,6 +53,9 @@ pub struct AudioDevicesChanged(pub AudioDevicesState);
 
 enum Msg {
     SetOutput(String),
+    MuteMics(bool),
+    ToggleMics,
+    Shortcut(ShortcutStatus),
     /// Something changed in Windows: re-read and publish.
     Refresh,
     Stop,
@@ -53,12 +72,20 @@ pub struct Shared {
 pub struct AudioDevices {
     app: AppHandle,
     worker: Option<JoinHandle<()>>,
+    /// The registered mute-all shortcut.
+    shortcut: Option<String>,
 }
 
 impl AudioDevices {
     pub fn new(app: AppHandle) -> Self {
         app.manage(Shared::default());
-        Self { app, worker: None }
+        Self { app, worker: None, shortcut: None }
+    }
+
+    fn unregister_shortcut(&mut self) {
+        if let Some(keys) = self.shortcut.take() {
+            let _ = self.app.global_shortcut().unregister(keys.as_str());
+        }
     }
 }
 
@@ -81,6 +108,7 @@ impl Module for AudioDevices {
     }
 
     fn stop(&mut self) {
+        self.unregister_shortcut();
         let shared = self.app.state::<Shared>();
         if let Some(tx) = shared.tx.lock().unwrap().take() {
             let _ = tx.send(Msg::Stop);
@@ -90,6 +118,24 @@ impl Module for AudioDevices {
         }
         *shared.state.lock().unwrap() = AudioDevicesState::default();
         println!("audio-devices stopped");
+    }
+
+    fn apply_settings(&mut self, settings: &Settings) {
+        let keys = &settings.mic_shortcut;
+        if self.shortcut.as_ref() == Some(keys) {
+            return;
+        }
+        self.unregister_shortcut();
+        let registered = self.app.global_shortcut().on_shortcut(keys.as_str(), |app, _, event| {
+            if event.state == ShortcutState::Pressed {
+                let _ = send(&app.state::<Shared>(), Msg::ToggleMics);
+            }
+        });
+        let error = registered.err().map(|e| e.to_string());
+        if error.is_none() {
+            self.shortcut = Some(keys.clone());
+        }
+        let _ = send(&self.app.state::<Shared>(), Msg::Shortcut(ShortcutStatus { keys: keys.clone(), error }));
     }
 }
 
@@ -110,4 +156,11 @@ pub fn audio_devices_state(shared: State<Shared>) -> AudioDevicesState {
 #[specta::specta]
 pub fn audio_devices_set_output(shared: State<Shared>, id: String) -> Result<(), String> {
     send(&shared, Msg::SetOutput(id))
+}
+
+/// Mutes or unmutes every microphone.
+#[tauri::command]
+#[specta::specta]
+pub fn audio_devices_mute_mics(shared: State<Shared>, muted: bool) -> Result<(), String> {
+    send(&shared, Msg::MuteMics(muted))
 }

@@ -24,6 +24,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::keep_awake::keep_awake_set_display,
             modules::audio_devices::audio_devices_state,
             modules::audio_devices::audio_devices_set_output,
+            modules::audio_devices::audio_devices_mute_mics,
         ])
         .events(collect_events![
             shell::panel::PanelShown,
@@ -63,13 +64,15 @@ pub fn run() {
         // Must be the first plugin. A second launch exits at once and opens this copy's panel.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| shell::panel::open(app)))
         .plugin(tauri_plugin_autostart::Builder::new().build())
+        // Registers nothing by itself; Audio devices adds its shortcut only while it runs.
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(bindings.invoke_handler())
         .setup(move |app| {
             bindings.mount_events(app);
             // Settings and modules first: the panel's UI asks for settings as soon as it loads.
             let settings = settings::SettingsState::load(app.handle())?;
             let modules = module::Modules::new(app.handle());
-            modules.apply(&settings.get().enabled_modules);
+            modules.apply(&settings.get());
             app.manage(settings);
             app.manage(modules);
             shell::panel::create(app)?;

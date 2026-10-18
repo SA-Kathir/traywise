@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { commands, events, type AudioDevicesState } from "../../bindings";
 
+// Segoe Fluent Icons glyphs.
+const MIC = String.fromCodePoint(0xe720);
+const MIC_OFF = String.fromCodePoint(0xec54);
+
 export default function Panel() {
   const [state, setState] = useState<AudioDevicesState | null>(null);
 
@@ -17,8 +21,17 @@ export default function Panel() {
   }, []);
 
   if (!state) return null;
-  if (state.outputs.length === 0) return <p className="hint">No output device.</p>;
 
+  return (
+    <>
+      <Outputs state={state} />
+      <Mics state={state} />
+    </>
+  );
+}
+
+function Outputs({ state }: { state: AudioDevicesState }) {
+  if (state.outputs.length === 0) return <p className="hint">No output device.</p>;
   return (
     <div className="segmented vertical" role="radiogroup" aria-label="Output device">
       {state.outputs.map((d) => (
@@ -34,5 +47,30 @@ export default function Panel() {
         </button>
       ))}
     </div>
+  );
+}
+
+function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) {
+  if (micsMuted === null) return <p className="hint">No microphone.</p>;
+  return (
+    <>
+      <div className="row mics">
+        <span className="icon" aria-hidden>
+          {micsMuted ? MIC_OFF : MIC}
+        </span>
+        <span className="grow">{micsMuted ? "All microphones muted" : "Microphones on"}</span>
+        <button className={micsMuted ? "on" : ""} onClick={() => commands.audioDevicesMuteMics(!micsMuted)}>
+          {micsMuted ? "Unmute all" : "Mute all"}
+        </button>
+      </div>
+      {shortcut &&
+        (shortcut.error ? (
+          <p className="error">
+            Shortcut {shortcut.keys} isn't available: {shortcut.error}
+          </p>
+        ) : (
+          <p className="hint">Shortcut: {shortcut.keys}</p>
+        ))}
+    </>
   );
 }

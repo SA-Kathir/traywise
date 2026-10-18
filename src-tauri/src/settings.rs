@@ -17,11 +17,18 @@ pub struct Settings {
     pub enabled_modules: Vec<ModuleId>,
     pub preset: Preset,
     pub motion: Motion,
+    /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
+    pub mic_shortcut: String,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { enabled_modules: vec![ModuleId::VolumeMixer], preset: Preset::Ocean, motion: Motion::OnOpen }
+        Self {
+            enabled_modules: vec![ModuleId::VolumeMixer],
+            preset: Preset::Ocean,
+            motion: Motion::OnOpen,
+            mic_shortcut: "Ctrl+Alt+M".into(),
+        }
     }
 }
 
@@ -97,7 +104,7 @@ pub fn get_settings(state: State<SettingsState>) -> Settings {
 #[specta::specta]
 pub fn set_settings(settings: Settings, state: State<SettingsState>, modules: State<Modules>) -> Result<(), String> {
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
-    modules.apply(&settings.enabled_modules);
+    modules.apply(&settings);
     *state.current.lock().unwrap() = settings;
     Ok(())
 }
@@ -128,7 +135,12 @@ mod tests {
 
         assert_eq!(read(&path), Settings::default(), "no file yet");
 
-        let custom = Settings { enabled_modules: vec![], preset: Preset::Graphite, motion: Motion::Still };
+        let custom = Settings {
+            enabled_modules: vec![],
+            preset: Preset::Graphite,
+            motion: Motion::Still,
+            mic_shortcut: "Ctrl+Shift+F9".into(),
+        };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");
 

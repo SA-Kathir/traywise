@@ -93,6 +93,16 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
         </div>
       </section>
 
+      {settings.enabledModules.includes("audio-devices") && (
+        <section>
+          <h2>Shortcuts</h2>
+          <div className="row">
+            <span className="grow">Mute all microphones</span>
+            <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
+          </div>
+        </section>
+      )}
+
       <section>
         <h2>System</h2>
         <label className="row">
@@ -108,5 +118,35 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
 
       {error && <p className="error">{error}</p>}
     </>
+  );
+}
+
+const MODIFIER_KEYS = ["Control", "Alt", "Shift", "Meta"];
+
+/** Click, then press the new key combination (with Ctrl, Alt, Shift or Win). Esc cancels. */
+function ShortcutPicker({ keys, onChange }: { keys: string; onChange: (keys: string) => void }) {
+  const [listening, setListening] = useState(false);
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (!listening || MODIFIER_KEYS.includes(e.key)) return;
+    e.preventDefault();
+    if (e.key === "Escape") return setListening(false);
+    const modifiers = [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && "Shift", e.metaKey && "Super"].filter(Boolean);
+    if (modifiers.length === 0) return; // a lone key would fire while typing anywhere
+    // "KeyM" -> "M", "Digit1" -> "1"; others ("F9", "Space") are already what Rust expects.
+    const key = e.code.replace(/^(Key|Digit)/, "");
+    setListening(false);
+    onChange([...modifiers, key].join("+"));
+  }
+
+  return (
+    <button
+      className={listening ? "on" : ""}
+      onClick={() => setListening(true)}
+      onKeyDown={onKeyDown}
+      onBlur={() => setListening(false)}
+    >
+      {listening ? "Press keys…" : keys}
+    </button>
   );
 }

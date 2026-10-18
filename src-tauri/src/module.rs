@@ -9,6 +9,7 @@ use tauri::AppHandle;
 use crate::modules::audio_devices::AudioDevices;
 use crate::modules::keep_awake::KeepAwake;
 use crate::modules::volume_mixer::VolumeMixer;
+use crate::settings::Settings;
 
 /// Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -25,6 +26,8 @@ pub trait Module: Send {
     fn start(&mut self) -> Result<(), String>;
     /// Stops it and releases everything `start` took.
     fn stop(&mut self);
+    /// Called after `start`, and whenever settings change while the module runs.
+    fn apply_settings(&mut self, _settings: &Settings) {}
 }
 
 /// All built-in modules, created but not started. Creating one must be cheap and do nothing.
@@ -53,9 +56,9 @@ impl Modules {
     }
 
     /// Starts the enabled modules that aren't running, and stops the running ones that were disabled.
-    pub fn apply(&self, enabled: &[ModuleId]) {
+    pub fn apply(&self, settings: &Settings) {
         for slot in self.0.lock().unwrap().iter_mut() {
-            let wanted = enabled.contains(&slot.module.id());
+            let wanted = settings.enabled_modules.contains(&slot.module.id());
             if wanted && !slot.running {
                 match slot.module.start() {
                     Ok(()) => slot.running = true,
@@ -64,6 +67,9 @@ impl Modules {
             } else if !wanted && slot.running {
                 slot.module.stop();
                 slot.running = false;
+            }
+            if slot.running {
+                slot.module.apply_settings(settings);
             }
         }
     }
@@ -86,17 +92,21 @@ mod tests {
         fn stop(&mut self) {
             self.0.lock().unwrap().push("stop");
         }
+        fn apply_settings(&mut self, _: &Settings) {
+            self.0.lock().unwrap().push("settings");
+        }
     }
 
     #[test]
     fn starts_and_stops_only_on_change() {
         let calls = Arc::new(Mutex::new(Vec::new()));
         let modules = Modules::with(vec![Box::new(Fake(calls.clone()))]);
-        modules.apply(&[]); // disabled from the start: never started
-        modules.apply(&[ModuleId::VolumeMixer]);
-        modules.apply(&[ModuleId::VolumeMixer]); // already running: no second start
-        modules.apply(&[]);
-        modules.apply(&[]); // already stopped: no second stop
-        assert_eq!(*calls.lock().unwrap(), ["start", "stop"]);
+        let enabled = |enabled_modules| Settings { enabled_modules, ..Settings::default() };
+        modules.apply(&enabled(vec![])); // disabled from the start: never started
+        modules.apply(&enabled(vec![ModuleId::VolumeMixer]));
+        modules.apply(&enabled(vec![ModuleId::VolumeMixer])); // already running: no second start
+        modules.apply(&enabled(vec![]));
+        modules.apply(&enabled(vec![])); // already stopped: no second stop
+        assert_eq!(*calls.lock().unwrap(), ["start", "settings", "settings", "stop"]);
     }
 }

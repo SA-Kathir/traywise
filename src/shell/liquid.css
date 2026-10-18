@@ -154,7 +154,10 @@ label.row + label.row {
 }
 .segmented + .segmented,
 .segmented + label.row,
-label.row + .hint {
+label.row + .hint,
+.segmented + .row,
+.row.mics + p,
+.segmented + .hint {
   margin-top: 8px;
 }
 
