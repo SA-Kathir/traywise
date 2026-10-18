@@ -63,6 +63,7 @@ Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a C
 - Release exe: `pnpm tauri build --no-bundle`, which produces `src-tauri/target/release/traywise.exe`
 - Measure: `pnpm tauri build --no-bundle --features autotest`, run `traywise.exe > log.txt` (it opens/closes itself 10 times, printing `panel opened in N ms`), then `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/measure-memory.ps1`. Wait 2+ minutes: RAM dips right after hiding, then settles higher.
 - Bindings: `src/bindings.ts` (tauri-specta) is rewritten whenever a debug build starts (`pnpm tauri dev`), and `cargo test` fails if it's stale. New commands/events go in `bindings()` in `src-tauri/src/lib.rs`.
+- CI: `.github/workflows/ci.yml` (Windows runner) runs `pnpm build`, clippy with `-D warnings`, `cargo test` and the release build.
 - Type-check: `pnpm exec tsc --noEmit`. Rust: `cargo build`, `cargo clippy`, `cargo test` in `src-tauri`.
 - Rust may not be on PATH in a fresh shell: `export PATH="$HOME/.cargo/bin:$PATH"`.
 
