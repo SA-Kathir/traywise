@@ -23,7 +23,10 @@ body,
 .panel {
   box-sizing: border-box;
   height: 100%;
-  padding: 16px;
+  /* The right side is 10px + the 6px scrollbar's space, reserved even when there's nothing to
+     scroll: otherwise a scrollbar appearing (a long Settings page) narrows everything. */
+  padding: 16px 10px 16px 16px;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -33,11 +36,24 @@ body,
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
+.panel::-webkit-scrollbar {
+  width: 6px;
+}
+.panel::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
 /* ---- Background presets ---------------------------------------------------------------- */
 
-/* One hue per preset, muted, so the background stays quiet behind the glass. */
+/* One hue per preset, muted, so the background stays quiet behind the glass.
+   --c1..--c3 are the blobs, --accent is for lit tiles and controls. */
 .bg-ocean { --base: #0a121c; --c1: #2c5487; --c2: #1d3a63; --c3: #44709f; --accent: #a9c8ee; }
 .bg-graphite { --base: #111214; --c1: #4a4c52; --c2: #303237; --c3: #65686f; --accent: #d7dce4; }
+.bg-forest { --base: #0a1410; --c1: #2f5a45; --c2: #1e3d2f; --c3: #4a7a5f; --accent: #a8d8bd; }
+.bg-plum { --base: #120d17; --c1: #533a69; --c2: #382748; --c3: #72548a; --accent: #d4bde8; }
+.bg-ember { --base: #160f0b; --c1: #774029; --c2: #50291a; --c3: #95583a; --accent: #f0c3a6; }
+.bg-rose { --base: #160d12; --c1: #6b3a51; --c2: #482536; --c3: #89546e; --accent: #f0bfd4; }
 
 .liquid-bg {
   /* fixed, not absolute: stays put when the panel scrolls, and its overhang adds no scroll area */
@@ -46,8 +62,7 @@ body,
   z-index: -1;
   background: var(--base);
 }
-/* Soft blobs are plain radial gradients (no filter: blur), and only `transform` animates,
-   so each frame is a cheap GPU composite rather than a repaint. */
+/* Soft blobs: plain radial gradients, still. */
 .blob {
   position: absolute;
   width: 75%;
@@ -55,31 +70,14 @@ body,
   border-radius: 50%;
   background: radial-gradient(circle, var(--c) 0%, transparent 65%);
   opacity: 0.6;
-  will-change: transform;
 }
-/* Starts paused; LiquidBackground.tsx plays it after each open, then slows it to a stop.
-   Paused, never removed: removing the animation would snap the blobs back to the start.
-   (Higher specificity than .b1–.b3, whose `animation` shorthand would reset it to running.) */
-.liquid-bg .blob { animation-play-state: paused; }
-.b1 { --c: var(--c1); top: 2%; left: -8%; animation: drift-a 16s ease-in-out infinite alternate; }
-.b2 { --c: var(--c2); top: 30%; right: -12%; animation: drift-b 19s ease-in-out infinite alternate; }
-.b3 { --c: var(--c3); bottom: -4%; left: 12%; animation: drift-c 17s ease-in-out infinite alternate; }
-@keyframes drift-a { to { transform: translate(30%, 34%) scale(1.18); } }
-@keyframes drift-b { to { transform: translate(-34%, -24%) scale(0.84); } }
-@keyframes drift-c { to { transform: translate(24%, -36%) scale(1.14); } }
-@media (prefers-reduced-motion: reduce) {
-  .blob { animation: none; }
-}
-
-.defs {
-  position: absolute;
-  width: 0;
-  height: 0;
-}
+.b1 { --c: var(--c1); top: 2%; left: -8%; }
+.b2 { --c: var(--c2); top: 30%; right: -12%; }
+.b3 { --c: var(--c3); bottom: -4%; left: 12%; }
 
 /* ---- Glass cards ----------------------------------------------------------------------- */
 
-/* Distort, then blur and boost colour, of whatever sits behind the card. */
+/* Blur and boost the colour of whatever sits behind the card. */
 section,
 .tile,
 .stats {
@@ -87,7 +85,7 @@ section,
   padding: 12px;
   border-radius: 18px;
   background: linear-gradient(140deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09));
-  backdrop-filter: url(#liquid-refract) blur(14px) saturate(1.7);
+  backdrop-filter: blur(14px) saturate(1.7);
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45), /* lit top rim */
@@ -416,6 +414,49 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
+/* Colour presets: a 3 x 2 grid, each with a swatch of its own colours. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.swatches button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-align: left;
+}
+.swatch {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 5px;
+  background: linear-gradient(135deg, var(--c3), var(--c1) 55%, var(--base));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* No modules on yet: the name, large, in the middle. */
+.welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-bottom: 40px;
+  text-align: center;
+}
+.welcome-name {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+.welcome button {
+  margin-top: 6px;
+}
+
 .segmented.vertical {
   flex-direction: column;
 }

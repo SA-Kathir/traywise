@@ -16,7 +16,6 @@ pub struct Settings {
     // invalid, so it falls back to defaults; skip unknown ids instead once modules get removed.
     pub enabled_modules: Vec<ModuleId>,
     pub preset: Preset,
-    pub motion: Motion,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
 }
@@ -26,26 +25,22 @@ impl Default for Settings {
         Self {
             enabled_modules: vec![ModuleId::VolumeMixer],
             preset: Preset::Ocean,
-            motion: Motion::OnOpen,
             mic_shortcut: "Ctrl+Alt+M".into(),
         }
     }
 }
 
-/// Background colour preset.
+/// Background colour preset: one muted hue each. The colours are in `src/shell/liquid.css`.
+/// (An old file's `motion` field, from when the background moved, is ignored.)
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Preset {
     Ocean,
     Graphite,
-}
-
-/// Background motion: `onOpen` drifts for a while after each open, `still` never moves.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum Motion {
-    Still,
-    OnOpen,
+    Forest,
+    Plum,
+    Ember,
+    Rose,
 }
 
 pub struct SettingsState {
@@ -138,7 +133,6 @@ mod tests {
         let custom = Settings {
             enabled_modules: vec![],
             preset: Preset::Graphite,
-            motion: Motion::Still,
             mic_shortcut: "Ctrl+Shift+F9".into(),
         };
         write(&path, &custom).unwrap();
@@ -146,6 +140,9 @@ mod tests {
 
         std::fs::write(&path, r#"{ "preset": "graphite" }"#).unwrap();
         assert_eq!(read(&path), Settings { preset: Preset::Graphite, ..Settings::default() }, "missing fields");
+
+        std::fs::write(&path, r#"{ "preset": "forest", "motion": "onOpen" }"#).unwrap();
+        assert_eq!(read(&path), Settings { preset: Preset::Forest, ..Settings::default() }, "old field ignored");
 
         std::fs::write(&path, "{ not json").unwrap();
         assert_eq!(read(&path), Settings::default(), "invalid file");

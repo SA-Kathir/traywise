@@ -127,9 +127,6 @@ export type Mode = "off" |
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
 export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor";
 
-/**  Background motion: `onOpen` drifts for a while after each open, `still` never moves. */
-export type Motion = "still" | "onOpen";
-
 export type OutputDevice = {
 	/**  Windows' id for the device. Stays the same across restarts. */
 	id: string,
@@ -148,13 +145,15 @@ export type Point = {
 	upload: number,
 };
 
-/**  Background colour preset. */
-export type Preset = "ocean" | "graphite";
+/**
+ *  Background colour preset: one muted hue each. The colours are in `src/shell/liquid.css`.
+ *  (An old file's `motion` field, from when the background moved, is ignored.)
+ */
+export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
 
 export type Settings = {
 	enabledModules: ModuleId[],
 	preset: Preset,
-	motion: Motion,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
 };

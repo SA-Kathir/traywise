@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { commands, type ModuleId, type Motion, type Preset, type Settings } from "../bindings";
+import { commands, type ModuleId, type Preset, type Settings } from "../bindings";
 import { modules } from "../modules";
 
 const PRESETS: { id: Preset; label: string }[] = [
   { id: "ocean", label: "Ocean" },
   { id: "graphite", label: "Graphite" },
-];
-
-const MOTIONS: { id: Motion; label: string }[] = [
-  { id: "onOpen", label: "On open" },
-  { id: "still", label: "Still" },
+  { id: "forest", label: "Forest" },
+  { id: "plum", label: "Plum" },
+  { id: "ember", label: "Ember" },
+  { id: "rose", label: "Rose" },
 ];
 
 const MODULE_IDS = Object.keys(modules) as ModuleId[];
@@ -67,27 +66,19 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
       </section>
 
       <section>
-        <h2>Background</h2>
-        <div className="segmented">
+        <h2>Colour</h2>
+        <div className="swatches" role="radiogroup" aria-label="Colour">
           {PRESETS.map((p) => (
             <button
               key={p.id}
+              role="radio"
+              aria-checked={settings.preset === p.id}
               className={settings.preset === p.id ? "on" : ""}
               onClick={() => save({ ...settings, preset: p.id })}
             >
+              {/* Its own preset class, so the swatch shows that preset's colours. */}
+              <span className={`swatch bg-${p.id}`} aria-hidden />
               {p.label}
-            </button>
-          ))}
-        </div>
-        <h2>Motion</h2>
-        <div className="segmented">
-          {MOTIONS.map((m) => (
-            <button
-              key={m.id}
-              className={settings.motion === m.id ? "on" : ""}
-              onClick={() => save({ ...settings, motion: m.id })}
-            >
-              {m.label}
             </button>
           ))}
         </div>

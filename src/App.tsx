@@ -34,12 +34,13 @@ function App() {
 
   // The registry's order, not the order modules were switched on in: tiles first, then rows.
   const enabled = (Object.keys(modules) as ModuleId[]).filter((id) => settings.enabledModules.includes(id));
-  const title = view === "home" ? "Traywise" : view === "settings" ? "Settings" : modules[view].name;
+  // The welcome screen shows the name large instead.
+  const title = view === "home" ? (enabled.length > 0 ? "Traywise" : "") : view === "settings" ? "Settings" : modules[view].name;
 
   return (
     // The preset class goes here too, so cards and controls can use its colours (--accent).
     <main className={`panel bg-${settings.preset}`}>
-      <LiquidBackground preset={settings.preset} motion={settings.motion} />
+      <LiquidBackground />
       <header className="row">
         {view !== "home" && (
           <button className="icon-button" aria-label="Back" title="Back" onClick={() => setView("home")}>
@@ -59,7 +60,11 @@ function App() {
       ) : view !== "home" ? (
         <ModulePage id={view} />
       ) : enabled.length === 0 ? (
-        <p className="hint">No modules are on. Turn them on in Settings.</p>
+        <div className="welcome">
+          <p className="welcome-name">Traywise</p>
+          <p className="hint">Pick the modules you want, and they'll show up here.</p>
+          <button onClick={() => setView("settings")}>Choose modules</button>
+        </div>
       ) : (
         <div className="home">
           {enabled.map((id) => {
