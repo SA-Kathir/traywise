@@ -25,12 +25,14 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::audio_devices::audio_devices_state,
             modules::audio_devices::audio_devices_set_output,
             modules::audio_devices::audio_devices_mute_mics,
+            modules::system_monitor::system_monitor_state,
         ])
         .events(collect_events![
             shell::panel::PanelShown,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
             modules::audio_devices::AudioDevicesChanged,
+            modules::system_monitor::SystemSampled,
         ])
 }
 

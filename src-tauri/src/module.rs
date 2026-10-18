@@ -8,6 +8,7 @@ use tauri::AppHandle;
 
 use crate::modules::audio_devices::AudioDevices;
 use crate::modules::keep_awake::KeepAwake;
+use crate::modules::system_monitor::SystemMonitor;
 use crate::modules::volume_mixer::VolumeMixer;
 use crate::settings::Settings;
 
@@ -18,6 +19,7 @@ pub enum ModuleId {
     VolumeMixer,
     KeepAwake,
     AudioDevices,
+    SystemMonitor,
 }
 
 pub trait Module: Send {
@@ -28,6 +30,8 @@ pub trait Module: Send {
     fn stop(&mut self);
     /// Called after `start`, and whenever settings change while the module runs.
     fn apply_settings(&mut self, _settings: &Settings) {}
+    /// Called while running, whenever the panel opens or closes.
+    fn panel_visible(&mut self, _visible: bool) {}
 }
 
 /// All built-in modules, created but not started. Creating one must be cheap and do nothing.
@@ -36,6 +40,7 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(VolumeMixer::new(app.clone())),
         Box::new(KeepAwake::new(app.clone())),
         Box::new(AudioDevices::new(app.clone())),
+        Box::new(SystemMonitor::new(app.clone())),
     ]
 }
 
@@ -71,6 +76,12 @@ impl Modules {
             if slot.running {
                 slot.module.apply_settings(settings);
             }
+        }
+    }
+
+    pub fn panel_visible(&self, visible: bool) {
+        for slot in self.0.lock().unwrap().iter_mut().filter(|s| s.running) {
+            slot.module.panel_visible(visible);
         }
     }
 }

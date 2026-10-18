@@ -200,6 +200,26 @@ label.row + .hint,
   font-variant-numeric: tabular-nums;
 }
 
+.stat + .stat {
+  margin-top: 8px;
+}
+.stat-value {
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}
+.graph {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin-top: 4px;
+}
+.graph polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
 .hint {
   color: rgba(255, 255, 255, 0.7);
 }

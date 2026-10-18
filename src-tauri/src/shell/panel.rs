@@ -11,6 +11,7 @@ use tauri::{
 use windows::Win32::Graphics::Dwm::{DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND, DwmSetWindowAttribute};
 
 use super::webview;
+use crate::module::Modules;
 
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
@@ -86,6 +87,7 @@ fn show(win: &WebviewWindow) {
     let _ = win.set_position(home_position(win));
     let _ = win.show();
     let _ = win.set_focus();
+    win.state::<Modules>().panel_visible(true);
     let _ = PanelShown.emit(win);
 }
 
@@ -96,6 +98,7 @@ pub struct PanelShown;
 fn hide(win: &WebviewWindow) {
     let _ = win.hide();
     webview::set_active(win, false);
+    win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
 }
 

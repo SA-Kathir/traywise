@@ -32,6 +32,8 @@ export const commands = {
 	audioDevicesSetOutput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_output", { id })),
 	/**  Mutes or unmutes every microphone. */
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
+	/**  The latest sample. Empty while the module is off or the panel is closed. */
+	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
 };
 
 /** Events */
@@ -40,6 +42,7 @@ export const events = {
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
+	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 };
 
 /* Types */
@@ -66,6 +69,13 @@ export type AudioDevicesState = {
 	micsMuted: boolean | null,
 	/**  The mute-all shortcut. None until it has been set up. */
 	shortcut: ShortcutStatus | null,
+};
+
+export type Battery = {
+	percent: number,
+	charging: boolean,
+	/**  Windows' estimate while on battery, when it has one. */
+	secondsLeft: number | null,
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -110,7 +120,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor";
 
 /**  Background motion: `onOpen` drifts for a while after each open, `still` never moves. */
 export type Motion = "still" | "onOpen";
@@ -125,6 +135,13 @@ export type OutputDevice = {
 
 /**  Sent to the UI each time the panel opens. */
 export type PanelShown = null;
+
+export type Point = {
+	cpu: number,
+	/**  Bytes a second. */
+	download: number,
+	upload: number,
+};
 
 /**  Background colour preset. */
 export type Preset = "ocean" | "graphite";
@@ -143,6 +160,28 @@ export type ShortcutStatus = {
 	/**  Why it couldn't be set up, for example another app already uses it. */
 	error: string | null,
 };
+
+/**  Everything the panel shows. Sent whole every second while the panel is open. */
+export type SystemSample = {
+	/**  Percent of all cores together. None for the first second after opening. */
+	cpu: number | null,
+	/**  MiB. */
+	memoryUsed: number,
+	memoryTotal: number,
+	/**  Bytes a second, all network adapters together. None for the first second after opening. */
+	download: number | null,
+	upload: number | null,
+	/**  None on a PC without a battery. */
+	battery: Battery | null,
+	/**  The drive Windows is on, usually C:. MiB. */
+	diskFree: number,
+	diskTotal: number,
+	/**  Up to the last 60 seconds, oldest first. Only kept while the panel is open. */
+	history: Point[],
+};
+
+/**  Sent to the UI every second while the panel is open. */
+export type SystemSampled = SystemSample;
 
 /**  What a volume or mute change applies to. */
 export type Target = "master" | 
