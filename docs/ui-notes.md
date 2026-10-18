@@ -3,7 +3,9 @@
 Ideas noticed while building milestone 2. Not built; the UI pass decides.
 
 ## Shell
-- Modules are simply stacked as cards (`src/App.tsx`). With three or four on, the panel scrolls; a real navigation (tabs, a module grid, or collapsible cards) belongs here.
+- Done (first pass): home view of tiles and full-width rows, each opening the module's own page (`src/App.tsx`, `src/shell/Tile.tsx`).
+- With three tiles the grid has a gap; Quick toggles would fill it.
+- The window is still 560 px tall; the home view uses about two thirds. Fitting the window to its content would look tidier.
 
 ## Keep awake
 - Mode picker is two segmented rows (Off / On / Plugged in, then 30 min / 1 h / 2 h). A single on/off switch with a duration menu may read better.

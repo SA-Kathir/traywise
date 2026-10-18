@@ -1,20 +1,34 @@
-import { useEffect, useState } from "react";
-import { commands, events, type Battery, type SystemSample } from "../../bindings";
+import { commands, events, type Battery } from "../../bindings";
+import { useLive } from "../../shell/useLive";
+
+const useSample = () => useLive(commands.systemMonitorState, events.systemSampled);
+
+/** Home row: four readings at a glance; clicking opens the graphs. */
+export function Summary({ open }: { open: () => void }) {
+  const s = useSample();
+  const ready = s !== null && s.memoryTotal > 0;
+  const chips: [string, string][] = ready
+    ? [
+        [s.cpu === null ? "–" : `${s.cpu}%`, "CPU"],
+        [`${Math.round((s.memoryUsed / s.memoryTotal) * 100)}%`, "Memory"],
+        [s.download === null ? "–" : rate(s.download), "Download"],
+        s.battery ? [`${s.battery.percent}%`, s.battery.charging ? "Charging" : "Battery"] : [gib(s.diskFree), "Disk free"],
+      ]
+    : [["–", "CPU"], ["–", "Memory"], ["–", "Download"], ["–", "Battery"]];
+  return (
+    <button className="wide stats" onClick={open} title="Show graphs">
+      {chips.map(([value, label]) => (
+        <span key={label} className="stat-chip">
+          <span className="stat-chip-value">{value}</span>
+          <span className="stat-chip-label">{label}</span>
+        </span>
+      ))}
+    </button>
+  );
+}
 
 export default function Panel() {
-  const [s, setSample] = useState<SystemSample | null>(null);
-
-  useEffect(() => {
-    let live = false; // an event beat the first fetch: don't overwrite it with older data
-    const unlisten = events.systemSampled.listen((e) => {
-      live = true;
-      setSample(e.payload);
-    });
-    commands.systemMonitorState().then((s) => live || setSample(s));
-    return () => {
-      unlisten.then((stop) => stop());
-    };
-  }, []);
+  const s = useSample();
 
   // Empty until the first sample after the panel opens.
   if (!s || s.memoryTotal === 0) return null;

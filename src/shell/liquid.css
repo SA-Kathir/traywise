@@ -80,7 +80,9 @@ body,
 /* ---- Glass cards ----------------------------------------------------------------------- */
 
 /* Distort, then blur and boost colour, of whatever sits behind the card. */
-section {
+section,
+.tile,
+.stats {
   position: relative;
   padding: 12px;
   border-radius: 18px;
@@ -94,7 +96,9 @@ section {
     0 10px 28px rgba(0, 0, 0, 0.28); /* lift */
 }
 /* Specular highlight: light catching the top-left curve of the glass. */
-section::before {
+section::before,
+.tile::before,
+.stats::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -102,6 +106,134 @@ section::before {
   pointer-events: none;
   background: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.28), transparent 55%);
   mix-blend-mode: screen;
+}
+
+/* ---- Home view: tiles, then full-width rows ------------------------------------------- */
+
+.home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.home .wide {
+  grid-column: 1 / -1;
+}
+
+.tile {
+  padding: 0;
+  min-width: 0;
+}
+/* Switched on: the glass takes on the preset's accent colour. */
+.tile.on {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--accent) 72%, transparent),
+    color-mix(in srgb, var(--accent) 42%, transparent) 60%,
+    color-mix(in srgb, var(--accent) 56%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--accent) 80%, transparent);
+  color: #0b1626;
+  text-shadow: none;
+}
+.tile.on .tile-detail {
+  color: rgba(11, 22, 38, 0.75);
+}
+/* The volume row on the home view: the mute button already shows it's sound. */
+.home .mixer-row .app-icon {
+  display: none;
+}
+.tile-main {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 34px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+.tile-icon {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 18px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.tile-label {
+  font-weight: 600;
+}
+.tile-detail {
+  max-width: 100%;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tile-more {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 6px;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 10px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.tile-more:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.link-row {
+  width: 100%;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.link-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.link-row .icon {
+  margin: 0;
+  font-size: 10px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 10px 6px;
+  border-radius: 18px;
+}
+.stats:hover {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.12));
+}
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.stat-chip-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.stat-chip-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 h1 {

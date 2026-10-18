@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { commands, events, type KeepAwakeState, type Mode } from "../../bindings";
+import { Tile } from "../../shell/Tile";
+import { useLive } from "../../shell/useLive";
+import keepAwake from ".";
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -10,22 +13,38 @@ const MODES: { mode: Mode; label: string }[] = [
 /** Timer lengths the − and + buttons step through, in minutes. */
 const STEPS = [1, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720];
 
+const useKeepAwake = () => useLive(commands.keepAwakeState, events.keepAwakeChanged);
+
+/** Home tile: switches keep-awake on (until turned off) or off. */
+export function Summary({ open }: { open: () => void }) {
+  const state = useKeepAwake();
+  const now = useNow(state?.endsAt != null);
+  if (!state) return null;
+  const detail =
+    state.endsAt !== null
+      ? `${clock(Math.max(0, state.endsAt - now))} left`
+      : state.mode === "whilePluggedIn"
+        ? state.active
+          ? "While plugged in"
+          : "Paused on battery"
+        : state.active
+          ? "On"
+          : "Off";
+  return (
+    <Tile
+      icon={keepAwake.icon}
+      label="Keep awake"
+      detail={detail}
+      on={state.mode !== "off"}
+      onToggle={() => commands.keepAwakeSetMode(state.mode === "off" ? "on" : "off")}
+      onOpen={open}
+    />
+  );
+}
+
 export default function Panel() {
-  const [state, setState] = useState<KeepAwakeState | null>(null);
+  const state = useKeepAwake();
   const [minutes, setMinutes] = useState(30); // the timer length picked, before it's started
-
-  useEffect(() => {
-    let live = false; // an event beat the first fetch: don't overwrite it with older data
-    const unlisten = events.keepAwakeChanged.listen((e) => {
-      live = true;
-      setState(e.payload);
-    });
-    commands.keepAwakeState().then((s) => live || setState(s));
-    return () => {
-      unlisten.then((stop) => stop());
-    };
-  }, []);
-
   const now = useNow(state?.endsAt != null);
   if (!state) return null;
 

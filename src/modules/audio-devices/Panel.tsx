@@ -1,25 +1,46 @@
-import { useEffect, useState } from "react";
 import { commands, events, type AudioDevicesState } from "../../bindings";
+import { Tile } from "../../shell/Tile";
+import { useLive } from "../../shell/useLive";
 
 // Segoe Fluent Icons glyphs.
 const MIC = String.fromCodePoint(0xe720);
 const MIC_OFF = String.fromCodePoint(0xec54);
+const HEADPHONES = String.fromCodePoint(0xe7f6);
+const SPEAKERS = String.fromCodePoint(0xe7f5);
+
+const useAudioDevices = () => useLive(commands.audioDevicesState, events.audioDevicesChanged);
+
+/** "Headphones (Realtek(R) Audio)" -> "Headphones": the part in brackets is the sound card. */
+const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
+
+/** Home tiles: the output device (opens the list) and mute-all for microphones. */
+export function Summary({ open }: { open: () => void }) {
+  const state = useAudioDevices();
+  if (!state) return null;
+  const output = state.outputs.find((d) => d.isDefault);
+  const muted = state.micsMuted;
+  return (
+    <>
+      <Tile
+        icon={output && /headphone|headset|earbud/i.test(output.name) ? HEADPHONES : SPEAKERS}
+        label="Output"
+        detail={output ? shortName(output.name) : "No device"}
+        onOpen={open}
+      />
+      <Tile
+        icon={muted ? MIC_OFF : MIC}
+        label="Microphones"
+        detail={muted === null ? "None" : muted ? "All muted" : "On"}
+        on={muted === true}
+        onToggle={muted === null ? undefined : () => commands.audioDevicesMuteMics(!muted)}
+        onOpen={open}
+      />
+    </>
+  );
+}
 
 export default function Panel() {
-  const [state, setState] = useState<AudioDevicesState | null>(null);
-
-  useEffect(() => {
-    let live = false; // an event beat the first fetch: don't overwrite it with older data
-    const unlisten = events.audioDevicesChanged.listen((e) => {
-      live = true;
-      setState(e.payload);
-    });
-    commands.audioDevicesState().then((s) => live || setState(s));
-    return () => {
-      unlisten.then((stop) => stop());
-    };
-  }, []);
-
+  const state = useAudioDevices();
   if (!state) return null;
 
   return (

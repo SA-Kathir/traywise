@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { commands, events, type MixerState, type Target } from "../../bindings";
+import { commands, events, type Target } from "../../bindings";
+import { useLive } from "../../shell/useLive";
 
 // Segoe Fluent Icons glyphs.
 const SPEAKER = String.fromCodePoint(0xe767);
@@ -12,21 +13,35 @@ const APP = String.fromCodePoint(0xecaa);
 /** At most one volume change per frame (~60 a second) while a slider is dragged. */
 const SEND_EVERY_MS = 16;
 
+const CHEVRON = String.fromCodePoint(0xe76c);
+
+const useMixer = () => useLive(commands.mixerState, events.mixerChanged);
+
+/** Home row: the master volume, and a way into the per-app volumes. */
+export function Summary({ open }: { open: () => void }) {
+  const state = useMixer();
+  if (!state) return null;
+  const playing = state.apps.filter((a) => !a.systemSounds).length;
+  return (
+    <section className="wide">
+      {state.master ? (
+        <Row name="Volume" glyph={DEVICE} volume={state.master.volume} muted={state.master.muted} target="master" />
+      ) : (
+        <p className="hint">No output device.</p>
+      )}
+      <button className="link-row" onClick={open}>
+        <span className="grow">App volumes</span>
+        <span className="hint">{playing === 0 ? "None playing" : `${playing} playing`}</span>
+        <span className="icon" aria-hidden>
+          {CHEVRON}
+        </span>
+      </button>
+    </section>
+  );
+}
+
 export default function Panel() {
-  const [state, setState] = useState<MixerState | null>(null);
-
-  useEffect(() => {
-    let live = false; // an event beat the first fetch: don't overwrite it with older data
-    const unlisten = events.mixerChanged.listen((e) => {
-      live = true;
-      setState(e.payload);
-    });
-    commands.mixerState().then((s) => live || setState(s));
-    return () => {
-      unlisten.then((stop) => stop());
-    };
-  }, []);
-
+  const state = useMixer();
   if (!state) return null;
   if (!state.master) return <p className="hint">No output device.</p>;
 
