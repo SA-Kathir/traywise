@@ -173,8 +173,9 @@ impl Device {
             if apps.iter().any(|a| a.pid == session.pid) {
                 continue;
             }
+            let system_sounds = unsafe { control2.IsSystemSoundsSession() } == S_OK;
             let info = names.entry(session.pid).or_insert_with(|| {
-                if unsafe { control2.IsSystemSoundsSession() } == S_OK {
+                if system_sounds {
                     AppInfo { name: "System sounds".into(), icon: None }
                 } else {
                     app_info::lookup(session.pid)
@@ -182,6 +183,7 @@ impl Device {
             });
             apps.push(AppAudio {
                 pid: session.pid,
+                system_sounds,
                 name: info.name.clone(),
                 icon: info.icon.clone(),
                 volume: percent(unsafe { session.volume.GetMasterVolume()? }),

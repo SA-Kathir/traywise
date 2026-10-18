@@ -33,6 +33,8 @@ export const events = {
 /**  One app with audio on the default output device (all of its audio sessions together). */
 export type AppAudio = {
 	pid: number,
+	/**  Windows' own sounds (notifications, errors), not an app. */
+	systemSounds: boolean,
 	name: string,
 	/**  The app's icon as a PNG data URL, if it has one. */
 	icon: string | null,

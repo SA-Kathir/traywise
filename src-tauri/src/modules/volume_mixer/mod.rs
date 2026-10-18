@@ -33,8 +33,11 @@ pub struct Level {
 
 /// One app with audio on the default output device (all of its audio sessions together).
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AppAudio {
     pub pid: u32,
+    /// Windows' own sounds (notifications, errors), not an app.
+    pub system_sounds: bool,
     pub name: String,
     /// The app's icon as a PNG data URL, if it has one.
     pub icon: Option<String>,
