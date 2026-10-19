@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { commands, type ModuleId, type Preset, type Settings } from "../bindings";
+import { commands, type Look, type Preset, type Settings } from "../bindings";
 import { modules } from "../modules";
+
+const LOOKS: { id: Look; label: string }[] = [
+  { id: "liquid", label: "Liquid" },
+  { id: "windows", label: "Windows" },
+];
 
 const PRESETS: { id: Preset; label: string }[] = [
   { id: "ocean", label: "Ocean" },
@@ -11,18 +16,14 @@ const PRESETS: { id: Preset; label: string }[] = [
   { id: "rose", label: "Rose" },
 ];
 
-const MODULE_IDS = Object.keys(modules) as ModuleId[];
+// Segoe Fluent Icons glyph.
+const CHEVRON = String.fromCodePoint(0xe76c);
 
-export function SettingsPage({ settings, onChange }: { settings: Settings; onChange: (next: Settings) => void }) {
-  // null until Windows has answered.
-  const [autostart, setAutostart] = useState<boolean | null>(null);
+type Props = { settings: Settings; onChange: (next: Settings) => void };
+
+/** Saves settings: shows the change at once, and undoes it if Rust couldn't save it. */
+export function useSave({ settings, onChange }: Props) {
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    commands.getAutostart().then((r) => (r.status === "ok" ? setAutostart(r.data) : setError(r.error)));
-  }, []);
-
-  // Show the change at once; undo it if Rust couldn't save it.
   async function save(next: Settings) {
     onChange(next);
     const r = await commands.setSettings(next);
@@ -33,14 +34,18 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
       setError(null);
     }
   }
+  return { save, error, setError };
+}
 
-  const allOn = MODULE_IDS.every((m) => settings.enabledModules.includes(m));
+export function SettingsPage({ openModules, ...props }: Props & { openModules: () => void }) {
+  const { settings } = props;
+  const { save, error, setError } = useSave(props);
+  // null until Windows has answered.
+  const [autostart, setAutostart] = useState<boolean | null>(null);
 
-  function toggleModule(id: ModuleId, on: boolean) {
-    // Keep the registry's order, so the main view doesn't reshuffle.
-    const enabledModules = MODULE_IDS.filter((m) => (m === id ? on : settings.enabledModules.includes(m)));
-    save({ ...settings, enabledModules });
-  }
+  useEffect(() => {
+    commands.getAutostart().then((r) => (r.status === "ok" ? setAutostart(r.data) : setError(r.error)));
+  }, []);
 
   async function toggleAutostart(on: boolean) {
     const r = await commands.setAutostart(on);
@@ -51,52 +56,50 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
   return (
     <>
       <section>
-        <label className="row modules-all">
-          <h2 className="grow">Modules</h2>
-          <span className="hint">All</span>
-          <input
-            type="checkbox"
-            aria-label="All modules"
-            checked={allOn}
-            // A dash when only some are on.
-            ref={(box) => {
-              if (box) box.indeterminate = !allOn && settings.enabledModules.length > 0;
-            }}
-            onChange={(e) => save({ ...settings, enabledModules: e.target.checked ? MODULE_IDS : [] })}
-          />
-        </label>
-        {MODULE_IDS.map((id) => (
-          <label key={id} className="row">
-            <span className="icon" aria-hidden>
-              {modules[id].icon}
-            </span>
-            <span className="grow">{modules[id].name}</span>
-            <input
-              type="checkbox"
-              checked={settings.enabledModules.includes(id)}
-              onChange={(e) => toggleModule(id, e.target.checked)}
-            />
-          </label>
-        ))}
+        <button className="link-row" onClick={openModules}>
+          <span className="grow">Modules</span>
+          <span className="hint">
+            {settings.enabledModules.length} of {Object.keys(modules).length} on
+          </span>
+          <span className="icon" aria-hidden>
+            {CHEVRON}
+          </span>
+        </button>
       </section>
 
       <section>
-        <h2>Colour</h2>
-        <div className="swatches" role="radiogroup" aria-label="Colour">
-          {PRESETS.map((p) => (
+        <h2>Look</h2>
+        <div className="segmented" role="radiogroup" aria-label="Look">
+          {LOOKS.map((l) => (
             <button
-              key={p.id}
+              key={l.id}
               role="radio"
-              aria-checked={settings.preset === p.id}
-              className={settings.preset === p.id ? "on" : ""}
-              onClick={() => save({ ...settings, preset: p.id })}
+              aria-checked={settings.look === l.id}
+              className={settings.look === l.id ? "on" : ""}
+              onClick={() => save({ ...settings, look: l.id })}
             >
-              {/* Its own preset class, so the swatch shows that preset's colours. */}
-              <span className={`swatch bg-${p.id}`} aria-hidden />
-              {p.label}
+              {l.label}
             </button>
           ))}
         </div>
+        {/* The Windows look uses Windows' own colours instead. */}
+        {settings.look === "liquid" && (
+          <div className="swatches" role="radiogroup" aria-label="Colour">
+            {PRESETS.map((p) => (
+              <button
+                key={p.id}
+                role="radio"
+                aria-checked={settings.preset === p.id}
+                className={settings.preset === p.id ? "on" : ""}
+                onClick={() => save({ ...settings, preset: p.id })}
+              >
+                {/* Its own preset class, so the swatch shows that preset's colours. */}
+                <span className={`swatch bg-${p.id}`} aria-hidden />
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {settings.enabledModules.includes("audio-devices") && (

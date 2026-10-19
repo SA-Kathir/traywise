@@ -1,19 +1,22 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
-import { modules } from "./modules";
-import { LiquidBackground } from "./shell/LiquidBackground";
+import { categories, modules, type Category } from "./modules";
+import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage } from "./shell/Settings";
+import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 
 // Segoe Fluent Icons glyphs.
+const HOME = String.fromCodePoint(0xe80f);
 const GEAR = String.fromCodePoint(0xe713);
+const POWER = String.fromCodePoint(0xe7e8);
 const BACK = String.fromCodePoint(0xe72b);
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
-  // The home view, Settings, or one module's own page.
-  const [view, setView] = useState<"home" | "settings" | ModuleId>("home");
+  // Home, a category's tab, Settings, or the Modules page (opened from Settings).
+  const [view, setView] = useState<"home" | Category | "settings" | "modules">("home");
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
@@ -30,54 +33,94 @@ function App() {
     };
   }, []);
 
-  // The window is as tall as this, so tell Rust each time the content changes height.
-  const panel = useRef<HTMLElement>(null);
-  const ready = settings !== null;
-  useEffect(() => {
-    const el = panel.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => commands.panelFit(el.getBoundingClientRect().height, view === "home"));
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ready, view]);
-
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
 
   // The registry's order, not the order modules were switched on in: tiles first, then rows.
   const enabled = (Object.keys(modules) as ModuleId[]).filter((id) => settings.enabledModules.includes(id));
+  // Categories with a page to show. Quick toggles has none, so it only appears on Home.
+  const tabs = (Object.keys(categories) as Category[]).filter((c) =>
+    enabled.some((id) => modules[id].category === c && modules[id].Panel),
+  );
+  const tabbed = view !== "settings" && view !== "modules";
   // The welcome screen shows the name large instead.
-  const title = view === "home" ? (enabled.length > 0 ? "Traywise" : "") : view === "settings" ? "Settings" : modules[view].name;
+  const title =
+    view === "home"
+      ? enabled.length > 0
+        ? "Traywise"
+        : ""
+      : view === "settings"
+        ? "Settings"
+        : view === "modules"
+          ? "Modules"
+          : categories[view].name;
+
+  // The look and preset classes go on the panel, so cards and controls can use their colours (--accent).
+  const panelClass = `panel look-${settings.look} bg-${settings.preset}`;
+
+  if (!settings.onboarded) {
+    return (
+      <main className={panelClass}>
+        <Setup settings={settings} onChange={setSettings} />
+      </main>
+    );
+  }
 
   return (
-    // The preset class goes here too, so cards and controls can use its colours (--accent).
-    <main ref={panel} className={`panel bg-${settings.preset}`}>
-      <LiquidBackground />
+    <main className={panelClass}>
       <header className="row">
-        {view !== "home" && (
-          <button className="icon-button" aria-label="Back" title="Back" onClick={() => setView("home")}>
+        {!tabbed && (
+          <button
+            className="icon-button"
+            aria-label="Back"
+            title="Back"
+            onClick={() => setView(view === "modules" ? "settings" : "home")}
+          >
             {BACK}
           </button>
         )}
         <h1 className="grow">{title}</h1>
-        {view === "home" && (
-          <button className="icon-button" aria-label="Settings" title="Settings" onClick={() => setView("settings")}>
-            {GEAR}
-          </button>
+        {tabbed && (
+          <>
+            <button className="icon-button" aria-label="Settings" title="Settings" onClick={() => setView("settings")}>
+              {GEAR}
+            </button>
+            <button className="icon-button" aria-label="Quit" title="Quit Traywise" onClick={() => commands.quit()}>
+              {POWER}
+            </button>
+          </>
         )}
       </header>
+
+      {tabbed && tabs.length > 0 && (
+        <nav className="tabs" aria-label="Categories">
+          {(["home", ...tabs] as const).map((t) => (
+            <button
+              key={t}
+              className={view === t ? "on" : ""}
+              aria-label={t === "home" ? "Home" : categories[t].name}
+              title={t === "home" ? "Home" : categories[t].name}
+              onClick={() => setView(t)}
+            >
+              {t === "home" ? HOME : categories[t].icon}
+            </button>
+          ))}
+        </nav>
+      )}
 
       <UpdateNotice />
 
       {view === "settings" ? (
-        <SettingsPage settings={settings} onChange={setSettings} />
+        <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
+      ) : view === "modules" ? (
+        <ModulesPage settings={settings} onChange={setSettings} />
       ) : view !== "home" ? (
-        <ModulePage id={view} />
+        <CategoryPage ids={enabled.filter((id) => modules[id].category === view)} />
       ) : enabled.length === 0 ? (
         <div className="welcome">
           <p className="welcome-name">Traywise</p>
           <p className="hint">Pick the modules you want, and they'll show up here.</p>
-          <button onClick={() => setView("settings")}>Choose modules</button>
+          <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
       ) : (
         <div className="home">
@@ -85,7 +128,7 @@ function App() {
             const { Summary } = modules[id];
             return (
               <Suspense key={id} fallback={null}>
-                <Summary open={() => setView(id)} />
+                <Summary open={() => setView(modules[id].category)} />
               </Suspense>
             );
           })}
@@ -95,16 +138,20 @@ function App() {
   );
 }
 
-function ModulePage({ id }: { id: ModuleId }) {
-  const { Panel } = modules[id];
-  if (!Panel) return null;
-  return (
-    <section>
-      <Suspense fallback={null}>
-        <Panel />
-      </Suspense>
-    </section>
-  );
+/** A category's tab: the page of each of its modules that's on, one card each. */
+function CategoryPage({ ids }: { ids: ModuleId[] }) {
+  return ids.map((id) => {
+    const { name, Panel } = modules[id];
+    if (!Panel) return null;
+    return (
+      <section key={id}>
+        <h2>{name}</h2>
+        <Suspense fallback={null}>
+          <Panel />
+        </Suspense>
+      </section>
+    );
+  });
 }
 
 export default App;

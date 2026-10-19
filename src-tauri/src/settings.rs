@@ -15,25 +15,40 @@ pub struct Settings {
     // shortcut: an unknown module id (one removed in a later version) makes the whole file
     // invalid, so it falls back to defaults; skip unknown ids instead once modules get removed.
     pub enabled_modules: Vec<ModuleId>,
+    pub look: Look,
     pub preset: Preset,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
     /// Whether Traywise asks GitHub for a newer version (at startup and about once a day).
     pub check_updates: bool,
+    /// Whether first-run setup (pick a look, then modules) is done.
+    pub onboarded: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             enabled_modules: vec![ModuleId::VolumeMixer],
+            look: Look::Liquid,
             preset: Preset::Ocean,
             mic_shortcut: "Ctrl+Alt+M".into(),
             check_updates: true,
+            onboarded: false,
         }
     }
 }
 
-/// Background colour preset: one muted hue each. The colours are in `src/shell/liquid.css`.
+/// How the panel is drawn. The styles are in `src/shell/liquid.css`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Look {
+    /// Glass cards over a colour preset's background.
+    Liquid,
+    /// Flat, like Windows 11's own flyouts, following Windows' light or dark mode.
+    Windows,
+}
+
+/// Background colour preset (Liquid look): one muted hue each. The colours are in `src/shell/liquid.css`.
 /// (An old file's `motion` field, from when the background moved, is ignored.)
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -135,9 +150,11 @@ mod tests {
 
         let custom = Settings {
             enabled_modules: vec![],
+            look: Look::Windows,
             preset: Preset::Graphite,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             check_updates: false,
+            onboarded: true,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

@@ -15,9 +15,10 @@ use crate::module::Modules;
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
 const REOPEN_GUARD: Duration = Duration::from_millis(250);
-/// Panel size in logical pixels. It's as tall as its content, up to MAX_HEIGHT; past that it scrolls.
+/// Panel size in logical pixels. The height is fixed, so nothing moves when switching pages; what
+/// doesn't fit scrolls.
 const WIDTH: f64 = 360.0;
-const MAX_HEIGHT: f64 = 640.0;
+const HEIGHT: f64 = 640.0;
 
 #[derive(Default)]
 pub struct PanelState {
@@ -25,16 +26,13 @@ pub struct PanelState {
     last_hidden: Mutex<Option<Instant>>,
     /// When the panel was last asked to show, for timing how long it takes to appear.
     shown_at: Mutex<Option<Instant>>,
-    /// The home view's height, last reported by the UI. Every open starts on the home view, so the
-    /// window gets this height before it appears instead of jumping to it a frame later.
-    home_height: Mutex<Option<f64>>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(PanelState::default());
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::default())
         .title("Traywise")
-        .inner_size(WIDTH, MAX_HEIGHT)
+        .inner_size(WIDTH, HEIGHT)
         .visible(false)
         .decorations(false)
         .transparent(true)
@@ -89,7 +87,7 @@ pub fn open(app: &AppHandle) {
 fn show(win: &WebviewWindow) {
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
-    place(win, win.state::<PanelState>().home_height.lock().unwrap().unwrap_or(MAX_HEIGHT));
+    place(win);
     let _ = win.show();
     let _ = win.set_focus();
     win.state::<Modules>().panel_visible(true);
@@ -108,6 +106,13 @@ fn hide(win: &WebviewWindow) {
     crate::updater::check(win.app_handle());
 }
 
+/// The panel's Quit button, the same as the tray menu's.
+#[tauri::command]
+#[specta::specta]
+pub fn quit(app: AppHandle) {
+    app.exit(0);
+}
+
 /// Called by the UI once it has drawn after `panel-shown`. Prints the click-to-drawn time,
 /// visible when traywise.exe is started from a terminal.
 #[tauri::command]
@@ -116,17 +121,6 @@ pub fn panel_painted(state: State<PanelState>) {
     if let Some(shown_at) = state.shown_at.lock().unwrap().take() {
         println!("panel opened in {:.1} ms", shown_at.elapsed().as_secs_f64() * 1000.0);
     }
-}
-
-/// Called by the UI whenever its content changes height (CSS pixels). The panel grows or shrinks to
-/// fit, keeping its bottom edge where it is.
-#[tauri::command]
-#[specta::specta]
-pub fn panel_fit(win: WebviewWindow, state: State<PanelState>, height: f64, home: bool) {
-    if home {
-        *state.home_height.lock().unwrap() = Some(height);
-    }
-    place(&win, height);
 }
 
 /// Measurement builds only: opens and closes the panel 10 times on its own, so open time and
@@ -145,15 +139,15 @@ pub fn autotest(app: AppHandle) {
     });
 }
 
-/// Sizes the panel to `height` logical pixels (capped) and puts it in the bottom-right corner of the
-/// primary monitor's work area (above the taskbar), 12 px margin. One call, so it doesn't flicker.
-fn place(win: &WebviewWindow, height: f64) {
+/// Sizes the panel (shorter if the screen is) and puts it in the bottom-right corner of the primary
+/// monitor's work area (above the taskbar), 12 px margin. One call, so it doesn't flicker.
+fn place(win: &WebviewWindow) {
     let (Ok(Some(monitor)), Ok(hwnd)) = (win.primary_monitor(), win.hwnd()) else { return };
     let scale = monitor.scale_factor();
     let area = monitor.work_area();
     let margin = (12.0 * scale) as i32;
     let width = (WIDTH * scale).round() as i32;
-    let height = ((height.min(MAX_HEIGHT) * scale).ceil() as i32).min(area.size.height as i32 - 2 * margin);
+    let height = ((HEIGHT * scale).ceil() as i32).min(area.size.height as i32 - 2 * margin);
     let x = area.position.x + area.size.width as i32 - width - margin;
     let y = area.position.y + area.size.height as i32 - height - margin;
     let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };

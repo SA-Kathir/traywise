@@ -13,7 +13,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::new()
         .commands(collect_commands![
             shell::panel::panel_painted,
-            shell::panel::panel_fit,
+            shell::panel::quit,
             settings::get_settings,
             settings::set_settings,
             settings::get_autostart,

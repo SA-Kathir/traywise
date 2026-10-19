@@ -10,11 +10,8 @@ export const commands = {
 	 *  visible when traywise.exe is started from a terminal.
 	 */
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
-	/**
-	 *  Called by the UI whenever its content changes height (CSS pixels). The panel grows or shrinks to
-	 *  fit, keeping its bottom edge where it is.
-	 */
-	panelFit: (height: number | null, home: boolean) => __TAURI_INVOKE<void>("panel_fit", { height, home }),
+	/**  The panel's Quit button, the same as the tray menu's. */
+	quit: () => __TAURI_INVOKE<void>("quit"),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
@@ -122,6 +119,13 @@ export type Level = {
 	muted: boolean,
 };
 
+/**  How the panel is drawn. The styles are in `src/shell/liquid.css`. */
+export type Look = 
+/**  Glass cards over a colour preset's background. */
+"liquid" | 
+/**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
+"windows";
+
 /**  Sent to the UI whenever anything in the mixer changes, here or elsewhere in Windows. */
 export type MixerChanged = MixerState;
 
@@ -162,7 +166,7 @@ export type Point = {
 };
 
 /**
- *  Background colour preset: one muted hue each. The colours are in `src/shell/liquid.css`.
+ *  Background colour preset (Liquid look): one muted hue each. The colours are in `src/shell/liquid.css`.
  *  (An old file's `motion` field, from when the background moved, is ignored.)
  */
 export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
@@ -178,11 +182,14 @@ export type QuickTogglesState = {
 
 export type Settings = {
 	enabledModules: ModuleId[],
+	look: Look,
 	preset: Preset,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
 	/**  Whether Traywise asks GitHub for a newer version (at startup and about once a day). */
 	checkUpdates: boolean,
+	/**  Whether first-run setup (pick a look, then modules) is done. */
+	onboarded: boolean,
 };
 
 export type ShortcutStatus = {

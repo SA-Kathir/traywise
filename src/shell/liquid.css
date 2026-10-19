@@ -1,6 +1,6 @@
-/* Liquid: an app-drawn background with glass cards and controls on top. backdrop-filter can
-   only blur what's inside our own window, so we draw the thing being blurred. Nothing is
-   read from the desktop. */
+/* The panel's styles. Two looks: Liquid (a near-black panel with cards tinted in a colour
+   preset) and Windows (flat, like Windows 11's flyouts; at the end). Nothing is read from the
+   desktop. */
 
 :root {
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -8,7 +8,10 @@
      older Segoe UI. Display is its large-size cut, for titles and big numbers. */
   --display: "Segoe UI Variable Display", "Segoe UI", sans-serif;
   font-size: 13px;
-  color: #f4f4f6;
+  /* Text and light-on-dark fills are this colour at some opacity; the Windows look's light mode
+     makes it black. --on-accent is text on accent-filled things. */
+  --ink: 255 255 255;
+  --on-accent: #0b1626;
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   user-select: none;
@@ -22,8 +25,7 @@ body {
   overflow: hidden;
 }
 
-/* #root scrolls, not .panel, so .panel is always as tall as its content: the window is sized to
-   that, up to a maximum, and past it this scrolls. */
+/* The window has a fixed height (so nothing jumps between pages); #root scrolls what doesn't fit. */
 #root {
   height: 100%;
   /* Reserved even when there's nothing to scroll: otherwise a scrollbar appearing (a long
@@ -37,25 +39,27 @@ body {
 }
 #root::-webkit-scrollbar-thumb {
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgb(var(--ink) / 0.22);
 }
 
 .panel {
   box-sizing: border-box;
+  /* Fills the window on short pages too, so the background reaches the bottom. */
+  min-height: 100%;
   /* The right side is 10px + the 6px scrollbar's space. */
   padding: 16px 10px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
   isolation: isolate;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  color: rgb(var(--ink) / 0.95);
 }
 
 /* ---- Background presets ---------------------------------------------------------------- */
 
-/* One hue per preset, muted, so the background stays quiet behind the glass.
-   --c1..--c3 are the blobs, --accent is for lit tiles and controls. */
+/* One hue per preset, muted. --c2 and --c3 tint the cards, --accent is for lit tiles and controls,
+   and all of them draw the preset's swatch in Settings. */
 .bg-ocean { --base: #0a121c; --c1: #2c5487; --c2: #1d3a63; --c3: #44709f; --accent: #a9c8ee; }
 .bg-graphite { --base: #111214; --c1: #4a4c52; --c2: #303237; --c3: #65686f; --accent: #d7dce4; }
 .bg-forest { --base: #0a1410; --c1: #2f5a45; --c2: #1e3d2f; --c3: #4a7a5f; --accent: #a8d8bd; }
@@ -63,55 +67,44 @@ body {
 .bg-ember { --base: #160f0b; --c1: #774029; --c2: #50291a; --c3: #95583a; --accent: #f0c3a6; }
 .bg-rose { --base: #160d12; --c1: #6b3a51; --c2: #482536; --c3: #89546e; --accent: #f0bfd4; }
 
-.liquid-bg {
-  /* fixed, not absolute: stays put when the panel scrolls, and its overhang adds no scroll area */
-  position: fixed;
-  inset: -20%;
-  z-index: -1;
-  background: var(--base);
+/* Liquid: a deep shade of the preset behind cards tinted in it. --tint and --tint-edge are the
+   cards' fill and edge, shared with the tab bar and icon buttons so they all match. */
+.look-liquid {
+  --tint: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--c3) 40%, #121214),
+    color-mix(in srgb, var(--c2) 20%, #0e0e10) 75%
+  );
+  --tint-edge: color-mix(in srgb, var(--c3) 45%, transparent);
+  background: color-mix(in srgb, var(--c2) 30%, var(--base));
 }
-/* Soft blobs: plain radial gradients, still. */
-.blob {
-  position: absolute;
-  width: 75%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--c) 0%, transparent 65%);
-  opacity: 0.6;
+.look-liquid h1 {
+  color: var(--accent);
 }
-.b1 { --c: var(--c1); top: 2%; left: -8%; }
-.b2 { --c: var(--c2); top: 30%; right: -12%; }
-.b3 { --c: var(--c3); bottom: -4%; left: 12%; }
+.look-liquid :is(.tabs, .icon-button) {
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.look-liquid .icon-button:hover {
+  filter: brightness(1.2);
+}
 
 /* ---- Glass cards ----------------------------------------------------------------------- */
 
-/* Blur and boost the colour of whatever sits behind the card. */
+/* Every card the same even tint of the preset: brighter at the top left, fading down, with a
+   thin edge of the same hue. Nothing behind it to blur, so no backdrop-filter. */
 section,
 .tile,
 .stats {
   position: relative;
   padding: 16px;
   border-radius: 18px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09));
-  backdrop-filter: blur(14px) saturate(1.7);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45), /* lit top rim */
-    inset 0 -1px 1px rgba(0, 0, 0, 0.18), /* shaded bottom rim */
-    inset 0 0 18px rgba(255, 255, 255, 0.05), /* thickness */
-    0 10px 28px rgba(0, 0, 0, 0.28); /* lift */
-}
-/* Specular highlight: light catching the top-left curve of the glass. */
-section::before,
-.tile::before,
-.stats::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.28), transparent 55%);
-  mix-blend-mode: screen;
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent), /* lit top rim */
+    0 8px 24px rgba(0, 0, 0, 0.45); /* lift */
 }
 
 /* ---- Home view: tiles, then full-width rows ------------------------------------------- */
@@ -129,20 +122,14 @@ section::before,
   padding: 0;
   min-width: 0;
 }
-/* Switched on: the glass takes on the preset's accent colour. */
+/* Switched on: filled with the preset's accent colour, like a lit Windows quick setting. */
 .tile.on {
-  background: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--accent) 72%, transparent),
-    color-mix(in srgb, var(--accent) 42%, transparent) 60%,
-    color-mix(in srgb, var(--accent) 56%, transparent)
-  );
-  border-color: color-mix(in srgb, var(--accent) 80%, transparent);
-  color: #0b1626;
-  text-shadow: none;
+  background: linear-gradient(150deg, var(--accent), color-mix(in srgb, var(--accent) 80%, var(--c1)));
+  border-color: transparent;
+  color: var(--on-accent);
 }
 .tile.on .tile-detail {
-  color: rgba(11, 22, 38, 0.75);
+  color: color-mix(in srgb, var(--on-accent) 75%, transparent);
 }
 /* The volume row on the home view: the mute button already shows it's sound. */
 .home .mixer-row .app-icon {
@@ -150,8 +137,8 @@ section::before,
 }
 .tile-main {
   width: 100%;
-  min-height: 104px;
-  padding: 16px 34px 14px 16px;
+  min-height: 92px;
+  padding: 14px 34px 14px 16px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -176,7 +163,7 @@ section::before,
 .tile-detail {
   max-width: 100%;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(var(--ink) / 0.6);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -195,7 +182,7 @@ section::before,
   box-shadow: none;
 }
 .tile-more:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgb(var(--ink) / 0.16);
 }
 
 .link-row {
@@ -210,7 +197,7 @@ section::before,
   box-shadow: none;
 }
 .link-row:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--ink) / 0.1);
 }
 .link-row .icon {
   margin: 0;
@@ -224,7 +211,11 @@ section::before,
   border-radius: 18px;
 }
 .stats:hover {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.12));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--c3) 50%, #121214),
+    color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
+  );
 }
 .stat-chip {
   display: flex;
@@ -242,7 +233,7 @@ section::before,
 }
 .stat-chip-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgb(var(--ink) / 0.55);
 }
 
 h1 {
@@ -256,7 +247,7 @@ h1 {
 h2 {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgb(var(--ink) / 0.55);
   margin: 0 0 8px;
 }
 
@@ -307,7 +298,8 @@ label.row + label.row {
 label.row + .hint,
 .segmented + .row,
 .row.mics + p,
-.segmented + .hint {
+.segmented + .hint,
+.segmented + .swatches {
   margin-top: 8px;
 }
 
@@ -371,7 +363,7 @@ label.row + .hint,
 }
 
 .hint {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(var(--ink) / 0.6);
 }
 .error {
   font-size: 12px;
@@ -385,17 +377,17 @@ button {
   color: inherit;
   padding: 6px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border: 1px solid rgb(var(--ink) / 0.08);
+  background: rgb(var(--ink) / 0.08);
+  box-shadow: inset 0 1px 0 rgb(var(--ink) / 0.16);
   cursor: pointer;
   transition: background 120ms ease;
 }
 button:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(var(--ink) / 0.14);
 }
 button:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--ink) / 0.05);
 }
 button:disabled {
   opacity: 0.5;
@@ -422,7 +414,7 @@ button.on {
 }
 /* Repeated here: `.segmented button` above would otherwise hide which one is picked. */
 .segmented button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--ink) / 0.1);
 }
 .segmented button.on {
   background: color-mix(in srgb, var(--accent) 48%, transparent);
@@ -456,7 +448,7 @@ button.on {
   flex: none;
   border-radius: 5px;
   background: linear-gradient(135deg, var(--c3), var(--c1) 55%, var(--base));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink) / 0.25);
 }
 
 /* No modules on yet: the name, large, in the middle. */
@@ -491,16 +483,6 @@ button.on {
   white-space: nowrap;
 }
 
-.pill {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(10px);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Slider: a thin track, filled with the accent up to the value (--fill, set by the panel). */
 input[type="range"] {
   flex: 1;
@@ -513,7 +495,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--fill, 0%), rgba(255, 255, 255, 0.2) var(--fill, 0%));
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), rgb(var(--ink) / 0.2) var(--fill, 0%));
 }
 /* A white knob with an accent dot, like Windows 11's, which grows on hover. */
 input[type="range"]::-webkit-slider-thumb {
@@ -539,7 +521,7 @@ input[type="checkbox"] {
   appearance: none;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.2);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink) / 0.4);
   cursor: inherit;
   transition: background 120ms ease;
 }
@@ -551,7 +533,7 @@ input[type="checkbox"]::before {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgb(var(--ink) / 0.85);
   transition: transform 120ms ease;
 }
 input[type="checkbox"]:checked {
@@ -560,7 +542,7 @@ input[type="checkbox"]:checked {
 }
 input[type="checkbox"]:checked::before {
   transform: translateX(16px);
-  background: #0b1626;
+  background: var(--on-accent);
 }
 /* "All modules" when only some are on: the knob waits in the middle. */
 input[type="checkbox"]:indeterminate::before {
@@ -568,4 +550,166 @@ input[type="checkbox"]:indeterminate::before {
 }
 input[type="checkbox"]:disabled {
   opacity: 0.5;
+}
+
+/* ---- Tabs, footer, Modules page -------------------------------------------------------- */
+
+/* Home plus one tab per category, like the segmented control but icons only. */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.tabs button {
+  flex: 1;
+  padding: 8px 0;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 16px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.tabs button:hover {
+  background: rgb(var(--ink) / 0.1);
+}
+.tabs button.on {
+  background: color-mix(in srgb, var(--accent) 48%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Settings' Modules row: the only thing in its card. */
+section > .link-row:only-child {
+  margin-top: 0;
+}
+
+.module-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.module-row + .module-row {
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+.module-row > .grow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.module-icon {
+  width: 22px;
+  flex: none;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 18px;
+  text-align: center;
+}
+.module-desc {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+}
+/* What the module costs while idle. */
+.badge {
+  margin-top: 2px;
+  padding: 1px 7px;
+  font-size: 11px;
+  border-radius: 999px;
+  background: rgb(var(--ink) / 0.1);
+  color: rgb(var(--ink) / 0.7);
+}
+
+/* ---- Windows look ---------------------------------------------------------------------- */
+
+/* Flat, like Windows 11's own flyouts: solid layers, hairline borders, no glass or background
+   blobs. Follows Windows' light or dark mode, with Windows' default blue. Comes last, so its
+   --accent wins over the preset's. */
+.look-windows {
+  --base: #202020;
+  --card: #2b2b2b;
+  --accent: #4cc2ff;
+  --on-accent: #000;
+  background: var(--base);
+}
+@media (prefers-color-scheme: light) {
+  .look-windows {
+    --ink: 0 0 0;
+    --base: #f3f3f3;
+    --card: #fbfbfb;
+    --accent: #005fb8;
+    --on-accent: #fff;
+    color-scheme: light;
+  }
+  .look-windows .error {
+    color: #c42b1c;
+  }
+}
+.look-windows :is(section, .tile, .stats) {
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid rgb(var(--ink) / 0.07);
+  box-shadow: none;
+}
+.look-windows .tile.on {
+  background: var(--accent);
+  border-color: transparent;
+}
+.look-windows .stats:hover {
+  background: color-mix(in srgb, var(--card) 94%, rgb(var(--ink)));
+}
+.look-windows button {
+  border-radius: 4px;
+  box-shadow: none;
+}
+.look-windows :is(.segmented, .tabs) {
+  border-radius: 6px;
+  background: rgb(var(--ink) / 0.05);
+  box-shadow: none;
+}
+/* Picked: a lighter fill with an accent bar underneath, like Windows' own navigation. */
+.look-windows :is(button.on, .segmented button.on, .tabs button.on) {
+  background: rgb(var(--ink) / 0.1);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* ---- First-run setup ------------------------------------------------------------------- */
+
+.setup-intro {
+  padding: 24px 0 8px;
+  text-align: center;
+}
+.setup-intro .hint {
+  margin-top: 6px;
+}
+/* Two big choices; picking one applies it, so the panel itself is the preview. */
+.looks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.looks button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  text-align: left;
+}
+.looks .tile-detail {
+  white-space: normal;
+}
+/* The main action: filled with the accent. */
+button.primary {
+  align-self: flex-end;
+  min-width: 96px;
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+button.primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, rgb(var(--ink)));
 }
