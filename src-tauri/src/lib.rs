@@ -3,6 +3,7 @@ mod module;
 mod modules;
 mod settings;
 mod shell;
+mod updater;
 
 use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
@@ -17,6 +18,8 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             settings::set_settings,
             settings::get_autostart,
             settings::set_autostart,
+            updater::update_available,
+            updater::update_install,
             modules::volume_mixer::mixer_state,
             modules::volume_mixer::mixer_set_volume,
             modules::volume_mixer::mixer_set_mute,
@@ -34,6 +37,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         ])
         .events(collect_events![
             shell::panel::PanelShown,
+            updater::UpdateAvailable,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
             modules::audio_devices::AudioDevicesChanged,
@@ -74,6 +78,7 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::Builder::new().build())
         // Registers nothing by itself; Audio devices adds its shortcut only while it runs.
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(bindings.invoke_handler())
         .setup(move |app| {
             bindings.mount_events(app);
@@ -85,6 +90,8 @@ pub fn run() {
             modules.apply(&settings.get());
             app.manage(settings);
             app.manage(modules);
+            app.manage(updater::UpdateState::default());
+            updater::check(app.handle());
             shell::panel::create(app)?;
             #[cfg(feature = "autotest")]
             shell::panel::autotest(app.handle().clone());

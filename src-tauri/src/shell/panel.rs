@@ -105,6 +105,7 @@ fn hide(win: &WebviewWindow) {
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
+    crate::updater::check(win.app_handle());
 }
 
 /// Called by the UI once it has drawn after `panel-shown`. Prints the click-to-drawn time,

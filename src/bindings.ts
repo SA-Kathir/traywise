@@ -21,6 +21,10 @@ export const commands = {
 	/**  Whether Traywise starts with Windows. Windows keeps this (in the registry's Run list), not settings.json. */
 	getAutostart: () => typedError<boolean, string>(__TAURI_INVOKE("get_autostart")),
 	setAutostart: (enabled: boolean) => typedError<null, string>(__TAURI_INVOKE("set_autostart", { enabled })),
+	/**  The version of an update that's been found, if any. */
+	updateAvailable: () => __TAURI_INVOKE<string | null>("update_available"),
+	/**  Downloads and runs the new installer. On success Traywise exits, and the installer restarts it. */
+	updateInstall: () => typedError<null, string>(__TAURI_INVOKE("update_install")),
 	/**  The latest snapshot. Empty while the module is off. */
 	mixerState: () => __TAURI_INVOKE<MixerState>("mixer_state"),
 	/**  Sets a volume, in percent (0 to 100). */
@@ -54,6 +58,7 @@ export const events = {
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
+	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
 };
 
 /* Types */
@@ -176,6 +181,8 @@ export type Settings = {
 	preset: Preset,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
+	/**  Whether Traywise asks GitHub for a newer version (at startup and about once a day). */
+	checkUpdates: boolean,
 };
 
 export type ShortcutStatus = {
@@ -211,6 +218,9 @@ export type SystemSampled = SystemSample;
 export type Target = "master" | 
 /**  An app, by process id. */
 { app: number };
+
+/**  Sent to the UI when a newer version is found. The payload is its version, like "0.2.0". */
+export type UpdateAvailable = string;
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

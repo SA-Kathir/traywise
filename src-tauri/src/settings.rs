@@ -18,6 +18,8 @@ pub struct Settings {
     pub preset: Preset,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
+    /// Whether Traywise asks GitHub for a newer version (at startup and about once a day).
+    pub check_updates: bool,
 }
 
 impl Default for Settings {
@@ -26,6 +28,7 @@ impl Default for Settings {
             enabled_modules: vec![ModuleId::VolumeMixer],
             preset: Preset::Ocean,
             mic_shortcut: "Ctrl+Alt+M".into(),
+            check_updates: true,
         }
     }
 }
@@ -134,6 +137,7 @@ mod tests {
             enabled_modules: vec![],
             preset: Preset::Graphite,
             mic_shortcut: "Ctrl+Shift+F9".into(),
+            check_updates: false,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

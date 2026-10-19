@@ -3,6 +3,7 @@ import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { modules } from "./modules";
 import { LiquidBackground } from "./shell/LiquidBackground";
 import { SettingsPage } from "./shell/Settings";
+import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 
 // Segoe Fluent Icons glyphs.
@@ -65,6 +66,8 @@ function App() {
           </button>
         )}
       </header>
+
+      <UpdateNotice />
 
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} />

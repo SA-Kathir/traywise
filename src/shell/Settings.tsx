@@ -120,6 +120,14 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
             onChange={(e) => toggleAutostart(e.target.checked)}
           />
         </label>
+        <label className="row">
+          <span className="grow">Check for updates</span>
+          <input
+            type="checkbox"
+            checked={settings.checkUpdates}
+            onChange={(e) => save({ ...settings, checkUpdates: e.target.checked })}
+          />
+        </label>
       </section>
 
       {error && <p className="error">{error}</p>}

@@ -31,5 +31,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENCMTk0REQyRTE4MTc2RUMKUldUc2RvSGgwazBaeTVNTXFZblFscHYrS3pFU3lEZjNlWXJHMlNVNlFrYUEwd3ViU2YrWWwvY04K",
+      "endpoints": ["https://github.com/SA-Kathir/traywise/releases/latest/download/latest.json"],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
