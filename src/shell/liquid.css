@@ -276,6 +276,13 @@ label.row {
 label.row + label.row {
   margin-top: 10px;
 }
+/* The Modules heading doubles as the select-all row. */
+.modules-all h2 {
+  margin: 0;
+}
+.modules-all .hint {
+  font-size: 12px;
+}
 .grow {
   flex: 1;
 }

@@ -34,6 +34,8 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
     }
   }
 
+  const allOn = MODULE_IDS.every((m) => settings.enabledModules.includes(m));
+
   function toggleModule(id: ModuleId, on: boolean) {
     // Keep the registry's order, so the main view doesn't reshuffle.
     const enabledModules = MODULE_IDS.filter((m) => (m === id ? on : settings.enabledModules.includes(m)));
@@ -49,7 +51,20 @@ export function SettingsPage({ settings, onChange }: { settings: Settings; onCha
   return (
     <>
       <section>
-        <h2>Modules</h2>
+        <label className="row modules-all">
+          <h2 className="grow">Modules</h2>
+          <span className="hint">All</span>
+          <input
+            type="checkbox"
+            aria-label="All modules"
+            checked={allOn}
+            // A dash when only some are on.
+            ref={(box) => {
+              if (box) box.indeterminate = !allOn && settings.enabledModules.length > 0;
+            }}
+            onChange={(e) => save({ ...settings, enabledModules: e.target.checked ? MODULE_IDS : [] })}
+          />
+        </label>
         {MODULE_IDS.map((id) => (
           <label key={id} className="row">
             <span className="icon" aria-hidden>
