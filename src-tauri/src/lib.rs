@@ -77,14 +77,15 @@ pub fn run() {
         .invoke_handler(bindings.invoke_handler())
         .setup(move |app| {
             bindings.mount_events(app);
-            // Settings and modules first: the panel's UI asks for settings as soon as it loads.
+            // The tray first: modules mark its icon (muted, keeping awake) as soon as they start.
+            shell::tray::create(app)?;
+            // Then settings and modules, before the panel: its UI asks for settings as soon as it loads.
             let settings = settings::SettingsState::load(app.handle())?;
             let modules = module::Modules::new(app.handle());
             modules.apply(&settings.get());
             app.manage(settings);
             app.manage(modules);
             shell::panel::create(app)?;
-            shell::tray::create(app)?;
             #[cfg(feature = "autotest")]
             shell::panel::autotest(app.handle().clone());
             Ok(())

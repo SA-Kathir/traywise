@@ -3,11 +3,13 @@
 use std::ffi::c_void;
 use std::ptr;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Globalization::{GetTimeFormatEx, TIME_NOSECONDS};
+use windows::Win32::System::SystemInformation::GetLocalTime;
 use windows::Win32::System::Power::{
     DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, GetPwrCapabilities, GetSystemPowerStatus, HPOWERNOTIFY, POWER_REQUEST_TYPE, PowerClearRequest,
     PowerCreateRequest, PowerRequestDisplayRequired, PowerRequestSystemRequired, PowerSetRequest,
@@ -17,9 +19,10 @@ use windows::Win32::System::Power::{
 use windows::Win32::System::SystemServices::{GUID_ACDC_POWER_SOURCE, POWER_REQUEST_CONTEXT_VERSION};
 use windows::Win32::System::Threading::{POWER_REQUEST_CONTEXT_SIMPLE_STRING, REASON_CONTEXT, REASON_CONTEXT_0};
 use windows::Win32::UI::WindowsAndMessaging::DEVICE_NOTIFY_CALLBACK;
-use windows::core::{PWSTR, Result};
+use windows::core::{PCWSTR, PWSTR, Result};
 
 use super::{KeepAwakeChanged, KeepAwakeState, Mode, Msg, Shared, Wish};
+use crate::shell::tray;
 
 pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     let mut request = match PowerRequest::new() {
@@ -53,6 +56,7 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
         }
     }
     // `request` is dropped here, which releases it.
+    tray::set_keep_awake(&app, None);
 }
 
 fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool) {
@@ -64,9 +68,26 @@ fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool) 
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
+        let line = match wish.deadline() {
+            Some(end) => format!("Keeping awake until {}", clock_in(end.saturating_duration_since(Instant::now()))),
+            None => "Keeping awake".into(),
+        };
+        tray::set_keep_awake(app, active.then_some(line));
         *current = state.clone();
         let _ = KeepAwakeChanged(state).emit(app);
     }
+}
+
+/// The time of day `left` from now, in the user's own format, like "3:40 PM" or "15:40". A clock time
+/// rather than "40 min left", so the tray tooltip stays right without a timer updating it.
+fn clock_in(left: Duration) -> String {
+    let mut time = unsafe { GetLocalTime() };
+    let now = time.wHour as u64 * 3600 + time.wMinute as u64 * 60 + time.wSecond as u64;
+    let minute = (now + left.as_secs() + 30) / 60 % (24 * 60);
+    (time.wHour, time.wMinute, time.wSecond, time.wMilliseconds) = ((minute / 60) as u16, (minute % 60) as u16, 0, 0);
+    let mut text = [0u16; 32];
+    let len = unsafe { GetTimeFormatEx(PCWSTR::null(), TIME_NOSECONDS, Some(&time), PCWSTR::null(), Some(&mut text)) };
+    String::from_utf16_lossy(&text[..(len as usize).saturating_sub(1)])
 }
 
 /// Modern Standby ("S0 low power idle", what `powercfg /a` lists), common on recent laptops.

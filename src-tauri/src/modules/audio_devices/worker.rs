@@ -22,9 +22,11 @@ use windows::core::{PCWSTR, Result, implement};
 
 use super::{AudioDevicesChanged, AudioDevicesState, Msg, OutputDevice, Shared, ShortcutStatus, policy_config};
 use crate::audio;
+use crate::shell::tray;
 
 pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     audio::with_com("audio-devices", || serve(&app, &tx, &rx));
+    tray::set_mics_muted(&app, false);
 }
 
 fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
@@ -84,6 +86,7 @@ fn publish(app: &AppHandle, enumerator: &IMMDeviceEnumerator, mics: &mut Mics, s
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
+        tray::set_mics_muted(app, state.mics_muted == Some(true));
         *current = state.clone();
         let _ = AudioDevicesChanged(state).emit(app);
     }
