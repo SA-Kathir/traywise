@@ -13,6 +13,9 @@ const useAudioDevices = () => useLive(commands.audioDevicesState, events.audioDe
 /** "Headphones (Realtek(R) Audio)" -> "Headphones": the part in brackets is the sound card. */
 const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
 
+/** A guess from the name: Windows doesn't say whether an output is headphones. */
+const outputIcon = (name: string) => (/headphone|headset|earbud/i.test(name) ? HEADPHONES : SPEAKERS);
+
 /** Home tiles: the output device (opens the list) and mute-all for microphones. */
 export function Summary({ open }: { open: () => void }) {
   const state = useAudioDevices();
@@ -22,7 +25,7 @@ export function Summary({ open }: { open: () => void }) {
   return (
     <>
       <Tile
-        icon={output && /headphone|headset|earbud/i.test(output.name) ? HEADPHONES : SPEAKERS}
+        icon={output ? outputIcon(output.name) : SPEAKERS}
         label="Output"
         detail={output ? shortName(output.name) : "No device"}
         onOpen={open}
@@ -53,9 +56,10 @@ export default function Panel() {
 
 function Outputs({ state }: { state: AudioDevicesState }) {
   if (state.outputs.length === 0) return <p className="hint">No output device.</p>;
+  const shorts = state.outputs.map((d) => shortName(d.name));
   return (
     <div className="segmented vertical" role="radiogroup" aria-label="Output device">
-      {state.outputs.map((d) => (
+      {state.outputs.map((d, i) => (
         <button
           key={d.id}
           role="radio"
@@ -64,7 +68,11 @@ function Outputs({ state }: { state: AudioDevicesState }) {
           title={d.name}
           onClick={() => d.isDefault || commands.audioDevicesSetOutput(d.id)}
         >
-          {d.name}
+          <span className="icon" aria-hidden>
+            {outputIcon(d.name)}
+          </span>
+          {/* Two "Speakers" on different sound cards keep their full names, to tell them apart. */}
+          {shorts.indexOf(shorts[i]) === shorts.lastIndexOf(shorts[i]) ? shorts[i] : d.name}
         </button>
       ))}
     </div>
