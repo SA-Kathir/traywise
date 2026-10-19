@@ -3,7 +3,10 @@
    read from the desktop. */
 
 :root {
-  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  /* Windows 11's font. "Segoe UI Variable" alone isn't an installed name and falls back to the
+     older Segoe UI. Display is its large-size cut, for titles and big numbers. */
+  --display: "Segoe UI Variable Display", "Segoe UI", sans-serif;
   font-size: 13px;
   color: #f4f4f6;
   color-scheme: dark;
@@ -161,9 +164,9 @@ section::before,
 }
 .tile-icon {
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .tile-label {
   font-weight: 600;
@@ -171,7 +174,7 @@ section::before,
 .tile-detail {
   max-width: 100%;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.6);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -229,26 +232,29 @@ section::before,
   min-width: 0;
 }
 .stat-chip-value {
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 300;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .stat-chip-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 h1 {
-  font-size: 15px;
+  font-family: var(--display);
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
 h2 {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.55);
   margin: 0 0 8px;
 }
 
@@ -363,7 +369,7 @@ label.row + .hint,
 }
 
 .hint {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.6);
 }
 .error {
   font-size: 12px;
@@ -461,7 +467,7 @@ button.on {
   text-align: center;
 }
 .welcome-name {
-  font-family: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-family: var(--display);
   font-size: 40px;
   font-weight: 300;
   letter-spacing: -0.02em;
