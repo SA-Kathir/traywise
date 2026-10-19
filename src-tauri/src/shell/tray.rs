@@ -14,6 +14,12 @@ const ID: &str = "main";
 const MUTED: [u8; 3] = [0xe5, 0x48, 0x4d]; // red, bottom-right
 const AWAKE: [u8; 3] = [0x3d, 0xd6, 0x8c]; // green, top-right
 
+/// The tray's own image: the small-size variant of the app icon (no glass plate, bolder glyph),
+/// which stays legible at tray size. Made from icons/source/app-icon-small.svg.
+fn tray_icon() -> Image<'static> {
+    Image::from_bytes(include_bytes!("../../icons/tray.png")).expect("icons/tray.png is a valid PNG")
+}
+
 /// What the icon shows besides Traywise itself. Modules set their part, and clear it when they stop.
 #[derive(Default, PartialEq)]
 struct Status {
@@ -27,7 +33,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "Quit Traywise", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&quit])?;
     TrayIconBuilder::with_id(ID)
-        .icon(app.default_window_icon().cloned().expect("app icon is set in tauri.conf.json"))
+        .icon(tray_icon())
         .tooltip("Traywise")
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -76,8 +82,7 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Status)) {
         tooltip += line;
     }
     let _ = tray.set_tooltip(Some(tooltip));
-    let icon = app.default_window_icon().expect("app icon is set in tauri.conf.json");
-    let _ = tray.set_icon(Some(badged(icon, status.mics_muted, status.awake.is_some())));
+    let _ = tray.set_icon(Some(badged(&tray_icon(), status.mics_muted, status.awake.is_some())));
 }
 
 /// The Traywise icon with a dot per state, each cut out with a clear ring so it reads as a mark on

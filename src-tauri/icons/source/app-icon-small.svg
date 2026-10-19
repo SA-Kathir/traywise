@@ -1,0 +1,14 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Traywise app icon: a T made from a tray holding two items. Design: Figma file "TrayWise". (small sizes and tray: no glass plate, bolder glyph) -->
+<defs>
+<radialGradient id="v" cx="0.95" cy="0.5" r="0.75"><stop offset="0" stop-color="#8a5cff"/><stop offset="1" stop-color="#8a5cff" stop-opacity="0"/></radialGradient>
+<radialGradient id="p" cx="0.15" cy="0.1" r="0.8"><stop offset="0" stop-color="#ff6fa5"/><stop offset="1" stop-color="#ff6fa5" stop-opacity="0"/></radialGradient>
+<radialGradient id="a" cx="0.2" cy="1" r="0.6"><stop offset="0" stop-color="#ffb36b"/><stop offset="1" stop-color="#ffb36b" stop-opacity="0"/></radialGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.12"/></linearGradient>
+</defs>
+<rect width="1024" height="1024" rx="230" fill="#1b1430"/>
+<rect width="1024" height="1024" rx="230" fill="url(#v)"/>
+<rect width="1024" height="1024" rx="230" fill="url(#p)"/>
+<rect width="1024" height="1024" rx="230" fill="url(#a)"/>
+<g transform="translate(128 96) scale(32)" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 C3.5 10.5 4.8 11.75 7 11.75 H17 C19.2 11.75 20.5 10.5 20.5 8"/><path d="M12 11.75 V20.5"/><circle cx="9.4" cy="7.3" r="2.15" fill="#ffffff" stroke="none"/><circle cx="14.6" cy="7.3" r="2.15" fill="#ffffff" stroke="none"/></g>
+</svg>
