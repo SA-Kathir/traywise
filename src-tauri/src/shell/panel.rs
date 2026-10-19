@@ -17,7 +17,7 @@ const LABEL: &str = "panel";
 const REOPEN_GUARD: Duration = Duration::from_millis(250);
 /// Panel size in logical pixels. It's as tall as its content, up to MAX_HEIGHT; past that it scrolls.
 const WIDTH: f64 = 360.0;
-const MAX_HEIGHT: f64 = 560.0;
+const MAX_HEIGHT: f64 = 640.0;
 
 #[derive(Default)]
 pub struct PanelState {
