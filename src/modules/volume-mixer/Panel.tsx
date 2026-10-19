@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { commands, events, type Target } from "../../bindings";
 import { useLive } from "../../shell/useLive";
 
@@ -138,6 +138,7 @@ function VolumeSlider({ name, value, onChange }: { name: string; value: number; 
         min={0}
         max={100}
         value={shown}
+        style={{ "--fill": `${shown}%` } as CSSProperties}
         aria-label={`${name} volume`}
         onPointerDown={() => (dragging.current = true)}
         onPointerUp={endDrag}
