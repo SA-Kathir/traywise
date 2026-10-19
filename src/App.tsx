@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { modules } from "./modules";
 import { LiquidBackground } from "./shell/LiquidBackground";
@@ -29,6 +29,17 @@ function App() {
     };
   }, []);
 
+  // The window is as tall as this, so tell Rust each time the content changes height.
+  const panel = useRef<HTMLElement>(null);
+  const ready = settings !== null;
+  useEffect(() => {
+    const el = panel.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => commands.panelFit(el.getBoundingClientRect().height, view === "home"));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ready, view]);
+
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
 
@@ -39,7 +50,7 @@ function App() {
 
   return (
     // The preset class goes here too, so cards and controls can use its colours (--accent).
-    <main className={`panel bg-${settings.preset}`}>
+    <main ref={panel} className={`panel bg-${settings.preset}`}>
       <LiquidBackground />
       <header className="row">
         {view !== "home" && (

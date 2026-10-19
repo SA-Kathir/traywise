@@ -10,6 +10,11 @@ export const commands = {
 	 *  visible when traywise.exe is started from a terminal.
 	 */
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
+	/**
+	 *  Called by the UI whenever its content changes height (CSS pixels). The panel grows or shrinks to
+	 *  fit, keeping its bottom edge where it is.
+	 */
+	panelFit: (height: number | null, home: boolean) => __TAURI_INVOKE<void>("panel_fit", { height, home }),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
