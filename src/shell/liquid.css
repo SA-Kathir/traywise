@@ -67,8 +67,9 @@ body {
 .bg-ember { --base: #160f0b; --c1: #774029; --c2: #50291a; --c3: #95583a; --accent: #f0c3a6; }
 .bg-rose { --base: #160d12; --c1: #6b3a51; --c2: #482536; --c3: #89546e; --accent: #f0bfd4; }
 
-/* Liquid: a deep shade of the preset behind cards tinted in it. --tint and --tint-edge are the
-   cards' fill and edge, shared with the tab bar and icon buttons so they all match. */
+/* Liquid: cards tinted in the preset, lighter at the top left (or one even hue: .flat). --tint
+   and --tint-edge are shared with the tab bar, icon buttons and title so they match. The look's
+   classes are on html too, so the page behind the panel (the scrollbar's strip) matches it. */
 .look-liquid {
   --tint: linear-gradient(
     150deg,
@@ -76,7 +77,43 @@ body {
     color-mix(in srgb, var(--c2) 20%, #0e0e10) 75%
   );
   --tint-edge: color-mix(in srgb, var(--c3) 45%, transparent);
+}
+.look-liquid.flat {
+  --tint: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--c3) 55%, var(--base)),
+    color-mix(in srgb, var(--c1) 45%, var(--base))
+  );
+}
+/* A deep shade of the preset behind the cards, unless transparent (.clear). */
+.look-liquid:not(.clear) {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
+}
+/* Less above and below than the Windows look: transparent's title card is taller, and the home
+   view with every module on still has to fit the 640 px window. */
+.panel.look-liquid {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  gap: 12px;
+}
+/* Transparent: the cards float over the desktop (shown through the window, never read). Anything
+   not already in a card gets one, so it reads over any wallpaper. The title's pill hugs the name;
+   the icon buttons are their own cards. */
+.look-liquid.clear header h1 {
+  flex: none;
+  margin-right: auto;
+  padding: 3px 14px 5px;
+}
+.look-liquid.clear :is(header h1, .modules-all, .welcome, .setup-intro) {
+  border-radius: 14px;
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
+}
+.look-liquid.clear .modules-all {
+  padding: 6px 8px 6px 14px;
+}
+.look-liquid.clear :is(.welcome, .setup-intro) {
+  padding: 24px 16px;
 }
 .look-liquid h1 {
   color: var(--accent);
@@ -290,7 +327,8 @@ label.row + label.row {
 .grow {
   flex: 1;
 }
-.segmented + h2 {
+.segmented + h2,
+.swatches + h2 {
   margin-top: 12px;
 }
 .segmented + .segmented,

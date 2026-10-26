@@ -33,6 +33,15 @@ function App() {
     };
   }, []);
 
+  // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
+  // html, so the page behind the panel (the scrollbar's strip) gets the same background.
+  const lookClass =
+    settings &&
+    `look-${settings.look} bg-${settings.preset}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}`;
+  useEffect(() => {
+    document.documentElement.className = lookClass ?? "";
+  }, [lookClass]);
+
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
 
@@ -55,8 +64,7 @@ function App() {
           ? "Modules"
           : categories[view].name;
 
-  // The look and preset classes go on the panel, so cards and controls can use their colours (--accent).
-  const panelClass = `panel look-${settings.look} bg-${settings.preset}`;
+  const panelClass = `panel ${lookClass}`;
 
   if (!settings.onboarded) {
     return (

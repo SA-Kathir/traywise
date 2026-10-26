@@ -100,6 +100,24 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
             ))}
           </div>
         )}
+        {settings.look === "liquid" && (
+          <>
+            <h2>Background</h2>
+            <Choice
+              label="Background"
+              options={["Tinted", "Transparent"]}
+              value={settings.transparent}
+              onChange={(transparent) => save({ ...settings, transparent })}
+            />
+            <h2>Tiles</h2>
+            <Choice
+              label="Tiles"
+              options={["Shaded", "Single hue"]}
+              value={settings.singleHue}
+              onChange={(singleHue) => save({ ...settings, singleHue })}
+            />
+          </>
+        )}
       </section>
 
       {settings.enabledModules.includes("audio-devices") && (
@@ -135,6 +153,22 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
 
       {error && <p className="error">{error}</p>}
     </>
+  );
+}
+
+/** A two-way choice saved as a yes/no setting: the second option means yes. */
+function Choice(props: { label: string; options: [string, string]; value: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <div className="segmented" role="radiogroup" aria-label={props.label}>
+      {props.options.map((text, i) => {
+        const on = props.value === (i === 1);
+        return (
+          <button key={text} role="radio" aria-checked={on} className={on ? "on" : ""} onClick={() => props.onChange(i === 1)}>
+            {text}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
