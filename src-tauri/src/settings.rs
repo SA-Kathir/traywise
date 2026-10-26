@@ -16,6 +16,10 @@ pub struct Settings {
     // invalid, so it falls back to defaults; skip unknown ids instead once modules get removed.
     pub enabled_modules: Vec<ModuleId>,
     pub look: Look,
+    /// Liquid: no panel background, so the cards float over the desktop.
+    pub transparent: bool,
+    /// Liquid: cards in one even hue, instead of lighter at the top left fading darker.
+    pub single_hue: bool,
     pub preset: Preset,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
@@ -30,6 +34,8 @@ impl Default for Settings {
         Self {
             enabled_modules: vec![ModuleId::VolumeMixer],
             look: Look::Liquid,
+            transparent: false,
+            single_hue: false,
             preset: Preset::Ocean,
             mic_shortcut: "Ctrl+Alt+M".into(),
             check_updates: true,
@@ -115,10 +121,17 @@ pub fn get_settings(state: State<SettingsState>) -> Settings {
 /// Saves the settings, then starts or stops modules to match.
 #[tauri::command]
 #[specta::specta]
-pub fn set_settings(settings: Settings, state: State<SettingsState>, modules: State<Modules>) -> Result<(), String> {
+pub fn set_settings(
+    app: AppHandle,
+    settings: Settings,
+    state: State<SettingsState>,
+    modules: State<Modules>,
+) -> Result<(), String> {
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
     *state.current.lock().unwrap() = settings;
+    // After saving: the window's frame and size follow the saved settings.
+    crate::shell::panel::refresh_frame(&app);
     Ok(())
 }
 
@@ -151,6 +164,8 @@ mod tests {
         let custom = Settings {
             enabled_modules: vec![],
             look: Look::Windows,
+            transparent: true,
+            single_hue: true,
             preset: Preset::Graphite,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             check_updates: false,

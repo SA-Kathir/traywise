@@ -6,11 +6,15 @@ use std::time::{Duration, Instant};
 
 use tauri_specta::Event;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
-use windows::Win32::Graphics::Dwm::{DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND, DwmSetWindowAttribute};
+use windows::Win32::Graphics::Dwm::{
+    DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
+    DWMWCP_ROUND, DwmSetWindowAttribute,
+};
 use windows::Win32::UI::WindowsAndMessaging::{SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos};
 
 use super::webview;
 use crate::module::Modules;
+use crate::settings::{Look, Settings, SettingsState};
 
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
@@ -41,9 +45,10 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .resizable(false)
         .always_on_top(true)
         .skip_taskbar(true)
-        .shadow(true)
+        // Set per look by `frame`.
+        .shadow(false)
         .build()?;
-    round_corners(&win);
+    frame(&win, framed(&app.state::<SettingsState>().get()));
     webview::set_active(&win, false);
 
     let handle = win.clone();
@@ -140,28 +145,62 @@ pub fn autotest(app: AppHandle) {
 }
 
 /// Sizes the panel (shorter if the screen is) and puts it in the bottom-right corner of the primary
-/// monitor's work area (above the taskbar), 12 px margin. One call, so it doesn't flicker.
+/// monitor's work area (above the taskbar), 12 px margin.
 fn place(win: &WebviewWindow) {
     let (Ok(Some(monitor)), Ok(hwnd)) = (win.primary_monitor(), win.hwnd()) else { return };
     let scale = monitor.scale_factor();
     let area = monitor.work_area();
     let margin = (12.0 * scale) as i32;
-    let width = (WIDTH * scale).round() as i32;
-    let height = ((HEIGHT * scale).ceil() as i32).min(area.size.height as i32 - 2 * margin);
-    let x = area.position.x + area.size.width as i32 - width - margin;
-    let y = area.position.y + area.size.height as i32 - height - margin;
-    let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };
+    let max_height = area.size.height as i32 - 2 * margin;
+    let set = |width: i32, height: i32| {
+        let height = height.min(max_height);
+        let x = area.position.x + area.size.width as i32 - width - margin;
+        let y = area.position.y + area.size.height as i32 - height - margin;
+        let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };
+    };
+    let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
+    set(width, height);
+    // A framed window's shadow takes a few pixels of it: add them back, so the page gets
+    // WIDTH x HEIGHT either way. Unframed, there's nothing to add (and Windows briefly misreports
+    // a frame right after resizing, so don't measure there).
+    if framed(&win.state::<SettingsState>().get()) && let Ok(inner) = win.inner_size() {
+        let (frame_w, frame_h) = (width - inner.width as i32, height.min(max_height) - inner.height as i32);
+        if frame_w != 0 || frame_h != 0 {
+            set(width + frame_w, height + frame_h);
+        }
+    }
 }
 
-/// Windows 11 rounded corners. Borderless windows get square ones unless they ask.
-fn round_corners(win: &WebviewWindow) {
+/// Called after Settings are saved: the look or background may have changed.
+pub fn refresh_frame(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(LABEL) {
+        frame(&win, framed(&app.state::<SettingsState>().get()));
+        place(&win);
+    }
+}
+
+/// Whether the window gets Windows 11's frame: every look except transparent Liquid, whose cards
+/// float over the desktop, where a frame would outline empty space.
+fn framed(settings: &Settings) -> bool {
+    settings.look == Look::Windows || !settings.transparent
+}
+
+/// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none
+/// of them (rounded corners alone bring the system shadow and border, so they go together).
+fn frame(win: &WebviewWindow, framed: bool) {
+    let _ = win.set_shadow(framed);
     let Ok(hwnd) = win.hwnd() else { return };
-    let _ = unsafe {
-        DwmSetWindowAttribute(
+    let corners = if framed { DWMWCP_ROUND } else { DWMWCP_DONOTROUND };
+    let color = if framed { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
+    unsafe {
+        let _ = DwmSetWindowAttribute(
             hwnd,
             DWMWA_WINDOW_CORNER_PREFERENCE,
-            &DWMWCP_ROUND as *const _ as *const c_void,
-            size_of_val(&DWMWCP_ROUND) as u32,
-        )
-    };
+            &corners as *const _ as *const c_void,
+            size_of_val(&corners) as u32,
+        );
+        let _ =
+            DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color as *const _ as *const c_void, size_of_val(&color) as u32);
+    }
 }
+
