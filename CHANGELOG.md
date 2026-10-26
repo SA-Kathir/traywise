@@ -4,8 +4,12 @@
 
 The first release.
 
-- One tray icon and one glass panel, with six colour presets.
-- Modules, each switched on or off in Settings:
+- One tray icon and one panel, with two looks to pick from on first start (and in Settings):
+  - **Liquid**: tiles tinted in one of six colour presets, on a tinted background or floating over the desktop, shaded or in a single hue.
+  - **Windows**: flat, like Windows 11's own flyouts; follows light and dark mode.
+- Home shows quick tiles, volume and a system summary; tabs (Sound, System) hold each module's full controls.
+- A Modules page lists what each module does and what it costs while idle, with an All switch.
+- Modules, each switched on or off in Settings → Modules:
   - **Volume mixer**: per-app and master volume and mute.
   - **Audio devices**: pick the default output; mute every microphone, with a shortcut.
   - **Keep awake**: until turned off, for a set time, or while plugged in; optionally keeps the screen on.
