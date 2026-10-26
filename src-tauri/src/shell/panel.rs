@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 
 use tauri_specta::Event;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
     DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
     DWMWCP_ROUND, DwmSetWindowAttribute,
@@ -30,6 +31,8 @@ pub struct PanelState {
     last_hidden: Mutex<Option<Instant>>,
     /// When the panel was last asked to show, for timing how long it takes to appear.
     shown_at: Mutex<Option<Instant>>,
+    /// The registered open/close shortcut.
+    shortcut: Mutex<Option<String>>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -78,6 +81,27 @@ pub fn toggle(app: &AppHandle) {
     } else if !just_hidden {
         show(&win);
     }
+}
+
+/// Registers the shortcut that opens or closes the panel, replacing the previous one. Fails (keeping
+/// the previous one) if Windows or another app already uses those keys.
+pub fn set_shortcut(app: &AppHandle, keys: &str) -> Result<(), String> {
+    let state = app.state::<PanelState>();
+    let mut current = state.shortcut.lock().unwrap();
+    if current.as_deref() == Some(keys) {
+        return Ok(());
+    }
+    app.global_shortcut()
+        .on_shortcut(keys, |app, _, event| {
+            if event.state == ShortcutState::Pressed {
+                toggle(app);
+            }
+        })
+        .map_err(|e| format!("couldn't use {keys} to open Traywise: {e}"))?;
+    if let Some(old) = current.replace(keys.to_owned()) {
+        let _ = app.global_shortcut().unregister(old.as_str());
+    }
+    Ok(())
 }
 
 /// Opens the panel if it isn't already open. Used when Traywise is launched a second time.

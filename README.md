@@ -22,7 +22,7 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 - **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
 
-Left-click the tray icon to open the panel. Modules are grouped into tabs (Home, Sound, System), and Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
+Left-click the tray icon, or press **Ctrl+Alt+T** (change it in Settings → Shortcuts), to open or close the panel. Modules are grouped into tabs (Home, Sound, System), and Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
 ## Install
 

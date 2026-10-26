@@ -15,6 +15,7 @@ The first release.
   - **Keep awake**: until turned off, for a set time, or while plugged in; optionally keeps the screen on.
   - **System monitor**: CPU, memory, network, battery and disk, while the panel is open.
   - **Quick toggles**: dark mode, desktop icons, lock screen.
+- A keyboard shortcut to open or close the panel, Ctrl+Alt+T by default (Settings → Shortcuts).
 - Start with Windows.
 - Auto-updates: checks GitHub at startup and about once a day, installs only when you click. Can be switched off.
 - Per-user installer, no admin rights needed. It isn't code-signed yet, so Windows SmartScreen warns on first install.

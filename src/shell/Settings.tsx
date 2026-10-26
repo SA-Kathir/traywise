@@ -120,15 +120,19 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
         )}
       </section>
 
-      {settings.enabledModules.includes("audio-devices") && (
-        <section>
-          <h2>Shortcuts</h2>
+      <section>
+        <h2>Shortcuts</h2>
+        <div className="row">
+          <span className="grow">Open or close Traywise</span>
+          <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
+        </div>
+        {settings.enabledModules.includes("audio-devices") && (
           <div className="row">
             <span className="grow">Mute all microphones</span>
             <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <section>
         <h2>System</h2>

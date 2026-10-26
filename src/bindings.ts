@@ -190,6 +190,8 @@ export type Settings = {
 	preset: Preset,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
+	/**  Global shortcut that opens or closes the panel, like "Ctrl+Alt+T". */
+	panelShortcut: string,
 	/**  Whether Traywise asks GitHub for a newer version (at startup and about once a day). */
 	checkUpdates: boolean,
 	/**  Whether first-run setup (pick a look, then modules) is done. */

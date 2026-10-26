@@ -314,7 +314,8 @@ p {
 label.row {
   cursor: pointer;
 }
-label.row + label.row {
+label.row + label.row,
+div.row + div.row {
   margin-top: 10px;
 }
 /* The Modules heading doubles as the select-all row. */

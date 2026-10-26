@@ -76,7 +76,8 @@ pub fn run() {
         // Must be the first plugin. A second launch exits at once and opens this copy's panel.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| shell::panel::open(app)))
         .plugin(tauri_plugin_autostart::Builder::new().build())
-        // Registers nothing by itself; Audio devices adds its shortcut only while it runs.
+        // Registers nothing by itself: the panel adds its open/close shortcut at startup, and Audio
+        // devices its mute shortcut only while it runs.
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(bindings.invoke_handler())
@@ -93,6 +94,10 @@ pub fn run() {
             app.manage(updater::UpdateState::default());
             updater::check(app.handle());
             shell::panel::create(app)?;
+            let keys = app.state::<settings::SettingsState>().get().panel_shortcut;
+            if let Err(e) = shell::panel::set_shortcut(app.handle(), &keys) {
+                eprintln!("{e}");
+            }
             #[cfg(feature = "autotest")]
             shell::panel::autotest(app.handle().clone());
             Ok(())

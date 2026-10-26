@@ -23,6 +23,8 @@ pub struct Settings {
     pub preset: Preset,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
+    /// Global shortcut that opens or closes the panel, like "Ctrl+Alt+T".
+    pub panel_shortcut: String,
     /// Whether Traywise asks GitHub for a newer version (at startup and about once a day).
     pub check_updates: bool,
     /// Whether first-run setup (pick a look, then modules) is done.
@@ -38,6 +40,7 @@ impl Default for Settings {
             single_hue: false,
             preset: Preset::Ocean,
             mic_shortcut: "Ctrl+Alt+M".into(),
+            panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
         }
@@ -127,6 +130,8 @@ pub fn set_settings(
     state: State<SettingsState>,
     modules: State<Modules>,
 ) -> Result<(), String> {
+    // Before saving, so keys another app already uses are refused instead of silently not working.
+    crate::shell::panel::set_shortcut(&app, &settings.panel_shortcut)?;
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
     *state.current.lock().unwrap() = settings;
@@ -168,6 +173,7 @@ mod tests {
             single_hue: true,
             preset: Preset::Graphite,
             mic_shortcut: "Ctrl+Shift+F9".into(),
+            panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
         };
