@@ -1,13 +1,20 @@
 # Traywise
 
-One tray icon, one glassy panel, and a handful of small Windows 11 tools you can switch on or off.
+One tray icon, one panel, and a handful of small Windows 11 tools you can switch on or off.
 
-<!-- PLACEHOLDER: replace with a real screenshot or GIF of the panel, e.g. docs/screenshot.png -->
-![Traywise panel (screenshot coming soon)](docs/screenshot.png)
+<p align="center">
+  <img src="docs/screenshot-liquid.png" width="300" alt="The Traywise panel in the Liquid look: tiles tinted in a colour preset">
+  <img src="docs/screenshot-windows.png" width="300" alt="The Traywise panel in the Windows look: flat, like Windows 11's own flyouts">
+</p>
+
+Pick a look when you first start it, and change it any time in Settings:
+
+- **Liquid**: tiles tinted in one of six colours, on a tinted background or floating over your desktop.
+- **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
 
 ## Modules
 
-Each module can be switched on or off in Settings. A module that's off doesn't run at all.
+Each module can be switched on or off in **Settings → Modules**. A module that's off doesn't run at all.
 
 - **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume.
 - **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default).
@@ -15,7 +22,7 @@ Each module can be switched on or off in Settings. A module that's off doesn't r
 - **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
 
-Left-click the tray icon to open the panel; right-click it to quit.
+Left-click the tray icon to open the panel. Modules are grouped into tabs (Home, Sound, System), and Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
 ## Install
 
