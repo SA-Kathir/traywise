@@ -283,18 +283,9 @@ button.tile-title:hover {
 .tile-card .mixer-row + .mixer-row {
   margin-top: 0;
 }
-/* Keep awake's choices at 2×2: two to a row, the last across. */
-.segmented.tile-choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin-top: auto;
-}
-.tile-choices button {
-  padding: 4px 0;
-  font-size: 12px;
-}
-.tile-choices button:last-child {
-  grid-column: 1 / -1;
+/* Keep awake at 4×2: the page's modes and timer, a little tighter. */
+.tile-card .segmented button {
+  padding: 5px 0;
 }
 /* Output's device list at 2×2: the first few; the page has them all. */
 .tile-card .segmented.vertical {

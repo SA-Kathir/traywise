@@ -16,17 +16,7 @@ const STEPS = [1, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720];
 
 const useKeepAwake = () => useLive(commands.keepAwakeState, events.keepAwakeChanged);
 
-/** The 2×2 tile's choices. A timer started here isn't shown as picked (Windows only tells us when
- *  it ends); the time left is in the title line instead. */
-const QUICK: { mode: Mode; label: string }[] = [
-  { mode: "off", label: "Off" },
-  { mode: "on", label: "On" },
-  { mode: { minutes: 60 }, label: "1 h" },
-  { mode: { minutes: 120 }, label: "2 h" },
-  { mode: "whilePluggedIn", label: "Plugged in" },
-];
-
-/** Home tile: switches keep-awake on (until turned off) or off; at 2×2, also timers and plugged-in. */
+/** Home tile: switches keep-awake on (until turned off) or off; at 4×2, the page's modes and timer. */
 export function Tiles({ size, open }: TileProps) {
   const state = useKeepAwake();
   const now = useNow(state?.endsAt != null);
@@ -41,21 +31,10 @@ export function Tiles({ size, open }: TileProps) {
         : state.active
           ? "On"
           : "Off";
-  if (size === "2x2")
+  if (size === "4x2")
     return (
-      <TileCard size={size} label="Keep awake" onOpen={open}>
-        <span className="tile-detail">{detail}</span>
-        <div className="segmented tile-choices">
-          {QUICK.map(({ mode, label }) => (
-            <button
-              key={label}
-              className={typeof mode === "string" && state.mode === mode ? "on" : ""}
-              onClick={() => commands.keepAwakeSetMode(mode)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <TileCard size={size} label="Keep awake" detail={detail} onOpen={open}>
+        <Controls state={state} />
       </TileCard>
     );
   return (
@@ -73,9 +52,29 @@ export function Tiles({ size, open }: TileProps) {
 
 export default function Panel() {
   const state = useKeepAwake();
-  const [minutes, setMinutes] = useState(30); // the timer length picked, before it's started
-  const now = useNow(state?.endsAt != null);
   if (!state) return null;
+  return (
+    <>
+      <Controls state={state} />
+      <label className="row">
+        <span className="grow">Keep the display on too</span>
+        <input type="checkbox" checked={state.display} onChange={(e) => commands.keepAwakeSetDisplay(e.target.checked)} />
+      </label>
+      <p className="hint">{status(state)}</p>
+      {state.screenOffSleeps && state.active && !state.display && (
+        <p className="hint">
+          This PC goes to sleep when its screen turns off, whatever apps ask (it uses Windows' Modern Standby). To
+          keep it awake, also keep the display on.
+        </p>
+      )}
+    </>
+  );
+}
+
+/** The modes, and the timer with − and +: on the page and on the 4×2 tile. */
+function Controls({ state }: { state: KeepAwakeState }) {
+  const [minutes, setMinutes] = useState(30); // the timer length picked, before it's started
+  const now = useNow(state.endsAt !== null);
 
   const left = state.endsAt === null ? null : Math.max(0, state.endsAt - now);
   // While a timer runs, − and + step from the time left; otherwise from the length picked.
@@ -111,17 +110,6 @@ export default function Panel() {
           +
         </button>
       </div>
-      <label className="row">
-        <span className="grow">Keep the display on too</span>
-        <input type="checkbox" checked={state.display} onChange={(e) => commands.keepAwakeSetDisplay(e.target.checked)} />
-      </label>
-      <p className="hint">{status(state)}</p>
-      {state.screenOffSleeps && state.active && !state.display && (
-        <p className="hint">
-          This PC goes to sleep when its screen turns off, whatever apps ask (it uses Windows' Modern Standby). To
-          keep it awake, also keep the display on.
-        </p>
-      )}
     </>
   );
 }
