@@ -151,9 +151,18 @@ pub fn set_settings(
     crate::shell::panel::set_shortcut(&app, &settings.panel_shortcut)?;
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
-    *state.current.lock().unwrap() = settings;
+    // Only the look decides the frame. Re-framing resizes the window, which visibly nudges the
+    // panel, so don't do it for every other save (like each tile moved on the home board).
+    let reframe = {
+        let mut current = state.current.lock().unwrap();
+        let reframe = current.look != settings.look || current.transparent != settings.transparent;
+        *current = settings;
+        reframe
+    };
     // After saving: the window's frame and size follow the saved settings.
-    crate::shell::panel::refresh_frame(&app);
+    if reframe {
+        crate::shell::panel::refresh_frame(&app);
+    }
     Ok(())
 }
 
