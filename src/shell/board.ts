@@ -5,8 +5,8 @@
 // Two ways to settle tiles after a change:
 // - auto-arrange: tiles keep their order, and each takes the first free spot, so a later small tile
 //   fills a hole and the board never has gaps;
-// - free placement: tiles stay where they're put, and one that's in the way moves to the nearest
-//   free spot.
+// - free placement: tiles stay where they're put. One that's in the way of a moved tile takes the
+//   spot the moved one left (they swap), if it fits there; otherwise the nearest free spot.
 
 export const COLUMNS = 4;
 
@@ -49,26 +49,31 @@ export function pack(tiles: Placed[]): Placed[] {
   return out.sort(byPosition);
 }
 
-/** Free placement: `fixed` stays put; any other tile in the way moves to the nearest free spot. */
-function bump(fixed: Placed[], rest: Placed[]): Placed[] {
+/** Free placement: `fixed` stays put; any other tile in the way moves to `home` (where a moved tile
+ *  came from) if it fits there, or else to the nearest free spot. */
+function bump(fixed: Placed[], rest: Placed[], home?: { x: number; y: number }): Placed[] {
   // Everything not in the way stays first, so a moved tile can't land on one that hasn't been placed yet.
   const out = [...fixed];
   const inTheWay: Placed[] = [];
   for (const o of rest) (fits(o, fixed) ? out : inTheWay).push(o);
-  for (const o of inTheWay.sort(byPosition)) out.push(nearestFree(o, out));
+  for (const o of inTheWay.sort(byPosition)) {
+    const swapped = home && clampX({ ...o, x: home.x, y: home.y });
+    out.push(swapped && fits(swapped, out) ? swapped : nearestFree(o, out));
+  }
   return out.sort(byPosition);
 }
 
 const clampX = (t: Placed) => ({ ...t, x: Math.max(0, Math.min(t.x, COLUMNS - t.w)), y: Math.max(0, t.y) });
 
 /** Drops tile `id` with its top-left cell at (`x`, `y`). With auto-arrange, it takes that place in
- *  the order (before the tile that's there now) and the board packs again. */
+ *  the order (before the tile that's there now) and the board packs again; with free placement, a
+ *  tile in the way swaps into the spot it left, if it fits. */
 export function move(tiles: Placed[], id: string, x: number, y: number, auto: boolean): Placed[] {
   const t = tiles.find((t) => t.id === id);
   if (!t) return tiles;
   const moved = clampX({ ...t, x, y });
   const rest = tiles.filter((o) => o !== t);
-  if (!auto) return bump([moved], rest);
+  if (!auto) return bump([moved], rest, t);
   const i = rest.findIndex((o) => byPosition(o, moved) >= 0);
   rest.splice(i < 0 ? rest.length : i, 0, moved);
   return pack(rest);

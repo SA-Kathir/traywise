@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
-import { categories, modules, type Category } from "./modules";
-import { Board, startingBoard } from "./shell/HomeBoard";
+import { categories, modules, tileModule, type Category } from "./modules";
+import { AddTiles } from "./shell/AddTiles";
+import { add, pack, type Placed } from "./shell/board";
+import { Board, newTile, startingBoard } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage } from "./shell/Settings";
 import { Setup } from "./shell/Setup";
@@ -13,11 +15,18 @@ const HOME = String.fromCodePoint(0xe80f);
 const GEAR = String.fromCodePoint(0xe713);
 const POWER = String.fromCodePoint(0xe7e8);
 const BACK = String.fromCodePoint(0xe72b);
+const EDIT = String.fromCodePoint(0xe70f);
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
   const [view, setView] = useState<"home" | Category | "settings" | "modules">("home");
+  // shortcut: the board and auto-arrange live here until step 4 saves them in settings.
+  const [board, setBoard] = useState<Placed[] | null>(null);
+  const [auto, setAuto] = useState(true);
+  // Edit mode on Home, and its list of tiles to add.
+  const [editing, setEditing] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
@@ -26,6 +35,8 @@ function App() {
   useEffect(() => {
     const unlisten = events.panelShown.listen(() => {
       setView("home"); // every open starts on the main view, like Windows' own flyouts
+      setEditing(false);
+      setAdding(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
       requestAnimationFrame(() => requestAnimationFrame(() => commands.panelPainted()));
     });
@@ -33,6 +44,16 @@ function App() {
       unlisten.then((stop) => stop());
     };
   }, []);
+
+  // Esc steps out: from the list of tiles to add, then out of edit mode.
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") (adding ? setAdding : setEditing)(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, adding]);
 
   // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
@@ -52,10 +73,15 @@ function App() {
   const tabs = (Object.keys(categories) as Category[]).filter((c) =>
     enabled.some((id) => modules[id].category === c && modules[id].Panel),
   );
-  const tabbed = view !== "settings" && view !== "modules";
+  const tiles = (board ?? startingBoard(enabled)).filter((t) => enabled.includes(tileModule(t.id)));
+  const editHome = view === "home" && editing;
+  const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
-  const title =
-    view === "home"
+  const title = editHome
+    ? adding
+      ? "Add tiles"
+      : "Edit home"
+    : view === "home"
       ? enabled.length > 0
         ? "Traywise"
         : ""
@@ -78,19 +104,29 @@ function App() {
   return (
     <main className={panelClass}>
       <header className="row">
-        {!tabbed && (
+        {!tabbed && !(editHome && !adding) && (
           <button
             className="icon-button"
             aria-label="Back"
             title="Back"
-            onClick={() => setView(view === "modules" ? "settings" : "home")}
+            onClick={() => (editHome ? setAdding(false) : setView(view === "modules" ? "settings" : "home"))}
           >
             {BACK}
           </button>
         )}
         <h1 className="grow">{title}</h1>
+        {editHome && !adding && (
+          <button className="primary" onClick={() => setEditing(false)}>
+            Done
+          </button>
+        )}
         {tabbed && (
           <>
+            {view === "home" && enabled.length > 0 && (
+              <button className="icon-button" aria-label="Edit home" title="Edit home" onClick={() => setEditing(true)}>
+                {EDIT}
+              </button>
+            )}
             <button className="icon-button" aria-label="Settings" title="Settings" onClick={() => setView("settings")}>
               {GEAR}
             </button>
@@ -119,6 +155,23 @@ function App() {
 
       <UpdateNotice />
 
+      {editHome && !adding && (
+        <div className="row edit-bar">
+          <label className="row grow">
+            <span className="grow">Auto-arrange</span>
+            <input
+              type="checkbox"
+              checked={auto}
+              onChange={(e) => {
+                setAuto(e.target.checked);
+                if (e.target.checked) setBoard(pack(tiles));
+              }}
+            />
+          </label>
+          <button onClick={() => setAdding(true)}>Add tiles</button>
+        </div>
+      )}
+
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
       ) : view === "modules" ? (
@@ -131,9 +184,31 @@ function App() {
           <p className="hint">Pick the modules you want, and they'll show up here.</p>
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
+      ) : adding ? (
+        <AddTiles
+          enabled={enabled}
+          tiles={tiles}
+          onAdd={(id) => {
+            const { w, h } = newTile(id);
+            setBoard(add(tiles, id, w, h, auto));
+            setAdding(false);
+          }}
+          openModules={() => setView("modules")}
+        />
+      ) : tiles.length === 0 && !editing ? (
+        <div className="welcome">
+          <p className="hint">Your home is empty.</p>
+          <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
+        </div>
       ) : (
-        // shortcut: always the default board until step 4 saves layouts in settings.
-        <Board tiles={startingBoard(enabled)} open={(id) => setView(modules[id].category)} />
+        <Board
+          tiles={tiles}
+          open={(id) => setView(modules[id].category)}
+          editing={editing}
+          auto={auto}
+          onChange={setBoard}
+          onLongPress={() => setEditing(true)}
+        />
       )}
     </main>
   );

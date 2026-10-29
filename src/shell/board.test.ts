@@ -30,11 +30,19 @@ check("pack is stable", pack(board), "ac.. bbbb bbbb dd.. dd..");
 
 // Auto-arrange: dropping d on a's cell puts d first in the order.
 check("move, auto", move(board, "d", 0, 0, true), "ddac dd.. bbbb bbbb");
-// Free placement: c takes a's cell, and a steps aside to the nearest free one.
-check("move, free", move(board, "c", 0, 0, false), "ca.. bbbb bbbb dd.. dd..");
-// Free placement keeps gaps: b, in d's way, moves down and leaves a hole.
+// Free placement swaps: c dropped on a's cell, and a dropped on c's, trade places.
+check("move, free, swap", move(board, "c", 0, 0, false), "ca.. bbbb bbbb dd.. dd..");
+check("move, free, swap back", move(board, "a", 1, 0, false), "ca.. bbbb bbbb dd.. dd..");
+// b, in d's way, takes the spot d left; free placement keeps the gap that leaves.
 const gappy = move(board, "d", 2, 0, false);
-check("move, free, gap", gappy, "acdd ..dd bbbb bbbb");
+check("move, free, gap", gappy, "acdd ..dd .... bbbb bbbb");
+
+// A drag is a series of moves, each from the last. Dragging c onto d's bottom-left cell pushes d one
+// cell right (d doesn't fit where c was); moving c on to the cell above, which d left, leaves d
+// where it went.
+const pushed = move(board, "c", 0, 4, false);
+check("drag, push aside", pushed, "a... bbbb bbbb .dd. cdd.");
+check("drag, pushed tile stays", move(pushed, "c", 0, 3, false), "a... bbbb bbbb cdd. .dd.");
 
 // Keyboard: d one step earlier lands beside c.
 check("shift", shift(board, "d", -1), "acdd ..dd bbbb bbbb");
@@ -51,7 +59,7 @@ check("move to the edge", right, "a..c bbbb bbbb dd.. dd..");
 check("resize at the edge", resize(right, "c", 2, 1, false), "a.cc bbbb bbbb dd.. dd..");
 
 check("add, auto", add(board, "e", 1, 1, true), "ace. bbbb bbbb dd.. dd..");
-check("add, free, into a gap", add(gappy, "e", 2, 1, false), "acdd eedd bbbb bbbb");
+check("add, free, into a gap", add(gappy, "e", 2, 1, false), "acdd eedd .... bbbb bbbb");
 
 check("remove, auto", remove(board, "a", true), "c... bbbb bbbb dd.. dd..");
 check("remove, free", remove(board, "a", false), ".c.. bbbb bbbb dd.. dd..");

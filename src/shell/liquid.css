@@ -376,6 +376,77 @@ button.tile-title:hover {
   color: rgb(var(--ink) / 0.55);
 }
 
+/* ---- Home board: edit mode ------------------------------------------------------------- */
+
+/* Tiles show a dashed edge and stop working. The one under the pointer (or with the keyboard focus)
+   shows a remove badge (top left) and, if it comes in more than one size, a resize badge (bottom
+   right), just inside its corners. The one being dragged or focused gets a solid accent edge. */
+.edit-bar {
+  gap: 12px;
+}
+.board-slot {
+  position: relative;
+}
+.board-tile {
+  display: flex;
+}
+.board-tile > * {
+  flex: 1;
+  min-width: 0;
+}
+.board.editing .board-slot {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 18px;
+  outline: none;
+}
+.board.editing .board-tile {
+  border-radius: 18px;
+  outline: 1.5px dashed rgb(var(--ink) / 0.35);
+  outline-offset: 2px;
+}
+.board.editing .board-slot:focus-visible .board-tile,
+.board-slot.dragging .board-tile {
+  outline: 2px solid var(--accent);
+}
+.board-slot.dragging {
+  z-index: 1;
+  cursor: grabbing;
+}
+.board .tile-badge {
+  position: absolute;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 9px;
+  line-height: 20px;
+  text-align: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+}
+.board-slot:is(:hover, :focus-within):not(.dragging) .tile-badge {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tile-remove {
+  top: 4px;
+  left: 4px;
+}
+.tile-resize {
+  right: 4px;
+  bottom: 4px;
+}
+.look-windows .board.editing :is(.board-slot, .board-tile) {
+  border-radius: 8px;
+}
+
 h1 {
   font-family: var(--display);
   font-size: 20px;
