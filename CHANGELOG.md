@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **A customisable home board.** Home is now a grid of tiles you arrange yourself:
+  - Each module offers tiles in several sizes (1×1, 2×1, 4×1, 2×2, 4×2), and bigger ones do more. For example, the mixer goes from a mute button up to the master volume plus three apps, and Keep awake's 4×2 has its modes and timer.
+  - Edit with the pencil button, or hold a tile. Drag tiles (or move them with the arrow keys), change their size, remove them, or add more. Reset goes back to the default board.
+  - **Auto-arrange** fills every gap. Switch it off to keep tiles where you put them; they still move up to close space above them.
+  - Your layout is saved. Switching a module on adds its tiles; switching it off removes them.
+  - Updating from 0.1.0 gives you the new default board.
+- The panel no longer nudges itself when a setting other than its look is saved.
+
 ## 0.1.0 (2026-10-26)
 
 The first release.
