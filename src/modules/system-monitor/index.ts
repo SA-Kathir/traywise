@@ -7,7 +7,8 @@ const systemMonitor: ModuleUi = {
   category: "system",
   description: "CPU, memory, network, battery and disk.",
   idle: "Only while the panel is open",
-  Summary: lazy(() => import("./Panel").then((m) => ({ default: m.Summary }))),
+  tiles: { monitor: { name: "System monitor", sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"] } },
+  Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
 };
 

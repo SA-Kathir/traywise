@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { commands, events, type Target } from "../../bindings";
+import { Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
+import type { Size, TileProps } from "..";
 
 // Segoe Fluent Icons glyphs.
 const SPEAKER = String.fromCodePoint(0xe767);
@@ -13,30 +15,48 @@ const APP = String.fromCodePoint(0xecaa);
 /** At most one volume change per frame (~60 a second) while a slider is dragged. */
 const SEND_EVERY_MS = 16;
 
-const CHEVRON = String.fromCodePoint(0xe76c);
-
 const useMixer = () => useLive(commands.mixerState, events.mixerChanged);
 
-/** Home row: the master volume, and a way into the per-app volumes. */
-export function Summary({ open }: { open: () => void }) {
+/** How many apps each size has room for, under the master volume. */
+const APPS_SHOWN: Partial<Record<Size, number>> = { "2x2": 2, "4x2": 3 };
+
+/** Home tile: mute (1×1), the master volume, and at 2×2 and 4×2 the apps playing. */
+export function Tiles({ size, open }: TileProps) {
   const state = useMixer();
   if (!state) return null;
-  const playing = state.apps.filter((a) => !a.systemSounds).length;
+  const master = state.master;
+  if (size === "1x1")
+    return (
+      <Tile
+        size={size}
+        icon={master?.muted ? MUTED : SPEAKER}
+        label="Volume"
+        detail={master ? String(master.volume) : "No device"}
+        on={master?.muted}
+        onToggle={master ? () => commands.mixerSetMute("master", !master.muted) : open}
+      />
+    );
+  // Apps first, Windows' own sounds last.
+  const apps = state.apps.filter((a) => !a.systemSounds);
   return (
-    <section className="wide">
-      {state.master ? (
-        <Row name="Volume" glyph={DEVICE} volume={state.master.volume} muted={state.master.muted} target="master" />
+    <TileCard size={size} label="Volume" detail={apps.length === 0 ? "None playing" : `${apps.length} playing`} onOpen={open}>
+      {master ? (
+        <Row name="Master" glyph={DEVICE} volume={master.volume} muted={master.muted} target="master" />
       ) : (
         <p className="hint">No output device.</p>
       )}
-      <button className="link-row" onClick={open}>
-        <span className="grow">App volumes</span>
-        <span className="hint">{playing === 0 ? "None playing" : `${playing} playing`}</span>
-        <span className="icon" aria-hidden>
-          {CHEVRON}
-        </span>
-      </button>
-    </section>
+      {apps.slice(0, APPS_SHOWN[size] ?? 0).map((app) => (
+        <Row
+          key={app.pid}
+          name={app.name}
+          icon={app.icon}
+          glyph={APP}
+          volume={app.volume}
+          muted={app.muted}
+          target={{ app: app.pid }}
+        />
+      ))}
+    </TileCard>
   );
 }
 

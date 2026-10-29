@@ -1,10 +1,14 @@
 import { commands, events, type Battery } from "../../bindings";
 import { useLive } from "../../shell/useLive";
+import type { Size, TileProps } from "..";
 
 const useSample = () => useLive(commands.systemMonitorState, events.systemSampled);
 
-/** Home row: four readings at a glance; clicking opens the graphs. */
-export function Summary({ open }: { open: () => void }) {
+/** How many readings each size shows, in the order below. */
+const READINGS: Record<Size, number> = { "1x1": 1, "2x1": 2, "4x1": 4, "2x2": 4, "4x2": 4 };
+
+/** Home tile: readings at a glance (at 4×2, with the CPU and network graphs); clicking opens the page. */
+export function Tiles({ size, open }: TileProps) {
   const s = useSample();
   const ready = s !== null && s.memoryTotal > 0;
   const chips: [string, string][] = ready
@@ -16,13 +20,21 @@ export function Summary({ open }: { open: () => void }) {
       ]
     : [["–", "CPU"], ["–", "Memory"], ["–", "Download"], ["–", "Battery"]];
   return (
-    <button className="wide stats" onClick={open} title="Show graphs">
-      {chips.map(([value, label]) => (
-        <span key={label} className="stat-chip">
-          <span className="stat-chip-value">{value}</span>
-          <span className="stat-chip-label">{label}</span>
+    <button className={`tile stats size-${size}`} onClick={open} title="Show graphs">
+      <span className="stat-chips">
+        {chips.slice(0, READINGS[size]).map(([value, label]) => (
+          <span key={label} className="stat-chip">
+            <span className="stat-chip-value">{value}</span>
+            <span className="stat-chip-label">{label}</span>
+          </span>
+        ))}
+      </span>
+      {size === "4x2" && ready && (
+        <span className="stat-graphs">
+          <Graph values={s.history.map((p) => p.cpu)} max={100} />
+          <Graph values={s.history.map((p) => p.download + p.upload)} />
         </span>
-      ))}
+      )}
     </button>
   );
 }

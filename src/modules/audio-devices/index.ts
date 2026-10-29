@@ -7,7 +7,11 @@ const audioDevices: ModuleUi = {
   category: "sound",
   description: "Switch outputs, and mute every mic with a shortcut.",
   idle: "Listens for device changes",
-  Summary: lazy(() => import("./Panel").then((m) => ({ default: m.Summary }))),
+  tiles: {
+    output: { name: "Output", sizes: ["1x1", "2x1", "2x2"] },
+    mics: { name: "Microphones", sizes: ["1x1", "2x1"] },
+  },
+  Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
 };
 

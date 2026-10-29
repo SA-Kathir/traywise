@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { commands, events, type KeepAwakeState, type Mode } from "../../bindings";
-import { Tile } from "../../shell/Tile";
+import { Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import keepAwake from ".";
+import type { TileProps } from "..";
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -15,8 +16,18 @@ const STEPS = [1, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720];
 
 const useKeepAwake = () => useLive(commands.keepAwakeState, events.keepAwakeChanged);
 
-/** Home tile: switches keep-awake on (until turned off) or off. */
-export function Summary({ open }: { open: () => void }) {
+/** The 2×2 tile's choices. A timer started here isn't shown as picked (Windows only tells us when
+ *  it ends); the time left is in the title line instead. */
+const QUICK: { mode: Mode; label: string }[] = [
+  { mode: "off", label: "Off" },
+  { mode: "on", label: "On" },
+  { mode: { minutes: 60 }, label: "1 h" },
+  { mode: { minutes: 120 }, label: "2 h" },
+  { mode: "whilePluggedIn", label: "Plugged in" },
+];
+
+/** Home tile: switches keep-awake on (until turned off) or off; at 2×2, also timers and plugged-in. */
+export function Tiles({ size, open }: TileProps) {
   const state = useKeepAwake();
   const now = useNow(state?.endsAt != null);
   if (!state) return null;
@@ -30,8 +41,26 @@ export function Summary({ open }: { open: () => void }) {
         : state.active
           ? "On"
           : "Off";
+  if (size === "2x2")
+    return (
+      <TileCard size={size} label="Keep awake" onOpen={open}>
+        <span className="tile-detail">{detail}</span>
+        <div className="segmented tile-choices">
+          {QUICK.map(({ mode, label }) => (
+            <button
+              key={label}
+              className={typeof mode === "string" && state.mode === mode ? "on" : ""}
+              onClick={() => commands.keepAwakeSetMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </TileCard>
+    );
   return (
     <Tile
+      size={size}
       icon={keepAwake.icon}
       label="Keep awake"
       detail={detail}

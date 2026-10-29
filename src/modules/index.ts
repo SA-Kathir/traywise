@@ -14,7 +14,13 @@ export const categories = {
 };
 export type Category = keyof typeof categories;
 
-/** What the shell needs to show a module. Both parts are lazy: a disabled module's code never loads. */
+/** A tile's size on the home board, in grid cells: columns × rows. The board is 4 columns wide. */
+export type Size = "1x1" | "2x1" | "4x1" | "2x2" | "4x2";
+
+/** What a module's `Tiles` component is given: which of its tiles to draw, and at what size. */
+export type TileProps = { kind: string; size: Size; open: () => void };
+
+/** What the shell needs to show a module. The components are lazy: a disabled module's code never loads. */
 export type ModuleUi = {
   name: string;
   /** A Segoe Fluent Icons glyph. */
@@ -24,15 +30,17 @@ export type ModuleUi = {
   description: string;
   /** What it costs while nothing is happening, on the Modules page. */
   idle: string;
-  /** Its piece of the home view: tiles (`Tile`) or one full-width row (class `wide`). */
-  Summary: LazyExoticComponent<ComponentType<{ open: () => void }>>;
-  /** Its own page, opened from the summary. Quick toggles has none. */
+  /** The tiles it offers for the home board, by kind: a name, and the sizes it comes in, smallest
+   *  first (resizing cycles through them). Plain data, so listing them doesn't load the module. */
+  tiles: Record<string, { name: string; sizes: Size[] }>;
+  /** Draws one of its tiles. */
+  Tiles: LazyExoticComponent<ComponentType<TileProps>>;
+  /** Its own page, opened from its tiles. Quick toggles has none. */
   Panel?: LazyExoticComponent<ComponentType>;
 };
 
 /** Every module's UI, keyed by the ids Rust defines. TypeScript errors if one is missing.
- *  This order is the home view's, the tabs' and the Modules page's order: tiles first, then the
- *  full-width rows. */
+ *  This order is the tabs' and the Modules page's order. */
 export const modules: Record<ModuleId, ModuleUi> = {
   "keep-awake": keepAwake,
   "audio-devices": audioDevices,
@@ -40,3 +48,20 @@ export const modules: Record<ModuleId, ModuleUi> = {
   "volume-mixer": volumeMixer,
   "system-monitor": systemMonitor,
 };
+
+/** A tile on the board is "<module id>/<kind>", like "quick-toggles/dark": this is its module. */
+export const tileModule = (id: string) => id.slice(0, id.indexOf("/")) as ModuleId;
+
+/** A new user's board, in order; tiles of modules that are off are left out. Packed, it's:
+ *  Dark, Lock and the mixer (2×2) on top, Microphones and Desktop icons under the first two, then
+ *  Keep awake and Output side by side, and the system monitor across the bottom. */
+export const defaultBoard: [id: string, size: Size][] = [
+  ["quick-toggles/dark", "1x1"],
+  ["quick-toggles/lock", "1x1"],
+  ["volume-mixer/mixer", "2x2"],
+  ["audio-devices/mics", "1x1"],
+  ["quick-toggles/icons", "1x1"],
+  ["keep-awake/keep-awake", "2x1"],
+  ["audio-devices/output", "2x1"],
+  ["system-monitor/monitor", "4x2"],
+];

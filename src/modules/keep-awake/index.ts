@@ -7,7 +7,8 @@ const keepAwake: ModuleUi = {
   category: "system",
   description: "Stops your PC sleeping, for a while or until you say.",
   idle: "Listens for power changes",
-  Summary: lazy(() => import("./Panel").then((m) => ({ default: m.Summary }))),
+  tiles: { "keep-awake": { name: "Keep awake", sizes: ["1x1", "2x1", "2x2"] } },
+  Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
 };
 

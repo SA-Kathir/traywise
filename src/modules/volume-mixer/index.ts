@@ -7,7 +7,8 @@ const volumeMixer: ModuleUi = {
   category: "sound",
   description: "Master volume, plus volume and mute for each app.",
   idle: "Listens for volume changes",
-  Summary: lazy(() => import("./Panel").then((m) => ({ default: m.Summary }))),
+  tiles: { mixer: { name: "Volume mixer", sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"] } },
+  Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
 };
 

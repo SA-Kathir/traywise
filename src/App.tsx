@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category } from "./modules";
+import { Board, startingBoard } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage } from "./shell/Settings";
 import { Setup } from "./shell/Setup";
@@ -45,7 +46,7 @@ function App() {
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
 
-  // The registry's order, not the order modules were switched on in: tiles first, then rows.
+  // The registry's order, not the order modules were switched on in.
   const enabled = (Object.keys(modules) as ModuleId[]).filter((id) => settings.enabledModules.includes(id));
   // Categories with a page to show. Quick toggles has none, so it only appears on Home.
   const tabs = (Object.keys(categories) as Category[]).filter((c) =>
@@ -131,16 +132,8 @@ function App() {
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
       ) : (
-        <div className="home">
-          {enabled.map((id) => {
-            const { Summary } = modules[id];
-            return (
-              <Suspense key={id} fallback={null}>
-                <Summary open={() => setView(modules[id].category)} />
-              </Suspense>
-            );
-          })}
-        </div>
+        // shortcut: always the default board until step 4 saves layouts in settings.
+        <Board tiles={startingBoard(enabled)} open={(id) => setView(modules[id].category)} />
       )}
     </main>
   );

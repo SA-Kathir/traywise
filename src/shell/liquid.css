@@ -144,15 +144,27 @@ section,
     0 8px 24px rgba(0, 0, 0, 0.45); /* lift */
 }
 
-/* ---- Home view: tiles, then full-width rows ------------------------------------------- */
+/* ---- Home board ------------------------------------------------------------------------ */
 
-.home {
+/* The board's sizes, in one place for restyling. The panel's content is 328 px wide (360, less
+   its padding and the scrollbar's gutter), so 4 columns of 76 px with 8 px gaps make square cells.
+   The cards themselves are the glass cards above; --tile-* is what tiles add to them. */
+.board {
+  --cell: 76px;
+  --board-gap: 8px;
+  --tile-pad: 10px 12px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: var(--cell);
+  gap: var(--board-gap);
 }
-.home .wide {
-  grid-column: 1 / -1;
+.board-slot {
+  display: flex;
+  min-width: 0;
+}
+.board-slot > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .tile {
@@ -168,18 +180,17 @@ section,
 .tile.on .tile-detail {
   color: color-mix(in srgb, var(--on-accent) 75%, transparent);
 }
-/* The volume row on the home view: the mute button already shows it's sound. */
-.home .mixer-row .app-icon {
-  display: none;
-}
+/* A one-click tile. 2×1 and wider: the icon at the left, name and state beside it. 1×1: the icon
+   over the state, centred. */
 .tile-main {
   width: 100%;
-  min-height: 92px;
-  padding: 14px 34px 14px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  height: 100%;
+  padding: var(--tile-pad);
+  padding-right: 30px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  column-gap: 12px;
   text-align: left;
   border: none;
   border-radius: inherit;
@@ -187,12 +198,21 @@ section,
   box-shadow: none;
 }
 .tile-icon {
+  grid-row: span 2;
+  align-self: center;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 20px;
   line-height: 1;
-  /* Icon at the top, name and state at the bottom, like Windows' quick settings. */
-  margin-bottom: auto;
-  padding-bottom: 10px;
+}
+.size-1x1 .tile-main {
+  padding: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  row-gap: 6px;
+  text-align: center;
+}
+.size-1x1 .tile-icon {
+  grid-row: auto;
 }
 .tile-label {
   font-weight: 600;
@@ -222,6 +242,69 @@ section,
   background: rgb(var(--ink) / 0.16);
 }
 
+/* A tile with controls: a title line (a link to the module's page), then its contents. */
+.tile-card {
+  padding: var(--tile-pad);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
+.size-4x2.tile-card {
+  gap: 4px;
+}
+.tile-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+button.tile-title:hover {
+  background: transparent;
+  color: var(--accent);
+}
+.tile-title .icon {
+  margin: 0;
+  font-size: 10px;
+}
+/* The mixer's rows keep the slider long: names only where there's room, the device icon not at
+   2×1, and at 2×2 no number (the slider shows it). */
+.tile-card:not(.size-4x2, .size-4x1) .mixer-name,
+.tile-card.size-2x1 .app-icon,
+.tile-card.size-2x2 .mixer-value {
+  display: none;
+}
+.tile-card .mixer-row + .mixer-row {
+  margin-top: 0;
+}
+/* Keep awake's choices at 2×2: two to a row, the last across. */
+.segmented.tile-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: auto;
+}
+.tile-choices button {
+  padding: 4px 0;
+  font-size: 12px;
+}
+.tile-choices button:last-child {
+  grid-column: 1 / -1;
+}
+/* Output's device list at 2×2: the first few; the page has them all. */
+.tile-card .segmented.vertical {
+  overflow: hidden;
+}
+.tile-card .segmented.vertical button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
 .link-row {
   width: 100%;
   margin-top: 8px;
@@ -241,11 +324,13 @@ section,
   font-size: 10px;
 }
 
+/* System monitor: its readings (one to four, two to a row at 2×2), and at 4×2 the graphs. */
 .stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 16px 6px;
-  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--tile-pad);
 }
 .stats:hover {
   background: linear-gradient(
@@ -253,6 +338,21 @@ section,
     color-mix(in srgb, var(--c3) 50%, #121214),
     color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
   );
+}
+.stat-chips {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.size-2x2 .stat-chips {
+  grid-auto-flow: row;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 14px;
+}
+.stat-graphs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 .stat-chip {
   display: flex;
@@ -267,6 +367,9 @@ section,
   font-weight: 300;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.size-1x1 .stat-chip-value {
+  font-size: 18px;
 }
 .stat-chip-label {
   font-size: 11px;

@@ -7,7 +7,12 @@ const quickToggles: ModuleUi = {
   category: "tools",
   description: "Dark mode, desktop icons and lock, one click each.",
   idle: "Nothing at rest",
-  Summary: lazy(() => import("./Tiles")),
+  tiles: {
+    dark: { name: "Dark mode", sizes: ["1x1", "2x1"] },
+    icons: { name: "Desktop icons", sizes: ["1x1", "2x1"] },
+    lock: { name: "Lock", sizes: ["1x1", "2x1"] },
+  },
+  Tiles: lazy(() => import("./Tiles")),
 };
 
 export default quickToggles;
