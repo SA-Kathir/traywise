@@ -421,6 +421,7 @@ button.tile-title:hover {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   opacity: 0;
   pointer-events: none;
+  transition: opacity 120ms ease;
 }
 .board-slot:is(:hover, :focus-within):not(.dragging) .tile-badge {
   opacity: 1;

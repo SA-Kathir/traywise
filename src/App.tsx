@@ -24,6 +24,8 @@ function App() {
   // Edit mode on Home, and its list of tiles to add.
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  // Reset asks once more before it throws the layout away.
+  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
@@ -169,6 +171,17 @@ function App() {
               }
             />
           </label>
+          <button
+            className={confirmReset ? "on" : ""}
+            onBlur={() => setConfirmReset(false)}
+            onClick={() => {
+              if (!confirmReset) return setConfirmReset(true);
+              setConfirmReset(false);
+              save({ ...settings, board: null, autoArrange: true }); // back to the default board
+            }}
+          >
+            {confirmReset ? "Reset board?" : "Reset"}
+          </button>
           <button onClick={() => setAdding(true)}>Add tiles</button>
         </div>
       )}
