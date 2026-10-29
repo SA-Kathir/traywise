@@ -16,12 +16,14 @@ jobs:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
       # Type-checks with tsc, then builds the UI into dist/ (the Rust build embeds it).
       - run: pnpm build
+      # The UI's logic tests (Node 24 runs TypeScript directly).
+      - run: pnpm test
 
       - uses: dtolnay/rust-toolchain@stable
         with:
