@@ -91,6 +91,18 @@ export type Battery = {
 	secondsLeft: number | null,
 };
 
+/**
+ *  A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
+ *  `id` is "<module id>/<kind>"; the kinds are the UI's (`tiles` in src/modules), so Rust doesn't check them.
+ */
+export type BoardTile = {
+	id: string,
+	w: number,
+	h: number,
+	x: number,
+	y: number,
+};
+
 /**  Sent to the UI whenever the state changes. */
 export type KeepAwakeChanged = KeepAwakeState;
 
@@ -196,6 +208,10 @@ export type Settings = {
 	checkUpdates: boolean,
 	/**  Whether first-run setup (pick a look, then modules) is done. */
 	onboarded: boolean,
+	/**  The home board's tiles. None until it's first changed: the UI shows its default board. */
+	board: BoardTile[] | null,
+	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
+	autoArrange: boolean,
 };
 
 export type ShortcutStatus = {

@@ -1,7 +1,7 @@
 import { Suspense, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
-import { COLUMNS, move, pack, remove, resize, shift, type Placed } from "./board";
+import { add, COLUMNS, move, pack, remove, resize, shift, type Placed } from "./board";
 
 // Segoe Fluent Icons glyphs.
 const MINUS = String.fromCodePoint(0xe738);
@@ -27,6 +27,37 @@ export function startingBoard(enabled: ModuleId[]): Placed[] {
 /** A tile not yet on the board, at its size on the default board (or its smallest). */
 export function newTile(id: string): Placed {
   return placed(id, defaultBoard.find(([d]) => d === id)?.[1] ?? info(id).sizes[0]);
+}
+
+/** The board to show: the saved one (or the default, before it's first changed), less any tile
+ *  this version doesn't know (a hand-edited or newer settings file) or whose module is off. */
+export function boardToShow(saved: Placed[] | null, enabled: ModuleId[], auto: boolean): Placed[] {
+  if (!saved) return startingBoard(enabled);
+  const seen = new Set<string>();
+  const known = saved.filter((t) => {
+    const module = tileModule(t.id);
+    const ok =
+      enabled.includes(module) && modules[module].tiles[kindOf(t.id)]?.sizes.includes(sizeOf(t)) && !seen.has(t.id);
+    seen.add(t.id);
+    return ok;
+  });
+  // Auto-arrange closes any gap a skipped tile left; free placement keeps where things are.
+  return auto ? pack(known) : known;
+}
+
+/** After modules are switched on or off: the tiles of those switched off go, and those switched on
+ *  get their default tiles. Nothing to do before the board is first changed (it's the default). */
+export function withModules(saved: Placed[] | null, before: ModuleId[], after: ModuleId[], auto: boolean) {
+  if (!saved) return null;
+  let board = saved.filter((t) => after.includes(tileModule(t.id)));
+  for (const [id] of defaultBoard) {
+    const module = tileModule(id);
+    if (after.includes(module) && !before.includes(module) && !board.some((t) => t.id === id)) {
+      const { w, h } = newTile(id);
+      board = add(board, id, w, h, auto);
+    }
+  }
+  return auto ? pack(board) : board;
 }
 
 function placed(id: string, size: Size): Placed {

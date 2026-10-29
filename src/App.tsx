@@ -1,11 +1,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
-import { categories, modules, tileModule, type Category } from "./modules";
+import { categories, modules, type Category } from "./modules";
 import { AddTiles } from "./shell/AddTiles";
 import { add, pack, type Placed } from "./shell/board";
-import { Board, newTile, startingBoard } from "./shell/HomeBoard";
+import { Board, boardToShow, newTile } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
-import { SettingsPage } from "./shell/Settings";
+import { SettingsPage, useSave } from "./shell/Settings";
 import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
@@ -21,9 +21,6 @@ function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
   const [view, setView] = useState<"home" | Category | "settings" | "modules">("home");
-  // shortcut: the board and auto-arrange live here until step 4 saves them in settings.
-  const [board, setBoard] = useState<Placed[] | null>(null);
-  const [auto, setAuto] = useState(true);
   // Edit mode on Home, and its list of tiles to add.
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -64,6 +61,8 @@ function App() {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
 
+  const { save, error } = useSave({ settings: settings!, onChange: setSettings });
+
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
 
@@ -73,7 +72,10 @@ function App() {
   const tabs = (Object.keys(categories) as Category[]).filter((c) =>
     enabled.some((id) => modules[id].category === c && modules[id].Panel),
   );
-  const tiles = (board ?? startingBoard(enabled)).filter((t) => enabled.includes(tileModule(t.id)));
+  const auto = settings.autoArrange;
+  const tiles = boardToShow(settings.board, enabled, auto);
+  // Every change to the board is saved straight away.
+  const setBoard = (board: Placed[]) => save({ ...settings, board });
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
@@ -162,10 +164,9 @@ function App() {
             <input
               type="checkbox"
               checked={auto}
-              onChange={(e) => {
-                setAuto(e.target.checked);
-                if (e.target.checked) setBoard(pack(tiles));
-              }}
+              onChange={(e) =>
+                save({ ...settings, autoArrange: e.target.checked, board: e.target.checked ? pack(tiles) : tiles })
+              }
             />
           </label>
           <button onClick={() => setAdding(true)}>Add tiles</button>
@@ -210,6 +211,7 @@ function App() {
           onLongPress={() => setEditing(true)}
         />
       )}
+      {view === "home" && error && <p className="error">{error}</p>}
     </main>
   );
 }

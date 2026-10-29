@@ -1,5 +1,6 @@
 import type { ModuleId, Settings } from "../bindings";
 import { categories, modules, type Category } from "../modules";
+import { withModules } from "./HomeBoard";
 import { useSave } from "./Settings";
 
 const MODULE_IDS = Object.keys(modules) as ModuleId[];
@@ -11,9 +12,16 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
   const on = settings.enabledModules;
   const allOn = MODULE_IDS.every((m) => on.includes(m));
 
+  /** Saves which modules are on; the home board loses the tiles of those switched off and gets the
+   *  default tiles of those switched on. */
+  function saveOn(enabledModules: ModuleId[]) {
+    const board = withModules(settings.board, on, enabledModules, settings.autoArrange);
+    save({ ...settings, enabledModules, board });
+  }
+
   function toggle(id: ModuleId, enable: boolean) {
-    // Keep the registry's order, so the home view doesn't reshuffle.
-    save({ ...settings, enabledModules: MODULE_IDS.filter((m) => (m === id ? enable : on.includes(m))) });
+    // Keep the registry's order, so the tabs don't reshuffle.
+    saveOn(MODULE_IDS.filter((m) => (m === id ? enable : on.includes(m))));
   }
 
   return (
@@ -31,7 +39,7 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
           ref={(box) => {
             if (box) box.indeterminate = !allOn && on.length > 0;
           }}
-          onChange={(e) => save({ ...settings, enabledModules: e.target.checked ? MODULE_IDS : [] })}
+          onChange={(e) => saveOn(e.target.checked ? MODULE_IDS : [])}
         />
       </label>
       {(Object.keys(categories) as Category[]).map((c) => (

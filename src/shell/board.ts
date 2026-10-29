@@ -1,3 +1,5 @@
+import type { BoardTile } from "../bindings.ts";
+
 // The home board: tiles on a grid four cells wide that grows downward. Pure functions, tested in
 // board.test.ts. Every function returns the tiles in reading order (top to bottom, left to right),
 // which is also their order on screen, for Tab and screen readers.
@@ -10,8 +12,8 @@
 
 export const COLUMNS = 4;
 
-/** A tile on the board: `w` × `h` cells, with its top-left cell at column `x`, row `y`. */
-export type Placed = { id: string; w: number; h: number; x: number; y: number };
+/** A tile on the board: `w` × `h` cells, with its top-left cell at column `x`, row `y` (saved as is in settings). */
+export type Placed = BoardTile;
 
 const byPosition = (a: Placed, b: Placed) => a.y - b.y || a.x - b.x;
 

@@ -29,6 +29,21 @@ pub struct Settings {
     pub check_updates: bool,
     /// Whether first-run setup (pick a look, then modules) is done.
     pub onboarded: bool,
+    /// The home board's tiles. None until it's first changed: the UI shows its default board.
+    pub board: Option<Vec<BoardTile>>,
+    /// Home board: tiles fill gaps (true), or stay where they're put (false).
+    pub auto_arrange: bool,
+}
+
+/// A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
+/// `id` is "<module id>/<kind>"; the kinds are the UI's (`tiles` in src/modules), so Rust doesn't check them.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+pub struct BoardTile {
+    pub id: String,
+    pub w: u32,
+    pub h: u32,
+    pub x: u32,
+    pub y: u32,
 }
 
 impl Default for Settings {
@@ -43,6 +58,8 @@ impl Default for Settings {
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
+            board: None,
+            auto_arrange: true,
         }
     }
 }
@@ -176,6 +193,8 @@ mod tests {
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
+            board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
+            auto_arrange: false,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");
