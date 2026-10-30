@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Open the panel from the right edge of the screen**: rest the mouse on the middle of the edge and it slides in, then closes when you move away. Optional small handle. Turn it on in Settings › Opening.
 - **Transparent glass adjusts to what's behind it**: more solid over dark wallpapers, lighter over bright ones. As the panel opens, Traywise measures only the brightness behind it (an 8 × 8 sample, deleted at once).
 - Now playing shows a browser's own icon instead of the video's frame, and a music note when there's no picture.
 - The picked tab is shown by its icon in the accent colour.
