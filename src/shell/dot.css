@@ -1090,3 +1090,7 @@
 .look-dot .setting.module .module-icon {
   background: var(--tw-control-track);
 }
+/* A wide countdown runs the full width: keep clear of the details chevron. */
+.look-dot .tile:not(.size-1x1):has(.tile-detail .num):has(.tile-more) .tile-main {
+  padding-right: 24px;
+}
