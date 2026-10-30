@@ -40,8 +40,22 @@ Rules:
 - Its UI is lazy-loaded, so a disabled module's code isn't loaded.
 - Modules are built in. No third-party plugins.
 
+## Branches
+
+| Branch | Holds | Who writes to it |
+|---|---|---|
+| `main` | Released versions only. Every commit on it is a release, tagged `vX.Y.Z`. | Release merges from `develop` only |
+| `develop` | The next release, as it comes together | Merged pull requests only |
+| `feature/<name>` | One feature or module | You, branched from `develop` |
+| `fix/<name>` | One bug fix | You, branched from `develop` |
+
+- Branch from `develop`, and open your pull request against `develop`.
+- **To release:** merge `develop` into `main`, then tag the merge `vX.Y.Z`. The tag triggers the release build.
+- **Urgent fix for a released version:** branch `fix/<name>` from `main`, release it from `main` as a patch, then merge `main` back into `develop`.
+
 ## Pull requests
 
+- Target `develop`, never `main`.
 - Keep them small: one module or one concern per PR.
 - Explain what changes for the user, and how you tested it on Windows 11.
 - By contributing, you agree your work is licensed under GPL-3.0-or-later.
