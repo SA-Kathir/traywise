@@ -251,9 +251,6 @@ section,
   gap: 6px;
   overflow: hidden;
 }
-.size-4x2.tile-card {
-  gap: 4px;
-}
 .tile-title {
   display: flex;
   align-items: center;
@@ -272,10 +269,6 @@ button.tile-title:hover {
 .tile-title .icon {
   margin: 0;
   font-size: 10px;
-}
-/* Keep awake at 4×2: the page's modes and timer, a little tighter. */
-.tile-card .segmented button {
-  padding: 5px 0;
 }
 /* Output's device list at 2×2: the first few; the page has them all. */
 .tile-card .segmented.vertical {
