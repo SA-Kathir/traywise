@@ -4,6 +4,7 @@ import { ModulesPage } from "./ModulesPage";
 import { useSave } from "./Settings";
 
 const LOOKS: { id: Look; label: string; detail: string }[] = [
+  { id: "dot", label: "Dot", detail: "Monochrome tiles over a dot grid, with one accent colour. Follows light and dark mode." },
   { id: "liquid", label: "Liquid", detail: "Glass cards over a soft colour you pick." },
   { id: "windows", label: "Windows", detail: "Flat, like Windows' own flyouts. Follows light and dark mode." },
 ];

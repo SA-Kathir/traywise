@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { commands, type Look, type Preset, type Settings } from "../bindings";
+import { commands, type Accent, type Look, type Preset, type Settings } from "../bindings";
 import { modules } from "../modules";
 
 const LOOKS: { id: Look; label: string }[] = [
+  { id: "dot", label: "Dot" },
   { id: "liquid", label: "Liquid" },
   { id: "windows", label: "Windows" },
 ];
@@ -14,6 +15,14 @@ const PRESETS: { id: Preset; label: string }[] = [
   { id: "plum", label: "Plum" },
   { id: "ember", label: "Ember" },
   { id: "rose", label: "Rose" },
+];
+
+const ACCENTS: { id: Accent; label: string }[] = [
+  { id: "red", label: "Red" },
+  { id: "amber", label: "Amber" },
+  { id: "violet", label: "Violet" },
+  { id: "blue", label: "Blue" },
+  { id: "green", label: "Green" },
 ];
 
 // Segoe Fluent Icons glyph.
@@ -82,6 +91,32 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
             </button>
           ))}
         </div>
+        {settings.look === "dot" && (
+          <>
+            <div className="swatches" role="radiogroup" aria-label="Accent">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.id}
+                  role="radio"
+                  aria-checked={settings.accent === a.id}
+                  className={settings.accent === a.id ? "on" : ""}
+                  onClick={() => save({ ...settings, accent: a.id })}
+                >
+                  {/* Its own accent class, so the swatch shows that colour. */}
+                  <span className={`swatch dot-swatch accent-${a.id}`} aria-hidden />
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <h2>Background</h2>
+            <Choice
+              label="Background"
+              options={["Dots", "Plain"]}
+              value={settings.plainBackground}
+              onChange={(plainBackground) => save({ ...settings, plainBackground })}
+            />
+          </>
+        )}
         {/* The Windows look uses Windows' own colours instead. */}
         {settings.look === "liquid" && (
           <div className="swatches" role="radiogroup" aria-label="Colour">

@@ -316,7 +316,7 @@
 /* Rows inside a card reach its edges, like the Figma list rows. */
 .look-dot section > :is(.link-row, .module-row) {
   margin-inline: -8px;
-  width: calc(100% + 16px);
+  width: auto;
 }
 .look-dot .badge {
   background: var(--tw-control-track);
@@ -666,6 +666,7 @@
 }
 .look-dot .tray .link-row {
   margin-inline: -8px;
+  width: auto;
 }
 .look-dot .tray .link-row:disabled {
   opacity: 0.4;
@@ -790,4 +791,36 @@
 /* Room under the board for it. */
 .look-dot .board.editing {
   margin-bottom: 48px;
+}
+
+/* ---- Settings and first run --------------------------------------------------------------- */
+
+/* Accent swatches: a dot of each colour. */
+.dot-swatch {
+  border-radius: 50%;
+  background: var(--tw-accent-base);
+  box-shadow: none;
+}
+.look-dot .swatches button {
+  border-radius: var(--tw-radius-md);
+}
+.look-dot .looks button {
+  border-radius: var(--tw-radius-lg);
+}
+.look-dot .swatches button {
+  padding: 0 10px;
+}
+.look-dot .looks button {
+  padding: 14px 16px;
+}
+.look-dot .looks button.on .tile-detail {
+  color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
+}
+/* The name, large, on the welcome and first-run screens: the wordmark. */
+.look-dot .welcome-name {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 40px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
