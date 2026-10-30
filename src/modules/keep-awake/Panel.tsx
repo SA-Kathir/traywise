@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { commands, events, type KeepAwakeState, type Mode } from "../../bindings";
-import { Tile, TileCard } from "../../shell/Tile";
+import { Num, Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import keepAwake from ".";
 import type { TileProps } from "..";
@@ -104,7 +104,7 @@ function Controls({ state }: { state: KeepAwakeState }) {
           onClick={() => commands.keepAwakeSetMode(left === null ? { minutes } : "off")}
           title={left === null ? "Start the timer" : "Stop the timer"}
         >
-          {left === null ? `Timer: ${duration(minutes)}` : `${clock(left)} left`}
+          {left === null ? `Timer: ${duration(minutes)}` : <Num text={`${clock(left)} left`} />}
         </button>
         <button aria-label="More time" onClick={() => step(1)}>
           +
