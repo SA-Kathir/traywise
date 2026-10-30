@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Transparent glass adjusts to what's behind it**: more solid over dark wallpapers, lighter over bright ones. As the panel opens, Traywise measures only the brightness behind it (an 8 × 8 sample, deleted at once).
+- Now playing shows a browser's own icon instead of the video's frame, and a music note when there's no picture.
+- The picked tab is shown by its icon in the accent colour.
+- System monitor: Download and Upload tiles, and a tidier picker for the wide tile.
+- The bundled fonts' licences are installed with the app.
 - **The Dot look's words are in OCR-A**, a monospaced, machine-readable typeface, lighter than before, beside the dot-matrix numbers.
 - **New modules: Wi-Fi and Bluetooth**, with their own Connect tab. Wi-Fi shows the network you're on and lets you join another, typing a new network's password right there. Bluetooth connects and disconnects headphones and speakers. Their tiles go up to 2×2 with the network or device name. New boards start with them; Lock and Desktop icons are in Add tiles.
 - **Tiles follow the design** at every size: volume (a level-filled 1×1, a bar with the speaker in it, the apps beside it at 4×2), separate CPU and Memory tiles with clock speed and total memory, a wide tile with any two of CPU, Memory, Download and Upload (picked on the System page), and Keep awake's 2×2 ring with 15 min, 1 hour and ∞ shortcuts.
