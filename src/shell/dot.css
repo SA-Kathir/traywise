@@ -900,11 +900,10 @@
 
 /* ---- Now playing --------------------------------------------------------------------------- */
 
-/* No cover art: a square of dots, as in Figma. */
+/* No picture: a music note on the track colour. */
 .look-dot span.media-art {
-  background:
-    radial-gradient(circle, var(--tw-text-tertiary) 1px, transparent 1.5px) 0 0 / 8px 8px,
-    var(--tw-control-track);
+  background: var(--tw-control-track);
+  color: var(--tw-text-tertiary);
 }
 .look-dot .media-art {
   border-radius: var(--tw-radius-md);

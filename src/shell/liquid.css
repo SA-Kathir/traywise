@@ -989,6 +989,11 @@ button.primary:hover {
 }
 .media-art {
   flex: none;
+  display: grid;
+  place-items: center;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 22px;
+  color: rgb(var(--ink) / 0.5);
   width: 64px;
   height: 64px;
   border-radius: 12px;

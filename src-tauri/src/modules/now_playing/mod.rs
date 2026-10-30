@@ -181,6 +181,13 @@ fn name_from_app_id(id: &str) -> String {
     if name.is_empty() { id.to_string() } else { name.to_string() }
 }
 
+/// Browsers, by their app ids ("Chrome", "MSEdge", "TheBrowserCompany.Arc_…"). Firefox's id is a
+/// hash, so it isn't recognised and keeps the video's frame.
+fn is_browser(app_id: &str) -> bool {
+    let id = app_id.to_ascii_lowercase();
+    ["chrome", "msedge", "thebrowsercompany", "brave", "opera", "vivaldi"].iter().any(|b| id.contains(b))
+}
+
 /// Keys for sessions in Windows' order: the app id, with `#2`, `#3` for repeats.
 fn keys<'a>(app_ids: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut seen: Vec<&str> = Vec::new();
@@ -212,6 +219,15 @@ mod tests {
         assert_eq!(name_from_app_id("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"), "ZuneMusic");
         assert_eq!(name_from_app_id("Chrome"), "Chrome");
         assert_eq!(name_from_app_id(""), "");
+    }
+
+    #[test]
+    fn browsers() {
+        assert!(is_browser("Chrome"));
+        assert!(is_browser("MSEdge"));
+        assert!(is_browser("TheBrowserCompany.Arc_ttt1ap7aakyb4!Arc"));
+        assert!(!is_browser("Spotify.exe"));
+        assert!(!is_browser("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"));
     }
 
     #[test]

@@ -13,11 +13,12 @@ use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
 };
 use windows::Media::MediaPlaybackAutoRepeatMode;
-use windows::Storage::Streams::DataReader;
-use windows::core::{HSTRING, Result};
+use windows::Foundation::Size;
+use windows::Storage::Streams::{DataReader, IRandomAccessStreamReference};
+use windows::core::{HSTRING, Interface, Result};
 
 use super::{
-    Abilities, MediaAction, MediaSession, Msg, NowPlayingChanged, NowPlayingState, Repeat, Shared, keys, name_from_app_id,
+    Abilities, MediaAction, MediaSession, Msg, NowPlayingChanged, NowPlayingState, Repeat, Shared, is_browser, keys, name_from_app_id,
     ms, unix_ms,
 };
 use crate::audio::with_com;
@@ -166,9 +167,13 @@ fn read(w: &Watched, artwork: &mut HashMap<String, Option<String>>) -> Result<Me
     let id = session.SourceAppUserModelId()?;
     let media = session.TryGetMediaPropertiesAsync()?.join()?;
     let (title, artist, album) = (media.Title()?.to_string(), media.Artist()?.to_string(), media.AlbumTitle()?.to_string());
+    // A browser's picture is a frame of the video: its own icon reads better there.
     let art = artwork
         .entry(w.key.clone())
-        .or_insert_with(|| media.Thumbnail().ok().and_then(|thumb| read_artwork(&thumb).ok().flatten()))
+        .or_insert_with(|| {
+            let picture = if is_browser(&id.to_string()) { app_logo(&id) } else { media.Thumbnail().ok() };
+            picture.and_then(|p| read_artwork(&p).ok().flatten())
+        })
         .clone();
 
     let playback = session.GetPlaybackInfo()?;
@@ -206,6 +211,14 @@ fn read(w: &Watched, artwork: &mut HashMap<String, Option<String>>) -> Result<Me
     })
 }
 
+/// The app's icon as Windows has it (Start menu apps; plain .exe apps have none here).
+fn app_logo(id: &HSTRING) -> Option<IRandomAccessStreamReference> {
+    let logo = AppInfo::GetFromAppUserModelId(id)
+        .and_then(|info| info.DisplayInfo())
+        .and_then(|d| d.GetLogo(Size { Width: 256.0, Height: 256.0 }));
+    logo.and_then(|l| l.cast()).ok()
+}
+
 /// The name Windows shows for an app, or one made from its id (plain .exe apps have no entry).
 fn app_name(id: &HSTRING) -> String {
     AppInfo::GetFromAppUserModelId(id)
@@ -216,7 +229,7 @@ fn app_name(id: &HSTRING) -> String {
 }
 
 /// The cover art as a data URL, or None if there is none or it's too big.
-fn read_artwork(thumb: &windows::Storage::Streams::IRandomAccessStreamReference) -> Result<Option<String>> {
+fn read_artwork(thumb: &IRandomAccessStreamReference) -> Result<Option<String>> {
     let stream = thumb.OpenReadAsync()?.join()?;
     let size = stream.Size()?;
     if size == 0 || size > MAX_ARTWORK_BYTES {

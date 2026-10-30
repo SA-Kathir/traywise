@@ -129,8 +129,14 @@ export default function Panel() {
 }
 
 function Artwork({ s }: { s: MediaSession }) {
-  // Without cover art, an empty square (the Dot look fills it with dots).
-  return s.artwork ? <img className="media-art" src={s.artwork} alt="" /> : <span className="media-art" aria-hidden />;
+  // Without a picture, a music note.
+  return s.artwork ? (
+    <img className="media-art" src={s.artwork} alt="" />
+  ) : (
+    <span className="media-art" aria-hidden>
+      {nowPlaying.icon}
+    </span>
+  );
 }
 
 function Button(props: { s: MediaSession; glyph: string; label: string; action: MediaAction; enabled: boolean; on?: boolean }) {
