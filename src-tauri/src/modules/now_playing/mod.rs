@@ -91,7 +91,9 @@ pub enum MediaAction {
 enum Msg {
     /// An app started or stopped having media.
     SessionsChanged,
-    /// Something about a session changed (track, play state, position).
+    /// A session's track (title, artist, cover art) changed: the key of its session.
+    MediaChanged(String),
+    /// Something else changed (play state, position, which session is current).
     Changed,
     Visible(bool),
     Control(String, MediaAction),

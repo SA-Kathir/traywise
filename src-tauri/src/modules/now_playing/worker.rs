@@ -48,8 +48,9 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
         let on_current = manager.CurrentSessionChanged(&handler(&tx, || Msg::Changed))?;
 
         let mut watched = watch(&manager, &tx)?;
-        // The cover art of each session's current track, read once per track: (track, data URL).
-        let mut artwork: HashMap<String, (String, Option<String>)> = HashMap::new();
+        // Each session's cover art, read again after the session says its media changed. (Not
+        // kept per track: browsers send the new title first and the new picture a moment later.)
+        let mut artwork: HashMap<String, Option<String>> = HashMap::new();
         let mut visible = false;
         let mut dirty = true;
         loop {
@@ -61,6 +62,11 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
                         eprintln!("now-playing: couldn't list the apps playing media: {e}");
                         Vec::new()
                     });
+                    artwork.clear(); // keys follow Windows' order, which may have shifted
+                    dirty = true;
+                }
+                Msg::MediaChanged(key) => {
+                    artwork.remove(&key);
                     dirty = true;
                 }
                 Msg::Changed => dirty = true,
@@ -86,7 +92,7 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
 }
 
 /// An event handler that only tells the worker; the work happens on its thread.
-fn handler<S, A>(tx: &Sender<Msg>, msg: fn() -> Msg) -> TypedEventHandler<S, A>
+fn handler<S, A>(tx: &Sender<Msg>, msg: impl Fn() -> Msg + Send + Sync + 'static) -> TypedEventHandler<S, A>
 where
     S: windows::core::RuntimeType + 'static,
     A: windows::core::RuntimeType + 'static,
@@ -108,7 +114,10 @@ fn watch(manager: &SessionManager, tx: &Sender<Msg>) -> Result<Vec<Watched>> {
         .zip(keys)
         .map(|(session, key)| {
             let tokens = [
-                session.MediaPropertiesChanged(&handler(tx, || Msg::Changed))?,
+                session.MediaPropertiesChanged(&handler(tx, {
+                    let key = key.clone();
+                    move || Msg::MediaChanged(key.clone())
+                }))?,
                 session.PlaybackInfoChanged(&handler(tx, || Msg::Changed))?,
                 session.TimelinePropertiesChanged(&handler(tx, || Msg::Changed))?,
             ];
@@ -121,7 +130,7 @@ fn publish(
     app: &AppHandle,
     manager: &SessionManager,
     watched: &[Watched],
-    artwork: &mut HashMap<String, (String, Option<String>)>,
+    artwork: &mut HashMap<String, Option<String>>,
 ) {
     let sessions: Vec<MediaSession> = watched
         .iter()
@@ -134,10 +143,14 @@ fn publish(
         })
         .collect();
     artwork.retain(|key, _| watched.iter().any(|w| &w.key == key));
-    // Windows' current session, matched by app: its object isn't the same one GetSessions gives.
-    let current_app = manager.GetCurrentSession().and_then(|s| s.SourceAppUserModelId()).ok();
-    let current = current_app.and_then(|id| {
-        watched.iter().find(|w| w.session.SourceAppUserModelId().is_ok_and(|s| s == id)).map(|w| w.key.clone())
+    // Windows' current session: the same object if GetSessions gave it, else the first of its app.
+    let current = manager.GetCurrentSession().ok().and_then(|c| {
+        let id = c.SourceAppUserModelId().ok();
+        watched
+            .iter()
+            .find(|w| w.session == c)
+            .or_else(|| watched.iter().find(|w| w.session.SourceAppUserModelId().ok() == id))
+            .map(|w| w.key.clone())
     });
     let state = NowPlayingState { sessions, current };
     let shared = app.state::<Shared>();
@@ -148,20 +161,15 @@ fn publish(
     }
 }
 
-fn read(w: &Watched, artwork: &mut HashMap<String, (String, Option<String>)>) -> Result<MediaSession> {
+fn read(w: &Watched, artwork: &mut HashMap<String, Option<String>>) -> Result<MediaSession> {
     let session = &w.session;
     let id = session.SourceAppUserModelId()?;
     let media = session.TryGetMediaPropertiesAsync()?.join()?;
     let (title, artist, album) = (media.Title()?.to_string(), media.Artist()?.to_string(), media.AlbumTitle()?.to_string());
-    let track = format!("{title}\n{artist}\n{album}");
-    let art = match artwork.get(&w.key) {
-        Some((t, art)) if *t == track => art.clone(),
-        _ => {
-            let art = media.Thumbnail().ok().and_then(|thumb| read_artwork(&thumb).ok().flatten());
-            artwork.insert(w.key.clone(), (track, art.clone()));
-            art
-        }
-    };
+    let art = artwork
+        .entry(w.key.clone())
+        .or_insert_with(|| media.Thumbnail().ok().and_then(|thumb| read_artwork(&thumb).ok().flatten()))
+        .clone();
 
     let playback = session.GetPlaybackInfo()?;
     let controls = playback.Controls()?;

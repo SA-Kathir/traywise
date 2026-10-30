@@ -1100,3 +1100,7 @@ button.media-text:hover {
   fill: currentColor;
   vertical-align: -0.125em;
 }
+.media-page > .hint {
+  font-size: 12px;
+  text-align: center;
+}

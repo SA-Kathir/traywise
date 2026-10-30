@@ -96,27 +96,34 @@ export default function Panel() {
       </div>
       <Progress s={s} times />
       <div className="media-row">
-        <Button
-          s={s}
-          glyph={SHUFFLE}
-          label={s.shuffle ? "Shuffle on" : "Shuffle off"}
-          action={{ shuffle: !s.shuffle }}
-          enabled={s.can.shuffle && s.shuffle !== null}
-          on={s.shuffle === true}
-        />
+        {/* Only music apps offer shuffle and repeat to other apps (browsers never do). */}
+        {s.can.shuffle && s.shuffle !== null && (
+          <Button
+            s={s}
+            glyph={SHUFFLE}
+            label={s.shuffle ? "Shuffle on" : "Shuffle off"}
+            action={{ shuffle: !s.shuffle }}
+            enabled
+            on={s.shuffle}
+          />
+        )}
         <Button s={s} glyph={PREVIOUS} label="Previous" action="previous" enabled={s.can.previous} />
         <PlayPause s={s} />
         <Button s={s} glyph={NEXT} label="Next" action="next" enabled={s.can.next} />
-        <Button
-          s={s}
-          glyph={s.repeat === "track" ? REPEAT_ONE : REPEAT_ALL}
-          label={s.repeat === "track" ? "Repeat this track" : s.repeat === "list" ? "Repeat all" : "Repeat off"}
-          // Off, then all, then this track, like most players.
-          action={{ repeat: s.repeat === "off" ? "list" : s.repeat === "list" ? "track" : "off" }}
-          enabled={s.can.repeat && s.repeat !== null}
-          on={s.repeat === "list" || s.repeat === "track"}
-        />
+        {s.can.repeat && s.repeat !== null && (
+          <Button
+            s={s}
+            glyph={s.repeat === "track" ? REPEAT_ONE : REPEAT_ALL}
+            label={s.repeat === "track" ? "Repeat this track" : s.repeat === "list" ? "Repeat all" : "Repeat off"}
+            // Off, then all, then this track, like most players.
+            action={{ repeat: s.repeat === "off" ? "list" : s.repeat === "list" ? "track" : "off" }}
+            enabled
+            on={s.repeat !== "off"}
+          />
+        )}
       </div>
+      {/* So greyed-out skip buttons don't look broken (YouTube, say, only offers them in a playlist). */}
+      {!s.can.next && !s.can.previous && <p className="hint">{s.app} doesn't offer skipping for this right now.</p>}
     </div>
   ));
 }
