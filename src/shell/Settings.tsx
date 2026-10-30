@@ -186,6 +186,24 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
       </section>
 
       <section>
+        <h2>Opening</h2>
+        <label className="row">
+          <span className="grow">Open from the right edge</span>
+          <input type="checkbox" checked={settings.edgeOpen} onChange={(e) => save({ ...settings, edgeOpen: e.target.checked })} />
+        </label>
+        <label className="row">
+          <span className="grow">Show a handle on the edge</span>
+          <input
+            type="checkbox"
+            disabled={!settings.edgeOpen}
+            checked={settings.edgeHandle}
+            onChange={(e) => save({ ...settings, edgeHandle: e.target.checked })}
+          />
+        </label>
+        <p className="hint">Rest the mouse on the middle of the right edge for a moment. It closes when the mouse leaves.</p>
+      </section>
+
+      <section>
         <h2>System</h2>
         <label className="row">
           <span className="grow">Start with Windows</span>

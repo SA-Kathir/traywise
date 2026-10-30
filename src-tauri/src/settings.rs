@@ -39,6 +39,10 @@ pub struct Settings {
     pub auto_arrange: bool,
     /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
     pub monitor_readings: [Reading; 2],
+    /// Resting the mouse on the middle of the screen's right edge opens the panel.
+    pub edge_open: bool,
+    /// With `edge_open`, a small pill on the edge shows where.
+    pub edge_handle: bool,
 }
 
 /// A reading the system monitor graphs.
@@ -79,6 +83,8 @@ impl Default for Settings {
             board: None,
             auto_arrange: true,
             monitor_readings: [Reading::Cpu, Reading::Memory],
+            edge_open: false,
+            edge_handle: false,
         }
     }
 }
@@ -183,6 +189,7 @@ pub fn set_settings(
     crate::shell::panel::set_shortcut(&app, &settings.panel_shortcut)?;
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
+    crate::shell::edge::apply(&app, &settings);
     // Only the look decides the frame. Re-framing resizes the window, which visibly nudges the
     // panel, so don't do it for every other save (like each tile moved on the home board).
     let reframe = {
@@ -239,6 +246,8 @@ mod tests {
             board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
             auto_arrange: false,
             monitor_readings: [Reading::Upload, Reading::Cpu],
+            edge_open: true,
+            edge_handle: true,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

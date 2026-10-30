@@ -2,6 +2,7 @@
 
 use std::ffi::c_void;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use tauri_specta::Event;
@@ -16,7 +17,7 @@ use windows::Win32::Graphics::Gdi::{
     BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
-use windows::Win32::UI::WindowsAndMessaging::{GetWindowRect, SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos};
+use windows::Win32::UI::WindowsAndMessaging::{GetWindowRect, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos, ShowWindow};
 
 use super::webview;
 use crate::module::Modules;
@@ -38,6 +39,9 @@ pub struct PanelState {
     shown_at: Mutex<Option<Instant>>,
     /// The registered open/close shortcut.
     shortcut: Mutex<Option<String>>,
+    /// Opened by resting the mouse on the screen's edge (not the tray or the shortcut): it sits at
+    /// the right, centred, doesn't take the keyboard, and closes when the mouse leaves.
+    hover: AtomicBool,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -84,7 +88,27 @@ pub fn toggle(app: &AppHandle) {
     if win.is_visible().unwrap_or(false) {
         hide(&win);
     } else if !just_hidden {
+        app.state::<PanelState>().hover.store(false, Ordering::Relaxed);
         show(&win);
+    }
+}
+
+/// The mouse rested on the screen's edge (`shell::edge`): open the panel there, if it's closed.
+pub fn hover_open(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(LABEL)
+        && !win.is_visible().unwrap_or(false)
+    {
+        app.state::<PanelState>().hover.store(true, Ordering::Relaxed);
+        show(&win);
+    }
+}
+
+/// The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into).
+#[tauri::command]
+#[specta::specta]
+pub fn hide_panel(app: AppHandle) {
+    if let Some(win) = app.get_webview_window(LABEL) {
+        hide(&win);
     }
 }
 
@@ -114,6 +138,7 @@ pub fn open(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL)
         && !win.is_visible().unwrap_or(false)
     {
+        app.state::<PanelState>().hover.store(false, Ordering::Relaxed);
         show(&win);
     }
 }
@@ -121,20 +146,33 @@ pub fn open(app: &AppHandle) {
 fn show(win: &WebviewWindow) {
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
-    place(win);
+    let hover = win.state::<PanelState>().hover.load(Ordering::Relaxed);
+    place(win, hover);
     // Before showing it, so the sample is of what's behind the panel, not the panel.
     let settings = win.state::<SettingsState>().get();
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
-    let _ = win.show();
-    let _ = win.set_focus();
+    if hover {
+        // Shown without taking the keyboard, so typing elsewhere carries on; a click gives it focus.
+        if let Ok(hwnd) = win.hwnd() {
+            let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
+        }
+    } else {
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
     win.state::<Modules>().panel_visible(true);
-    let _ = PanelShown(backdrop).emit(win);
+    let _ = PanelShown { backdrop, hover }.emit(win);
 }
 
-/// Sent to the UI each time the panel opens. For a transparent look, how bright the screen behind
-/// it is (0 black to 100 white), so the glass can be more solid over dark things.
+/// Sent to the UI each time the panel opens.
 #[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
-pub struct PanelShown(pub Option<u8>);
+pub struct PanelShown {
+    /// For a transparent look, how bright the screen behind it is (0 black to 100 white), so the
+    /// glass can be more solid over dark things.
+    pub backdrop: Option<u8>,
+    /// Opened from the screen's edge: the UI closes it when the mouse leaves.
+    pub hover: bool,
+}
 
 /// How bright the screen is where the panel will appear: Windows shrinks that area to an 8 × 8
 /// sample, which is averaged to one number and then deleted. Nothing is kept or sent anywhere.
@@ -221,8 +259,8 @@ pub fn autotest(app: AppHandle) {
 }
 
 /// Sizes the panel (shorter if the screen is) and puts it in the bottom-right corner of the primary
-/// monitor's work area (above the taskbar), 12 px margin.
-fn place(win: &WebviewWindow) {
+/// monitor's work area (above the taskbar), 12 px margin; opened from the edge, at the right, centred.
+fn place(win: &WebviewWindow, edge: bool) {
     let (Ok(Some(monitor)), Ok(hwnd)) = (win.primary_monitor(), win.hwnd()) else { return };
     let scale = monitor.scale_factor();
     let area = monitor.work_area();
@@ -231,7 +269,11 @@ fn place(win: &WebviewWindow) {
     let set = |width: i32, height: i32| {
         let height = height.min(max_height);
         let x = area.position.x + area.size.width as i32 - width - margin;
-        let y = area.position.y + area.size.height as i32 - height - margin;
+        let y = if edge {
+            area.position.y + (area.size.height as i32 - height) / 2
+        } else {
+            area.position.y + area.size.height as i32 - height - margin
+        };
         let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };
     };
     let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
@@ -251,7 +293,7 @@ fn place(win: &WebviewWindow) {
 pub fn refresh_frame(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL) {
         frame(&win, framed(&app.state::<SettingsState>().get()));
-        place(&win);
+        place(&win, app.state::<PanelState>().hover.load(Ordering::Relaxed));
     }
 }
 

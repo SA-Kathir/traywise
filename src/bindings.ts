@@ -12,6 +12,8 @@ export const commands = {
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
+	/**  The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into). */
+	hidePanel: () => __TAURI_INVOKE<void>("hide_panel"),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
@@ -267,11 +269,16 @@ export type OutputDevice = {
 	isDefault: boolean,
 };
 
-/**
- *  Sent to the UI each time the panel opens. For a transparent look, how bright the screen behind
- *  it is (0 black to 100 white), so the glass can be more solid over dark things.
- */
-export type PanelShown = number | null;
+/**  Sent to the UI each time the panel opens. */
+export type PanelShown = {
+	/**
+	 *  For a transparent look, how bright the screen behind it is (0 black to 100 white), so the
+	 *  glass can be more solid over dark things.
+	 */
+	backdrop: number | null,
+	/**  Opened from the screen's edge: the UI closes it when the mouse leaves. */
+	hover: boolean,
+};
 
 export type Point = {
 	cpu: number,
@@ -328,6 +335,10 @@ export type Settings = {
 	autoArrange: boolean,
 	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
 	monitorReadings: [Reading, Reading],
+	/**  Resting the mouse on the middle of the screen's right edge opens the panel. */
+	edgeOpen: boolean,
+	/**  With `edge_open`, a small pill on the edge shows where. */
+	edgeHandle: boolean,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */

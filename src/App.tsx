@@ -19,6 +19,9 @@ const POWER = String.fromCodePoint(0xe7e8);
 const BACK = String.fromCodePoint(0xe72b);
 const EDIT = String.fromCodePoint(0xe70f);
 
+/** How long the mouse can be outside an edge-opened panel before it closes. */
+const LEAVE_MS = 400;
+
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
@@ -34,9 +37,28 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Opened from the screen's edge: close it once the mouse has left (and not come back, or
+    // clicked in, within LEAVE_MS).
+    let leave: number | undefined;
+    const left = () => {
+      leave = window.setTimeout(() => document.hasFocus() || commands.hidePanel(), LEAVE_MS);
+    };
+    const back = () => clearTimeout(leave);
+    const root = document.documentElement;
     const unlisten = events.panelShown.listen((e) => {
+      const { backdrop, hover } = e.payload;
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
-      if (e.payload !== null) document.documentElement.style.setProperty("--backdrop", String(e.payload / 100));
+      if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
+      clearTimeout(leave);
+      root.removeEventListener("mouseleave", left);
+      root.removeEventListener("mouseenter", back);
+      if (hover) {
+        root.addEventListener("mouseleave", left);
+        root.addEventListener("mouseenter", back);
+        // It slides in from the edge (once; not with Windows' animation effects off).
+        if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+          document.querySelector(".panel")?.animate([{ transform: "translateX(24px)", opacity: 0 }, {}], { duration: 220, easing: "cubic-bezier(0, 0, 0, 1)" });
+      }
       setView("home"); // every open starts on the main view, like Windows' own flyouts
       setEditing(false);
       setAdding(false);
