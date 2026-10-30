@@ -41,9 +41,15 @@ function App() {
   useEffect(() => {
     // Opened from the screen's edge: close it once the mouse has left (and not come back, or
     // clicked in, within LEAVE_MS), or if it never comes in at all.
+    // (A click in it keeps it, like a tray-opened panel. Not document.hasFocus(): WebView2 can
+    // report focus for a window that was never clicked.)
     let leave: number | undefined;
+    let clicked = false;
     const close = (after: number) => {
-      leave = window.setTimeout(() => document.hasFocus() || commands.hidePanel(), after);
+      leave = window.setTimeout(() => clicked || commands.hidePanel(), after);
+    };
+    const click = () => {
+      clicked = true;
     };
     const left = () => close(LEAVE_MS);
     const back = () => clearTimeout(leave);
@@ -53,11 +59,14 @@ function App() {
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
       if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
       clearTimeout(leave);
+      clicked = false;
       root.removeEventListener("mouseleave", left);
       root.removeEventListener("mouseenter", back);
+      root.removeEventListener("pointerdown", click);
       if (hover) {
         root.addEventListener("mouseleave", left);
         root.addEventListener("mouseenter", back);
+        root.addEventListener("pointerdown", click);
         close(NEVER_ENTERED_MS);
       }
       setView("home"); // every open starts on the main view, like Windows' own flyouts

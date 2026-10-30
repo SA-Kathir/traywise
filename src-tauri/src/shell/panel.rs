@@ -18,7 +18,7 @@ use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetWindowRect, SPI_GETCLIENTAREAANIMATION, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
+    GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
     SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
 };
 use windows::core::BOOL;
@@ -74,7 +74,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     let handle = win.clone();
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
-        WindowEvent::Focused(false) if handle.is_visible().unwrap_or(false) => hide(&handle),
+        WindowEvent::Focused(false) if is_open(&handle) => hide(&handle),
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
@@ -151,9 +151,10 @@ pub fn open(app: &AppHandle) {
     }
 }
 
-/// Shown and not minimised (a minimised window still counts as visible to Windows).
+/// Shown and not minimised (a minimised window still counts as visible to Windows). Asked of
+/// Windows itself: the edge shows the panel with ShowWindow, which Tauri doesn't track.
 fn is_open(win: &WebviewWindow) -> bool {
-    win.is_visible().unwrap_or(false) && !win.is_minimized().unwrap_or(false)
+    win.hwnd().is_ok_and(|h| unsafe { IsWindowVisible(h).as_bool() && !IsIconic(h).as_bool() })
 }
 
 fn show(win: &WebviewWindow) {
@@ -265,7 +266,11 @@ fn hide(win: &WebviewWindow) {
 
 fn hide_now(win: &WebviewWindow) {
     win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
+    // Both: Tauri's hide does nothing when it didn't do the showing (the edge uses ShowWindow).
     let _ = win.hide();
+    if let Ok(hwnd) = win.hwnd() {
+        let _ = unsafe { ShowWindow(hwnd, SW_HIDE) };
+    }
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
