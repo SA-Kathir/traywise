@@ -1,4 +1,5 @@
 import { commands, events, type Battery } from "../../bindings";
+import { Num } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
@@ -24,7 +25,9 @@ export function Tiles({ size, open }: TileProps) {
       <span className="stat-chips">
         {chips.slice(0, READINGS[size]).map(([value, label]) => (
           <span key={label} className="stat-chip">
-            <span className="stat-chip-value">{value}</span>
+            <span className="stat-chip-value">
+              <Num text={value} />
+            </span>
             <span className="stat-chip-label">{label}</span>
           </span>
         ))}
@@ -81,8 +84,11 @@ function Graph({ values, max }: { values: number[]; max?: number }) {
   const top = max ?? Math.max(1, ...values);
   // 60 seconds across 59 steps, newest on the right.
   const points = values.map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`).join(" ");
+  const first = 59 - (values.length - 1);
   return (
     <svg className="graph" viewBox="0 0 59 20" preserveAspectRatio="none" aria-hidden>
+      {/* The area under the line: the Dot look draws the graph as dots in it. */}
+      <polygon className="area" points={`${first},20 ${points} 59,20`} />
       <polyline points={points} />
     </svg>
   );

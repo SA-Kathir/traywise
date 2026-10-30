@@ -33,6 +33,7 @@ export function Tiles({ size, open }: TileProps) {
         label="Volume"
         detail={master ? String(master.volume) : "No device"}
         on={master?.muted}
+        level={master && !master.muted ? master.volume : undefined}
         onToggle={master ? () => commands.mixerSetMute("master", !master.muted) : open}
       />
     );

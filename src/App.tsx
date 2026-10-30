@@ -1,9 +1,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
-import { categories, modules, type Category } from "./modules";
+import { categories, modules, type Category, type Size } from "./modules";
 import { AddTiles } from "./shell/AddTiles";
 import { add, pack, type Placed } from "./shell/board";
-import { Board, boardToShow, newTile } from "./shell/HomeBoard";
+import { Board, boardToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { Setup } from "./shell/Setup";
@@ -45,7 +45,7 @@ function App() {
     };
   }, []);
 
-  // Esc steps out: from the list of tiles to add, then out of edit mode.
+  // Esc steps out: from the tray of tiles to add, then out of edit mode.
   useEffect(() => {
     if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
@@ -83,9 +83,7 @@ function App() {
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
   const title = editHome
-    ? adding
-      ? "Add tiles"
-      : "Edit home"
+    ? "Edit home"
     : view === "home"
       ? enabled.length > 0
         ? "Traywise"
@@ -109,18 +107,25 @@ function App() {
   return (
     <main className={panelClass}>
       <header className="row">
-        {!tabbed && !(editHome && !adding) && (
+        {!tabbed && !editHome && (
           <button
             className="icon-button"
             aria-label="Back"
             title="Back"
-            onClick={() => (editHome ? setAdding(false) : setView(view === "modules" ? "settings" : "home"))}
+            onClick={() => setView(view === "modules" ? "settings" : "home")}
           >
             {BACK}
           </button>
         )}
-        <h1 className="grow">{title}</h1>
-        {editHome && !adding && (
+        {editHome ? (
+          <div className="grow">
+            <h1>{title}</h1>
+            <p className="hint">Drag to move, corner to resize</p>
+          </div>
+        ) : (
+          <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
+        )}
+        {editHome && (
           <button className="primary" onClick={() => setEditing(false)}>
             Done
           </button>
@@ -160,7 +165,7 @@ function App() {
 
       <UpdateNotice />
 
-      {editHome && !adding && (
+      {editHome && (
         <div className="row edit-bar">
           <label className="row grow">
             <span className="grow">Auto-arrange</span>
@@ -183,7 +188,9 @@ function App() {
           >
             {confirmReset ? "Reset board?" : "Reset"}
           </button>
-          <button onClick={() => setAdding(true)}>Add tiles</button>
+          <button className="add-tiles" onClick={() => setAdding(true)}>
+            Add tiles
+          </button>
         </div>
       )}
 
@@ -199,17 +206,6 @@ function App() {
           <p className="hint">Pick the modules you want, and they'll show up here.</p>
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
-      ) : adding ? (
-        <AddTiles
-          enabled={enabled}
-          tiles={tiles}
-          onAdd={(id) => {
-            const { w, h } = newTile(id);
-            setBoard(add(tiles, id, w, h, auto));
-            setAdding(false);
-          }}
-          openModules={() => setView("modules")}
-        />
       ) : tiles.length === 0 && !editing ? (
         <div className="welcome">
           <p className="hint">Your home is empty.</p>
@@ -223,6 +219,19 @@ function App() {
           auto={auto}
           onChange={setBoard}
           onLongPress={() => setEditing(true)}
+        />
+      )}
+      {editHome && adding && (
+        <AddTiles
+          enabled={enabled}
+          tiles={tiles}
+          onAdd={(id, size: Size) => {
+            const [w, h] = size.split("x").map(Number);
+            setBoard(add(tiles, id, w, h, auto));
+            setAdding(false);
+          }}
+          onClose={() => setAdding(false)}
+          openModules={() => setView("modules")}
         />
       )}
       {view === "home" && error && <p className="error">{error}</p>}

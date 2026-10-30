@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Size } from "../modules";
 
 // The two building blocks of every tile on the home board. Modules draw their tiles with these,
@@ -21,14 +21,19 @@ type TileProps = {
   onToggle?: () => void;
   /** Opens the module's own page. Without one there's no chevron. */
   onOpen?: () => void;
+  /** A level from 0 to 100 (volume): the Dot look fills the tile up to it. */
+  level?: number;
 };
 
 /** A one-click tile, like Windows' quick settings. At 1×1 it's the icon and the detail only (the
  *  name is in its tooltip), with no chevron. */
-export function Tile({ size, icon, label, detail, on, onToggle, onOpen }: TileProps) {
+export function Tile({ size, icon, label, detail, on, onToggle, onOpen, level }: TileProps) {
   const small = size === "1x1";
   return (
-    <div className={`tile size-${size}${on ? " on" : ""}`}>
+    <div
+      className={`tile size-${size}${on ? " on" : ""}${level === undefined ? "" : " level"}`}
+      style={level === undefined ? undefined : ({ "--level": `${level}%` } as CSSProperties)}
+    >
       <button
         className="tile-main"
         aria-pressed={on}
@@ -41,7 +46,7 @@ export function Tile({ size, icon, label, detail, on, onToggle, onOpen }: TilePr
         </span>
         {!small && <span className="tile-label">{label}</span>}
         <span className="tile-detail" title={small ? undefined : detail}>
-          {detail}
+          <Num text={detail} />
         </span>
       </button>
       {onOpen && !small && (
@@ -91,5 +96,18 @@ export function TileCard({
       )}
       {children}
     </div>
+  );
+}
+
+/** A reading with its digits in dot type (the Dot look) and its unit beside them in the UI font:
+ *  "23%" is 23 then %. Text that doesn't start with a number stays as it is. */
+export function Num({ text }: { text: string }) {
+  const [, digits, rest] = /^([\d.:×]+)(.*)$/s.exec(text) ?? [];
+  if (!digits) return text;
+  return (
+    <>
+      <span className="num">{digits}</span>
+      {rest}
+    </>
   );
 }

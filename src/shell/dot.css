@@ -395,3 +395,393 @@
 .look-dot #root::-webkit-scrollbar-thumb {
   background: var(--tw-control-track);
 }
+
+/* ---- Tiles ------------------------------------------------------------------------------- */
+
+/* 12 px padding all round (the other looks use 10 x 12). */
+.look-dot .board {
+  --tile-pad: 12px;
+}
+.look-dot .tile:has(> .tile-main:hover) {
+  background: var(--tw-glass-tile-hover);
+}
+.look-dot .tile:has(> .tile-main:active) {
+  background: var(--tw-glass-tile-pressed);
+}
+.look-dot :is(.tile-main, .tile-title, .tile-more) {
+  min-height: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+.look-dot .tile-label {
+  font-weight: 600;
+}
+/* 1×1: the icon top left and the state bottom left. */
+.look-dot .size-1x1 .tile-main {
+  padding: var(--tile-pad);
+  justify-items: start;
+  align-content: space-between;
+  text-align: left;
+}
+.look-dot .size-1x1 .tile-detail {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: inherit;
+}
+/* 2×1 and wider: the icon in a round well at the left, the name and state beside it. */
+.look-dot .tile:not(.size-1x1) .tile-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tw-control-track);
+}
+.look-dot .tile-detail .num {
+  font-size: 20px;
+  margin-right: 2px;
+}
+.look-dot .size-1x1 .tile-detail .num {
+  font-size: 24px;
+}
+/* 2×1 and wider with a number (a countdown): the icon and name on top, the number large below. */
+.look-dot .tile:not(.size-1x1):has(.tile-detail .num) .tile-main {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: space-between;
+  column-gap: 8px;
+}
+.look-dot .tile:not(.size-1x1):has(.tile-detail .num) .tile-icon {
+  grid-row: auto;
+  width: auto;
+  height: auto;
+  font-size: 16px;
+  background: none;
+}
+.look-dot .tile:not(.size-1x1):has(.tile-detail .num) .tile-detail {
+  grid-column: 1 / -1;
+}
+.look-dot .tile:not(.size-1x1):has(.tile-detail .num) .tile-detail .num {
+  font-size: 28px;
+  margin-right: 4px;
+}
+/* The details chevron sits bottom right, out of the live dot's way. */
+.look-dot .tile-more {
+  top: auto;
+  bottom: 6px;
+  color: var(--tw-text-tertiary);
+}
+
+/* Switched on: the inverted plate with a small accent "live" dot 12 px from the top right. */
+.look-dot .tile.on {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+}
+.look-dot .tile.on :is(.tile-detail, .tile-more) {
+  color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
+}
+.look-dot .tile.on .tile-icon {
+  background: color-mix(in srgb, var(--tw-text-inverse) 10%, transparent);
+}
+.look-dot .tile.on::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tw-accent-base);
+  pointer-events: none;
+}
+/* A level (volume at 1×1): the tile fills from the bottom up to it. */
+.look-dot .tile.level {
+  background:
+    linear-gradient(to top, var(--tw-control-track) var(--level), transparent var(--level)),
+    var(--tw-glass-tile);
+}
+
+/* Tiles with controls: the title is an overline, and sliders are bars whose fill is the thumb. */
+.look-dot .tile-title .tile-label {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tw-text-secondary);
+}
+.look-dot button.tile-title:hover .tile-label {
+  color: var(--tw-accent-text);
+}
+.look-dot .tile-card input[type="range"] {
+  height: 28px;
+}
+.look-dot .tile-card input[type="range"]::-webkit-slider-runnable-track {
+  height: 28px;
+  border-radius: var(--tw-radius-md);
+}
+.look-dot .tile-card input[type="range"]::-webkit-slider-thumb {
+  width: 4px;
+  height: 28px;
+  margin-top: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.look-dot .size-4x2 .mixer-row :is(input[type="range"], input[type="range"]::-webkit-slider-runnable-track, input[type="range"]::-webkit-slider-thumb, .icon-button) {
+  height: 24px;
+  min-height: 24px;
+}
+.look-dot .tile-card .mixer-row {
+  gap: 6px;
+}
+.look-dot .tile-card .app-icon {
+  display: none;
+}
+.look-dot .tile-card .icon-button {
+  width: 28px;
+  min-height: 28px;
+  font-size: 14px;
+}
+.look-dot .mixer-value {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* System monitor: each reading's name above its dot-matrix number, left aligned. */
+.look-dot .stats {
+  justify-content: space-between;
+  padding: var(--tile-pad);
+}
+.look-dot .stat-chip {
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 4px;
+  overflow: hidden;
+}
+.look-dot .stat-chip-label {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.look-dot .stat-chip-value {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--tw-text-secondary);
+}
+.look-dot .stat-chip-value .num {
+  margin-right: 2px;
+  color: var(--tw-text-primary);
+}
+.look-dot :is(.size-4x1, .size-2x2, .size-4x2) .stat-chip-value .num {
+  font-size: 20px;
+}
+/* Graphs as a dot matrix: the area under the line, seen through a grid of 4 px dots. */
+.look-dot .graph {
+  height: 35px;
+  -webkit-mask: radial-gradient(circle, #000 1.6px, transparent 2.1px) 0 100% / 7px 7px;
+}
+.look-dot .graph polyline {
+  display: none;
+}
+.look-dot .graph .area {
+  fill: var(--tw-text-primary);
+}
+
+/* ---- Header ------------------------------------------------------------------------------- */
+
+/* The wordmark: TRAYWISE in dot type with an accent dot after it. */
+.look-dot h1.wordmark {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.look-dot h1.wordmark::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: 3px;
+  border-radius: 50%;
+  background: var(--tw-accent-base);
+}
+
+/* ---- Level-2 glass: floating layers -------------------------------------------------------- */
+
+/* Frost (blur) only here, and only while something floats, so it costs nothing at rest. */
+.look-dot .tray {
+  left: 8px;
+  right: 8px;
+  padding: 8px 16px 16px;
+  border-radius: var(--tw-radius-tile);
+  background: var(--tw-glass-float);
+  backdrop-filter: blur(var(--tw-blur-float)) saturate(1.2);
+  box-shadow:
+    inset 0 0 0 1px var(--tw-glass-edge-strong),
+    0 8px 24px var(--tw-effect-shadow);
+  animation: dot-tray-in var(--tw-duration-slow) var(--tw-ease-standard);
+}
+/* The sheet's handle. */
+.look-dot .tray::before {
+  content: "";
+  align-self: center;
+  flex: none;
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--tw-glass-edge-strong);
+}
+.look-dot .tray h1 {
+  font-size: 15px;
+  line-height: 20px;
+}
+.look-dot .scrim {
+  background: var(--tw-effect-scrim);
+  animation: dot-fade-in var(--tw-duration-slow) var(--tw-ease-standard);
+}
+@keyframes dot-tray-in {
+  from { transform: translateY(24px); opacity: 0; }
+}
+@keyframes dot-fade-in {
+  from { opacity: 0; }
+}
+/* The size picker: sizes in dot type. */
+.look-dot .segmented.sizes .num {
+  font-size: 20px;
+}
+.look-dot .tray .link-row {
+  margin-inline: -8px;
+}
+.look-dot .tray .link-row:disabled {
+  opacity: 0.4;
+}
+.look-dot .tray .icon.add {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--tw-glass-tile);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+}
+
+/* ---- Edit mode ------------------------------------------------------------------------------ */
+
+/* Every tile gets a dashed edge, a remove badge, a resize corner and a grip, all the time (not
+   just on hover). The one being dragged lifts: an accent edge, a shadow, 102% and a slight tilt. */
+.look-dot .board.editing .board-tile {
+  border-radius: var(--tw-radius-tile);
+  outline: 1px dashed var(--tw-glass-edge-strong);
+  outline-offset: 0;
+  transition:
+    transform var(--tw-duration-base) var(--tw-ease-snap),
+    box-shadow var(--tw-duration-base) var(--tw-ease-standard);
+}
+.look-dot .board.editing .board-slot {
+  border-radius: var(--tw-radius-tile);
+}
+.look-dot .board.editing .board-slot:focus-visible .board-tile,
+.look-dot .board-slot.dragging .board-tile {
+  outline: 2px solid var(--tw-accent-base);
+}
+.look-dot .board-slot.dragging .board-tile {
+  transform: scale(1.02) rotate(-2deg);
+  box-shadow: 0 2px 8px var(--tw-effect-shadow);
+}
+.look-dot .board.editing .tile-badge {
+  opacity: 1;
+  pointer-events: auto;
+}
+.look-dot .board-slot.dragging .tile-badge {
+  opacity: 0;
+}
+/* Remove: a 24 px plate with a minus, just outside the top-left corner; danger on hover. */
+.look-dot .board .tile-remove {
+  top: -6px;
+  left: -6px;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  font-size: 10px;
+  line-height: 24px;
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+  box-shadow: 0 1px 4px var(--tw-effect-shadow);
+}
+.look-dot .board .tile-remove:hover {
+  background: var(--tw-status-danger);
+  color: #fff;
+}
+/* Resize: a thick arc hugging the bottom-right corner (the button is a bigger target round it). */
+.look-dot .board .tile-resize {
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  font-size: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.look-dot .board .tile-resize::before {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 12px;
+  height: 12px;
+  border: solid var(--tw-text-primary);
+  border-width: 0 2.5px 2.5px 0;
+  border-bottom-right-radius: 14px;
+}
+.look-dot .board .tile-resize:hover::before {
+  border-color: var(--tw-accent-base);
+}
+/* Grip: 3 × 2 dots on a small frosted pill at the top edge. */
+.look-dot .board.editing .board-slot::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -5px;
+  left: calc(50% - 12px);
+  /* The dots fill the 15 x 8 content box: 3 across, 2 down. */
+  box-sizing: content-box;
+  width: 15px;
+  height: 8px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle, var(--tw-text-primary) 1px, transparent 1.4px) content-box 0 0 / 5px 4px,
+    var(--tw-glass-float);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+  pointer-events: none;
+}
+.look-dot .board-slot.dragging::after {
+  display: none;
+}
+/* Add tiles floats at the bottom as the accent pill. */
+.look-dot .edit-bar .add-tiles {
+  position: fixed;
+  z-index: 2;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--tw-accent-base);
+  color: var(--tw-accent-on);
+  box-shadow: 0 8px 24px var(--tw-effect-shadow);
+  font-weight: 600;
+}
+/* Room under the board for it. */
+.look-dot .board.editing {
+  margin-bottom: 48px;
+}
