@@ -45,6 +45,8 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	/**  Switches Wi-Fi or Bluetooth on or off, like the toggles in Windows' quick settings. */
+	quickTogglesSetRadio: (radioId: RadioId, on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_radio", { radioId, on })),
 	/**  The latest state. Empty while the module is switched off. */
 	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
 	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
@@ -248,10 +250,17 @@ export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose"
 export type QuickTogglesChanged = QuickTogglesState;
 
 export type QuickTogglesState = {
+	/**  None when this PC has no Wi-Fi radio (or Windows wouldn't say). */
+	wifi: boolean | null,
+	/**  None when this PC has no Bluetooth radio. */
+	bluetooth: boolean | null,
 	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
 	dark: boolean,
 	desktopIcons: boolean,
 };
+
+/**  The radios the Wi-Fi and Bluetooth tiles switch. */
+export type RadioId = "wifi" | "bluetooth";
 
 export type Repeat = "off" | "track" | "list";
 
