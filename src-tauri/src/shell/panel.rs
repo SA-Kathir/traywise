@@ -11,7 +11,12 @@ use windows::Win32::Graphics::Dwm::{
     DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
     DWMWCP_ROUND, DwmSetWindowAttribute,
 };
-use windows::Win32::UI::WindowsAndMessaging::{SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos};
+use windows::Win32::Foundation::{HWND, RECT};
+use windows::Win32::Graphics::Gdi::{
+    BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
+    DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
+};
+use windows::Win32::UI::WindowsAndMessaging::{GetWindowRect, SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos};
 
 use super::webview;
 use crate::module::Modules;
@@ -117,15 +122,62 @@ fn show(win: &WebviewWindow) {
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
     place(win);
+    // Before showing it, so the sample is of what's behind the panel, not the panel.
+    let settings = win.state::<SettingsState>().get();
+    let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
     let _ = win.show();
     let _ = win.set_focus();
     win.state::<Modules>().panel_visible(true);
-    let _ = PanelShown.emit(win);
+    let _ = PanelShown(backdrop).emit(win);
 }
 
-/// Sent to the UI each time the panel opens.
+/// Sent to the UI each time the panel opens. For a transparent look, how bright the screen behind
+/// it is (0 black to 100 white), so the glass can be more solid over dark things.
 #[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
-pub struct PanelShown;
+pub struct PanelShown(pub Option<u8>);
+
+/// How bright the screen is where the panel will appear: Windows shrinks that area to an 8 × 8
+/// sample, which is averaged to one number and then deleted. Nothing is kept or sent anywhere.
+/// (The owner allowed this for transparent looks only; see CLAUDE.md.)
+fn backdrop_brightness(hwnd: HWND) -> Option<u8> {
+    let mut r = RECT::default();
+    unsafe { GetWindowRect(hwnd, &mut r) }.ok()?;
+    let mut pixels = [0u8; 8 * 8 * 4];
+    let copied = unsafe {
+        let screen = GetDC(None);
+        let memory = CreateCompatibleDC(Some(screen));
+        let bitmap = CreateCompatibleBitmap(screen, 8, 8);
+        let old = SelectObject(memory, bitmap.into());
+        SetStretchBltMode(memory, HALFTONE);
+        let drawn = StretchBlt(memory, 0, 0, 8, 8, Some(screen), r.left, r.top, r.right - r.left, r.bottom - r.top, SRCCOPY).as_bool();
+        SelectObject(memory, old);
+        let mut info = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: 8,
+                biHeight: -8,
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let lines = GetDIBits(memory, bitmap, 0, 8, Some(pixels.as_mut_ptr().cast()), &mut info, DIB_RGB_COLORS);
+        let _ = DeleteObject(bitmap.into());
+        let _ = DeleteDC(memory);
+        ReleaseDC(None, screen);
+        drawn && lines == 8
+    };
+    copied.then(|| brightness(&pixels))
+}
+
+/// The average perceived brightness of BGRA pixels, 0 to 100.
+fn brightness(bgra: &[u8]) -> u8 {
+    let n = (bgra.len() / 4).max(1) as f64;
+    let sum: f64 = bgra.as_chunks::<4>().0.iter().map(|p| 0.0722 * f64::from(p[0]) + 0.7152 * f64::from(p[1]) + 0.2126 * f64::from(p[2])).sum();
+    (sum / n / 255.0 * 100.0).round() as u8
+}
 
 fn hide(win: &WebviewWindow) {
     let _ = win.hide();
@@ -228,3 +280,13 @@ fn frame(win: &WebviewWindow, framed: bool) {
     }
 }
 
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn brightness() {
+        assert_eq!(super::brightness(&[0, 0, 0, 255].repeat(64)), 0);
+        assert_eq!(super::brightness(&[255, 255, 255, 255].repeat(64)), 100);
+        assert_eq!(super::brightness(&[0, 255, 0, 255, 0, 0, 0, 255].repeat(32)), 36); // half bright green
+    }
+}

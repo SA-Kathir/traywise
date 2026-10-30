@@ -34,7 +34,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unlisten = events.panelShown.listen(() => {
+    const unlisten = events.panelShown.listen((e) => {
+      // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
+      if (e.payload !== null) document.documentElement.style.setProperty("--backdrop", String(e.payload / 100));
       setView("home"); // every open starts on the main view, like Windows' own flyouts
       setEditing(false);
       setAdding(false);

@@ -51,7 +51,7 @@ Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a C
   - **Windows:** flat like Windows 11's flyouts, follows Windows light/dark mode, Windows' default blue. Text and light fills use `rgb(var(--ink) / a)`, so light mode only flips `--ink`.
 - **The panel has a fixed height (640 logical px)**; pages that don't fit scroll. The owner found a window that resized to each page's content jarring.
 - **Native Mica/Acrylic doesn't work** on the owner's PC, even with fixes. Don't go back to it.
-- **Never read the desktop or wallpaper.** The owner rejected this for privacy.
+- **Never read the desktop or wallpaper**, with one exception the owner allowed (2026-10-30): for a transparent look, `backdrop_brightness` in `shell/panel.rs` shrinks the area behind the panel to an 8 × 8 sample as it opens, averages it to one brightness number for the glass's strength, and deletes it. Nothing is stored, sent or used for anything else; keep it that way.
 - **The background doesn't move.** It used to drift for ~10 s after each open (continuous motion costs about 35% of a core), but blurred behind the glass the motion wasn't noticeable, so the owner agreed to drop it. The SVG refraction filter (`url(#liquid-refract)` in `backdrop-filter`) was dropped too: it was barely visible and is the likely cause of stale blue blocks seen in WebView2.
 - **When the panel hides, call `controller.SetIsVisible(false)` on WebView2.** Hiding the window alone keeps WebView2 rendering, which cost about 39% of a core while hidden.
 - **Set WebView2 `MemoryUsageTargetLevel` to Low while hidden and Normal before showing** (through `ICoreWebView2_19`). It trims RAM right after hiding (dips to ~65–75 MB), but most of it comes back within a minute or two.

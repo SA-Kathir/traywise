@@ -884,6 +884,17 @@
    wallpaper. */
 .look-dot.clear {
   background: none;
+  /* The glass gets more solid over dark things behind the panel (--backdrop, 0 black to 1 white,
+     sampled as it opens): 92% over black down to 68% over white. */
+  --tw-glass-alpha: calc(0.92 - var(--backdrop, 0.5) * 0.24);
+  --tw-glass-float: rgb(28 28 30 / var(--tw-glass-alpha));
+  --tw-glass-float-hover: rgb(48 48 50 / var(--tw-glass-alpha));
+}
+@media (prefers-color-scheme: light) {
+  .look-dot.clear {
+    --tw-glass-float: rgb(250 250 248 / var(--tw-glass-alpha));
+    --tw-glass-float-hover: rgb(255 255 255 / var(--tw-glass-alpha));
+  }
 }
 .look-dot.clear :is(header, .tabs, .edit-bar, .welcome, .setup-intro) {
   padding: 6px 8px 6px 16px;

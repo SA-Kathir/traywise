@@ -267,8 +267,11 @@ export type OutputDevice = {
 	isDefault: boolean,
 };
 
-/**  Sent to the UI each time the panel opens. */
-export type PanelShown = null;
+/**
+ *  Sent to the UI each time the panel opens. For a transparent look, how bright the screen behind
+ *  it is (0 black to 100 white), so the glass can be more solid over dark things.
+ */
+export type PanelShown = number | null;
 
 export type Point = {
 	cpu: number,
