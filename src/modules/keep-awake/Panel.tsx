@@ -3,8 +3,11 @@ import { commands, events, type KeepAwakeState, type Mode } from "../../bindings
 import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import { useNow } from "../../shell/useNow";
-import keepAwake from ".";
 import type { TileProps } from "..";
+
+// The tile's icon shows its state: a cup while keeping awake, a sleeping moon while not.
+const AWAKE = String.fromCodePoint(0xec32);
+const ASLEEP = String.fromCodePoint(0xec46);
 
 const MODES: { mode: Mode; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -41,7 +44,7 @@ export function Tiles({ size, open }: TileProps) {
               ? "Off"
               : "Off · tap to keep awake";
     return (
-      <Tile size={size} icon={keepAwake.icon} label="Keep awake" detail={detail} on={state.mode !== "off"} onToggle={toggle} onOpen={open} />
+      <Tile size={size} icon={state.active ? AWAKE : ASLEEP} label="Keep awake" detail={detail} on={state.mode !== "off"} onToggle={toggle} onOpen={open} />
     );
   }
   const total = typeof state.mode === "object" ? state.mode.minutes * 60000 : null;
@@ -53,7 +56,7 @@ export function Tiles({ size, open }: TileProps) {
     <div className={`tile awake size-2x2${state.mode !== "off" ? " on" : ""}`}>
       <button className="tile-title" title="Details" onClick={open}>
         <span className="tile-icon" aria-hidden>
-          {keepAwake.icon}
+          {state.active ? AWAKE : ASLEEP}
         </span>
         <span className="tile-label">Keep awake</span>
       </button>
