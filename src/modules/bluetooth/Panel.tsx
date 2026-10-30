@@ -22,17 +22,19 @@ export function Tiles({ size, open }: TileProps) {
   const s = useBluetooth();
   if (!s) return null;
   const connected = s.devices.filter((d) => d.connected);
-  // 1×1: the name, as in the design (the icon shows on or off).
+  // 1×1: on or off ("Bluetooth" doesn't fit in the Dot look's OCR-A).
   const detail =
-    size === "1x1"
-      ? "Bluetooth"
-      : s.on === null
+    s.on === null
       ? "Not available"
       : !s.on
         ? "Off"
         : connected.length > 0
-          ? connected[0].name + (connected.length > 1 ? ` +${connected.length - 1}` : "")
-          : "Nothing connected";
+          ? size === "1x1"
+            ? "On"
+            : connected[0].name + (connected.length > 1 ? ` +${connected.length - 1}` : "")
+          : size === "1x1"
+            ? "On"
+            : "Nothing connected";
   return (
     <Tile
       size={size}

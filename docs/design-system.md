@@ -21,6 +21,7 @@ Decisions made with the owner (2026-10-29):
 | On tiles | **Inverted:** a white plate in dark mode (black in light) with a small accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
 | Red | **#D92B24**, so white text passes WCAG AA (about 4.9:1). |
+| Words (2026-10-30, in the app) | **OCR-A** (public domain) instead of Segoe UI Variable, in one weight and a size smaller, so the words set off the dot-matrix numbers. The type ramp below is the Figma file's. |
 
 ## Tokens
 

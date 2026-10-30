@@ -12,6 +12,23 @@
   font-display: block;
 }
 
+/* OCR-A (public domain, OCR-A-LICENSE.txt beside it), printable ASCII only: the look's words.
+   Characters it lacks (·, …, ×) come from Segoe. It has one weight, so no bold is faked. */
+@font-face {
+  font-family: "OCR-A";
+  src: url("../assets/fonts/ocr-a.woff2") format("woff2");
+  font-display: block;
+}
+.look-dot {
+  --tw-font-ui: "OCR-A", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  /* Page titles and big numbers outside dot type. */
+  --display: var(--tw-font-ui);
+  font-family: var(--tw-font-ui);
+  /* OCR-A is wide (each letter about 0.7 of its size), so the look's text is a size smaller. */
+  font-size: 11px;
+  font-synthesis: none;
+}
+
 /* ---- Tokens ---------------------------------------------------------------------------- */
 
 .look-dot {
@@ -1036,4 +1053,18 @@
 /* Buttons shrink to their content; a row of the card reaches its edges. */
 .look-dot section > button.net-row {
   width: calc(100% + 16px);
+}
+
+/* ---- OCR-A sizes ------------------------------------------------------------------------------ */
+
+/* OCR-A is wide: tile text a size smaller than the spec's Segoe ramp, and the room the details
+   chevron took at the right (it sits bottom right in this look) goes to the text. */
+.look-dot .tile-label {
+  font-size: 12px;
+}
+.look-dot :is(.tile-detail, .module-desc, .hint, .media-app, .reading-sub, .media-times) {
+  font-size: 11px;
+}
+.look-dot .tile-main {
+  padding-right: var(--tile-pad);
 }

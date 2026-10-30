@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **The Dot look's words are in OCR-A**, a monospaced, machine-readable typeface, lighter than before, beside the dot-matrix numbers.
 - **New modules: Wi-Fi and Bluetooth**, with their own Connect tab. Wi-Fi shows the network you're on and lets you join another, typing a new network's password right there. Bluetooth connects and disconnects headphones and speakers. Their tiles go up to 2×2 with the network or device name. New boards start with them; Lock and Desktop icons are in Add tiles.
 - **Tiles follow the design** at every size: volume (a level-filled 1×1, a bar with the speaker in it, the apps beside it at 4×2), separate CPU and Memory tiles with clock speed and total memory, a wide tile with any two of CPU, Memory, Download and Upload (picked on the System page), and Keep awake's 2×2 ring with 15 min, 1 hour and ∞ shortcuts.
 - **Tile icons show their state**: a moon or a sun for dark mode, a crossed-out eye for hidden desktop icons, a cup or a sleeping moon for Keep awake, and Wi-Fi and Bluetooth off icons.
