@@ -294,6 +294,9 @@ export type QuickTogglesState = {
 	desktopIcons: boolean,
 };
 
+/**  A reading the system monitor graphs. */
+export type Reading = "cpu" | "memory" | "download" | "upload";
+
 export type Repeat = "off" | "track" | "list";
 
 export type Settings = {
@@ -320,6 +323,8 @@ export type Settings = {
 	board: BoardTile[] | null,
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
+	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
+	monitorReadings: [Reading, Reading],
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */

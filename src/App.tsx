@@ -6,6 +6,7 @@ import { add, pack, type Placed } from "./shell/board";
 import { Board, boardToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage, useSave } from "./shell/Settings";
+import { SettingsContext } from "./shell/SettingsContext";
 import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
@@ -105,6 +106,7 @@ function App() {
   }
 
   return (
+    <SettingsContext.Provider value={{ settings, save }}>
     <main className={panelClass}>
       <header className="row">
         {!tabbed && !editHome && (
@@ -236,6 +238,7 @@ function App() {
       )}
       {view === "home" && error && <p className="error">{error}</p>}
     </main>
+    </SettingsContext.Provider>
   );
 }
 

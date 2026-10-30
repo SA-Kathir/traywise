@@ -37,6 +37,18 @@ pub struct Settings {
     pub board: Option<Vec<BoardTile>>,
     /// Home board: tiles fill gaps (true), or stay where they're put (false).
     pub auto_arrange: bool,
+    /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
+    pub monitor_readings: [Reading; 2],
+}
+
+/// A reading the system monitor graphs.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Reading {
+    Cpu,
+    Memory,
+    Download,
+    Upload,
 }
 
 /// A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
@@ -66,6 +78,7 @@ impl Default for Settings {
             onboarded: false,
             board: None,
             auto_arrange: true,
+            monitor_readings: [Reading::Cpu, Reading::Memory],
         }
     }
 }
@@ -225,6 +238,7 @@ mod tests {
             onboarded: true,
             board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
             auto_arrange: false,
+            monitor_readings: [Reading::Upload, Reading::Cpu],
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

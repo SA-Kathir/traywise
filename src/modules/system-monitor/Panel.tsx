@@ -1,45 +1,85 @@
-import { commands, events, type Battery } from "../../bindings";
+import { commands, events, type Battery, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
+import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
 const useSample = () => useLive(commands.systemMonitorState, events.systemSampled);
 
+/** The graphs zoom in to the highest reading shown, but never further than this (CPU %, network
+ *  bytes a second), so a quiet PC's jitter doesn't look like a spike. */
+const CPU_FLOOR = 10;
+const NET_FLOOR = 10 * 1024;
+/** The Dot look's dots: 4 px with 3 px gaps. */
+const PITCH = 7;
+
 /** Home tiles, as in the design: CPU or Memory, a dot-matrix number and its graph; at 4×1 and 4×2
- *  both side by side. Clicking opens the page, which has network, battery and disk too. */
+ *  two of them side by side, picked on the page. Clicking opens the page. */
 export function Tiles({ kind, size, open }: TileProps) {
   const s = useSample();
+  const { settings } = useSettings();
   const ready = s !== null && s.memoryTotal > 0;
-  const history = ready ? s.history : [];
-  const cpu = (
-    <Reading
-      label="CPU"
-      sub={ready && s.cpuMhz !== null ? `${(s.cpuMhz / 1000).toFixed(1)} GHz` : ""}
-      value={ready && s.cpu !== null ? String(s.cpu) : "–"}
-      unit="%"
-      values={history.map((p) => p.cpu)}
-      floor={CPU_FLOOR}
-      size={size}
-    />
-  );
-  const memory = (
-    <Reading
-      label={size.startsWith("4") ? "RAM" : "Memory"}
-      sub={ready ? `of ${Math.round(s.memoryTotal / 1024)} GB` : ""}
-      value={ready ? (s.memoryUsed / 1024).toFixed(1) : "–"}
-      unit="GB"
-      values={history.map((p) => p.memory)}
-      floor={MEMORY_FLOOR}
-      size={size}
-    />
-  );
+  const reading = (id: ReadingId) => {
+    const r = READINGS[id];
+    return (
+      <Reading
+        key={id}
+        label={size.startsWith("4") && id === "memory" ? "RAM" : r.label}
+        sub={ready ? r.sub(s) : ""}
+        value={ready ? r.value(s) : "–"}
+        unit={r.unit}
+        values={ready ? s.history.map(r.history) : []}
+        floor={r.floor}
+        size={size}
+      />
+    );
+  };
   return (
     <button className={`tile stats size-${size}`} onClick={open} title="Show details">
-      {kind === "memory" ? memory : cpu}
-      {kind === "monitor" && memory}
+      {kind === "monitor" ? settings.monitorReadings.map(reading) : reading(kind === "memory" ? "memory" : "cpu")}
     </button>
   );
 }
+
+/** What each reading shows on a tile: its name, a detail (at 2×2 and 4×2), the number (with its
+ *  unit, apart for the dot type) and its history for the graph. */
+const READINGS: Record<
+  ReadingId,
+  { label: string; unit: string; floor: number; sub: (s: SystemSample) => string; value: (s: SystemSample) => string; history: (p: Point) => number }
+> = {
+  cpu: {
+    label: "CPU",
+    unit: "%",
+    floor: CPU_FLOOR,
+    sub: (s) => (s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`),
+    value: (s) => (s.cpu === null ? "–" : String(s.cpu)),
+    history: (p) => p.cpu,
+  },
+  memory: {
+    label: "Memory",
+    unit: "GB",
+    floor: 10,
+    sub: (s) => `of ${Math.round(s.memoryTotal / 1024)} GB`,
+    value: (s) => (s.memoryUsed / 1024).toFixed(1),
+    history: (p) => p.memory,
+  },
+  download: {
+    label: "Download",
+    unit: "",
+    floor: NET_FLOOR,
+    sub: () => "",
+    value: (s) => (s.download === null ? "–" : rate(s.download)),
+    history: (p) => p.download,
+  },
+  upload: {
+    label: "Upload",
+    unit: "",
+    floor: NET_FLOOR,
+    sub: () => "",
+    value: (s) => (s.upload === null ? "–" : rate(s.upload)),
+    history: (p) => p.upload,
+  },
+};
 
 /** One reading on a tile: its name (and at 2×2 and 4×2 a detail, like the clock speed), the number
  *  in dot type with its unit, and from 2×1 up its graph. */
@@ -86,7 +126,40 @@ export default function Panel() {
       </Stat>
       {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
       <Stat label="Disk" value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`} />
+      <TilePicker />
     </>
+  );
+}
+
+/** Which two readings the 4×1 and 4×2 tile shows. */
+function TilePicker() {
+  const { settings, save } = useSettings();
+  return (
+    <div className="stat">
+      <p className="hint">The wide tile shows</p>
+      {([0, 1] as const).map((slot) => (
+        <div key={slot} className="segmented" role="radiogroup" aria-label={slot === 0 ? "Left reading" : "Right reading"}>
+          {(Object.keys(READINGS) as ReadingId[]).map((id) => {
+            const on = settings.monitorReadings[slot] === id;
+            return (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={on}
+                className={on ? "on" : ""}
+                onClick={() => {
+                  const readings: [ReadingId, ReadingId] = [...settings.monitorReadings];
+                  readings[slot] = id;
+                  save({ ...settings, monitorReadings: readings });
+                }}
+              >
+                {READINGS[id].label}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -102,13 +175,6 @@ function Stat({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-/** The graphs zoom in to the highest reading shown, but never further than this (CPU %, network
- *  bytes a second), so a quiet PC's jitter doesn't look like a spike. */
-const CPU_FLOOR = 10;
-const MEMORY_FLOOR = 10;
-const NET_FLOOR = 10 * 1024;
-/** The Dot look's dots: 4 px with 3 px gaps. */
-const PITCH = 7;
 
 /** The last 60 seconds, newest on the right, scaled to the highest reading (or `floor`): a line,
  *  and for the Dot look a dot matrix of `cols` × `rows` (each style hides the other). */
