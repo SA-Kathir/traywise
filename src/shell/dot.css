@@ -134,3 +134,264 @@
 .panel.look-dot {
   background: none;
 }
+
+/* ---- Type ------------------------------------------------------------------------------ */
+
+.look-dot h1 {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+/* Section and tile heads: the overline (CPU, VOLUME). */
+.look-dot h2 {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tw-text-secondary);
+}
+.look-dot :is(.hint, .tile-detail, .module-desc, .stat-chip-label) {
+  color: var(--tw-text-secondary);
+}
+.look-dot .error {
+  color: var(--tw-status-danger);
+}
+/* Dot-matrix numbers (the digits of a reading; its unit stays in Segoe beside it). */
+.look-dot .num {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* ---- Level-1 glass: cards ---------------------------------------------------------------- */
+
+/* A faint tint and a 1 px inside edge, no blur and no shadow at rest. */
+.look-dot :is(section, .tile, .stats) {
+  border: none;
+  border-radius: var(--tw-radius-tile);
+  background: var(--tw-glass-tile);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+  transition: background var(--tw-duration-instant) var(--tw-ease-standard);
+}
+.look-dot .stats:hover {
+  background: var(--tw-glass-tile-hover);
+}
+
+/* ---- Buttons ------------------------------------------------------------------------------ */
+
+/* Secondary: a glass pill. Hover lightens and pressing darkens whatever the fill is. :where keeps
+   these at plain `button` strength, so liquid.css's button classes (tile parts, rows) still win. */
+:where(.look-dot) button {
+  min-height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--tw-radius-full);
+  background-color: var(--tw-glass-tile);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+  transition:
+    background var(--tw-duration-instant) var(--tw-ease-standard),
+    color var(--tw-duration-fast) var(--tw-ease-standard);
+}
+:where(.look-dot) button:hover {
+  background-image: linear-gradient(rgb(255 255 255 / 0.12) 0 0);
+}
+:where(.look-dot) button:active {
+  background-image: linear-gradient(rgb(0 0 0 / 0.12) 0 0);
+}
+:where(.look-dot) button:disabled {
+  opacity: 0.4;
+  background-image: none;
+}
+/* Primary: the accent, one per view. A switched-on button: the inverted plate. */
+.look-dot button.primary {
+  background-color: var(--tw-accent-base);
+  color: var(--tw-accent-on);
+  box-shadow: none;
+}
+.look-dot button.on {
+  background-color: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+  box-shadow: none;
+}
+/* Quiet icon buttons: a 32 px circle. */
+.look-dot .icon-button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  font-size: 16px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--tw-text-primary);
+}
+.look-dot .icon-button:hover {
+  background: var(--tw-control-quiet-hover);
+}
+
+/* ---- Segmented control and tabs ------------------------------------------------------------ */
+
+/* A track pill with a 3 px inset; the picked segment is the inverted pill. */
+.look-dot .segmented {
+  gap: 0;
+  padding: 3px;
+  border-radius: var(--tw-radius-full);
+  background: var(--tw-control-track);
+  box-shadow: none;
+}
+.look-dot .segmented button {
+  min-height: 26px;
+  padding: 0 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--tw-text-secondary);
+}
+.look-dot .segmented button:hover {
+  background: transparent;
+  color: var(--tw-text-primary);
+}
+.look-dot .segmented button.on {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+  font-weight: 600;
+}
+/* A list of choices (output devices): rounded rectangles, not pills. */
+.look-dot .segmented.vertical {
+  border-radius: var(--tw-radius-md);
+}
+.look-dot .segmented.vertical button {
+  min-height: 30px;
+  border-radius: 9px;
+}
+
+/* Tabs: no track; the picked one is primary with a 4 px accent dot under it. */
+.look-dot .tabs {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.look-dot .tabs button {
+  position: relative;
+  padding: 6px 0 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--tw-text-tertiary);
+}
+.look-dot .tabs button:hover {
+  background: transparent;
+  color: var(--tw-text-secondary);
+}
+.look-dot .tabs button.on {
+  color: var(--tw-text-primary);
+}
+.look-dot .tabs button.on::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: calc(50% - 2px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tw-accent-base);
+}
+
+/* ---- List rows ------------------------------------------------------------------------------ */
+
+/* 8/12 padding, radius 12, a wash on hover, no dividers. */
+.look-dot :is(.link-row, .module-row) {
+  min-height: 0;
+  padding: 8px 12px;
+  border-radius: var(--tw-radius-md);
+  background: transparent;
+  box-shadow: none;
+}
+.look-dot :is(.link-row, .module-row):hover {
+  background: var(--tw-control-quiet-hover);
+}
+.look-dot .module-row + .module-row {
+  border-top: none;
+}
+/* Rows inside a card reach its edges, like the Figma list rows. */
+.look-dot section > :is(.link-row, .module-row) {
+  margin-inline: -8px;
+  width: calc(100% + 16px);
+}
+.look-dot .badge {
+  background: var(--tw-control-track);
+  color: var(--tw-text-secondary);
+}
+
+/* ---- Switch --------------------------------------------------------------------------------- */
+
+/* 40 × 20. Off: the track, a hairline and a grey 12 px knob; on: the accent and an accent-on knob. */
+.look-dot input[type="checkbox"] {
+  width: 40px;
+  border-radius: var(--tw-radius-full);
+  background: var(--tw-control-track);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+  transition: background var(--tw-duration-fast) var(--tw-ease-standard);
+}
+.look-dot input[type="checkbox"]::before {
+  top: 4px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  background: var(--tw-text-secondary);
+  transition:
+    transform var(--tw-duration-fast) var(--tw-ease-standard),
+    width var(--tw-duration-instant),
+    height var(--tw-duration-instant),
+    top var(--tw-duration-instant),
+    left var(--tw-duration-instant);
+}
+.look-dot input[type="checkbox"]:hover::before {
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+}
+.look-dot input[type="checkbox"]:checked {
+  background: var(--tw-accent-base);
+  box-shadow: none;
+}
+.look-dot input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+  background: var(--tw-accent-on);
+}
+.look-dot input[type="checkbox"]:hover:checked::before {
+  transform: translateX(18px);
+}
+.look-dot input[type="checkbox"]:indeterminate::before {
+  transform: translateX(10px);
+}
+.look-dot input[type="checkbox"]:disabled {
+  opacity: 0.4;
+}
+
+/* ---- Slider --------------------------------------------------------------------------------- */
+
+/* Inline: a 4 px track, a neutral fill (never the accent) and a 16 px white thumb. */
+.look-dot input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    var(--tw-control-fill) var(--fill, 0%),
+    var(--tw-control-track) var(--fill, 0%)
+  );
+}
+.look-dot input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  background: var(--tw-control-thumb);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px var(--tw-glass-edge);
+}
+.look-dot input[type="range"]:hover::-webkit-slider-thumb {
+  background: var(--tw-control-thumb);
+}
+
+/* Scrollbar. */
+.look-dot #root::-webkit-scrollbar-thumb {
+  background: var(--tw-control-track);
+}
