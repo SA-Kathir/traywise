@@ -50,8 +50,14 @@ export function Tiles({ size, open }: TileProps) {
   const total = typeof state.mode === "object" ? state.mode.minutes * 60000 : null;
   // The ring: full while on (a timer's share left while timed), empty while off.
   const lit = state.mode === "off" ? 0 : left !== null && total ? Math.ceil((left / total) * RING) : RING;
+  // Up to an hour in minutes ("42 min left"), then hours and minutes ("1:30 h left").
   const minutes = left === null ? 0 : Math.ceil(left / 60000);
-  const big = left === null ? null : minutes < 60 ? [String(minutes), "min left"] : [clock(left).replace(/:\d\d$/, ""), "h left"];
+  const big =
+    left === null
+      ? null
+      : minutes <= 60
+        ? [String(minutes), "min left"]
+        : [`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`, "h left"];
   return (
     <div className={`tile awake size-2x2${state.mode !== "off" ? " on" : ""}`}>
       <button className="tile-title" title="Details" onClick={open}>
