@@ -34,8 +34,14 @@ export function Tiles({ size, open }: TileProps) {
       </span>
       {size === "4x2" && ready && (
         <span className="stat-graphs">
-          <Graph values={s.history.map((p) => p.cpu)} max={100} />
-          <Graph values={s.history.map((p) => p.download + p.upload)} />
+          <span>
+            <span className="stat-chip-label">CPU</span>
+            <Graph values={s.history.map((p) => p.cpu)} floor={CPU_FLOOR} cols={20} rows={7} />
+          </span>
+          <span>
+            <span className="stat-chip-label">Network</span>
+            <Graph values={s.history.map((p) => p.download + p.upload)} floor={NET_FLOOR} cols={20} rows={7} />
+          </span>
         </span>
       )}
     </button>
@@ -51,14 +57,14 @@ export default function Panel() {
   return (
     <>
       <Stat label="CPU" value={s.cpu === null ? "–" : `${s.cpu}%`}>
-        <Graph values={s.history.map((p) => p.cpu)} max={100} />
+        <Graph values={s.history.map((p) => p.cpu)} floor={CPU_FLOOR} />
       </Stat>
       <Stat label="Memory" value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`} />
       <Stat
         label="Network"
         value={s.download === null || s.upload === null ? "–" : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`}
       >
-        <Graph values={s.history.map((p) => p.download + p.upload)} />
+        <Graph values={s.history.map((p) => p.download + p.upload)} floor={NET_FLOOR} />
       </Stat>
       {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
       <Stat label="Disk" value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`} />
@@ -78,19 +84,44 @@ function Stat({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-/** A line over the last 60 seconds. `max` defaults to the highest value shown. */
-function Graph({ values, max }: { values: number[]; max?: number }) {
+/** The graphs zoom in to the highest reading shown, but never further than this (CPU %, network
+ *  bytes a second), so a quiet PC's jitter doesn't look like a spike. */
+const CPU_FLOOR = 10;
+const NET_FLOOR = 10 * 1024;
+/** The Dot look's dots: 4 px with 3 px gaps. */
+const PITCH = 7;
+
+/** The last 60 seconds, newest on the right, scaled to the highest reading (or `floor`): a line,
+ *  and for the Dot look a dot matrix of `cols` × `rows` (each style hides the other). */
+function Graph({ values, floor, cols = 40, rows = 5 }: { values: number[]; floor: number; cols?: number; rows?: number }) {
   if (values.length < 2) return <svg className="graph" aria-hidden />;
-  const top = max ?? Math.max(1, ...values);
+  const top = Math.max(floor, ...values) * 1.1; // a little headroom above the peak
   // 60 seconds across 59 steps, newest on the right.
   const points = values.map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`).join(" ");
-  const first = 59 - (values.length - 1);
+  // Each column is the highest reading in its slice of the minute; columns before the first reading stay dark.
+  const per = 60 / cols;
+  const dots = Array.from({ length: cols }, (_, c) => {
+    const slice = values.slice(Math.max(0, values.length - (cols - c) * per), values.length - (cols - 1 - c) * per);
+    const lit = slice.length === 0 ? 0 : Math.max(1, Math.round((Math.max(...slice) / top) * rows));
+    return Array.from({ length: rows }, (_, r) => (
+      <circle
+        key={r}
+        cx={c * PITCH + PITCH / 2}
+        cy={(rows - 1 - r) * PITCH + PITCH / 2}
+        r={2}
+        className={r >= lit ? "off" : c === cols - 1 ? "now" : undefined}
+      />
+    ));
+  });
   return (
-    <svg className="graph" viewBox="0 0 59 20" preserveAspectRatio="none" aria-hidden>
-      {/* The area under the line: the Dot look draws the graph as dots in it. */}
-      <polygon className="area" points={`${first},20 ${points} 59,20`} />
-      <polyline points={points} />
-    </svg>
+    <>
+      <svg className="graph" viewBox="0 0 59 20" preserveAspectRatio="none" aria-hidden>
+        <polyline points={points} />
+      </svg>
+      <svg className="graph-dots" viewBox={`0 0 ${cols * PITCH} ${rows * PITCH}`} aria-hidden>
+        {dots}
+      </svg>
+    </>
   );
 }
 

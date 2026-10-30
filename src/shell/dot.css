@@ -604,19 +604,23 @@
   font-size: 16px;
   margin-right: 4px;
 }
-/* Graphs as a dot matrix: the area under the line, seen through a grid of 4 px dots. */
+/* Graphs as a dot matrix: lit dots up to each column's reading, the newest column in the accent,
+   the rest faint. */
 .look-dot .graph {
-  height: 35px;
-  -webkit-mask: radial-gradient(circle, #000 1.6px, transparent 2.1px) 0 100% / 7px 7px;
-}
-.look-dot .stats .graph {
-  height: 56px;
-}
-.look-dot .graph polyline {
   display: none;
 }
-.look-dot .graph .area {
+.look-dot .graph-dots {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 6px;
   fill: var(--tw-text-primary);
+}
+.look-dot .graph-dots .off {
+  fill: var(--tw-control-track);
+}
+.look-dot .graph-dots .now {
+  fill: var(--tw-accent-base);
 }
 
 /* ---- Header ------------------------------------------------------------------------------- */
@@ -863,4 +867,7 @@
 }
 .look-dot.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
+}
+.look-dot .stat-graphs {
+  text-align: left;
 }

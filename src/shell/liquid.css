@@ -345,6 +345,12 @@ button.tile-title:hover {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* Each graph under its name. */
+.stat-graphs > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .stat-chip {
   display: flex;
   flex-direction: column;
@@ -590,8 +596,9 @@ label.row + .hint,
   height: 20px;
   margin-top: 4px;
 }
-.graph .area {
-  fill: none;
+/* The Dot look's graph; the others draw the line. */
+.graph-dots {
+  display: none;
 }
 .graph polyline {
   fill: none;
