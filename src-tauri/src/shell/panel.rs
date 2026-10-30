@@ -63,8 +63,6 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .resizable(false)
         .always_on_top(true)
         .skip_taskbar(true)
-        // A minimised panel counts as open and blocked opening it again (Show desktop can minimise it).
-        .minimizable(false)
         // Set per look by `frame`.
         .shadow(false)
         .build()?;
