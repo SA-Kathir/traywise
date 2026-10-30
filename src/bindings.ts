@@ -12,8 +12,12 @@ export const commands = {
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
-	/**  The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into). */
-	hidePanel: () => __TAURI_INVOKE<void>("hide_panel"),
+	/**
+	 *  The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into).
+	 *  Not while the pointer is beside it, between the panel and the screen's edge (still on the edge
+	 *  it was opened from, say): false then, and the UI asks again a moment later.
+	 */
+	hidePanel: () => __TAURI_INVOKE<boolean>("hide_panel"),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),

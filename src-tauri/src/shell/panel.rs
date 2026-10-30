@@ -10,15 +10,15 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowB
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
     DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
-    DWMWCP_ROUND, DwmSetWindowAttribute,
+    DWMWCP_ROUND, DwmFlush, DwmSetWindowAttribute,
 };
-use windows::Win32::Foundation::{HWND, RECT};
+use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::Graphics::Gdi::{
     BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
+    GetCursorPos, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
     SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
 };
 use windows::core::BOOL;
@@ -112,12 +112,27 @@ pub fn hover_open(app: &AppHandle) {
 }
 
 /// The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into).
+/// Not while the pointer is beside it, between the panel and the screen's edge (still on the edge
+/// it was opened from, say): false then, and the UI asks again a moment later.
 #[tauri::command]
 #[specta::specta]
-pub fn hide_panel(app: AppHandle) {
-    if let Some(win) = app.get_webview_window(LABEL) {
-        hide(&win);
+pub fn hide_panel(app: AppHandle) -> bool {
+    let Some(win) = app.get_webview_window(LABEL) else { return true };
+    let mut pointer = POINT::default();
+    let mut r = RECT::default();
+    if let Ok(hwnd) = win.hwnd()
+        && unsafe { GetCursorPos(&mut pointer).is_ok() && GetWindowRect(hwnd, &mut r).is_ok() }
+        && beside(&r, pointer)
+    {
+        return false;
     }
+    hide(&win);
+    true
+}
+
+/// Over the panel or to its right, level with it.
+fn beside(panel: &RECT, p: POINT) -> bool {
+    p.x >= panel.left && p.y >= panel.top && p.y < panel.bottom
 }
 
 /// Registers the shortcut that opens or closes the panel, replacing the previous one. Fails (keeping
@@ -290,16 +305,23 @@ fn move_to(hwnd: HWND, x: i32, y: i32) {
     let _ = unsafe { SetWindowPos(hwnd, None, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE) };
 }
 
-/// Moves the window from `from` to `to` (its left edge) over `ms`, about 60 times a second, on a
+/// Moves the window from `from` to `to` (its left edge) over `ms`, once per screen refresh, on a
 /// thread of its own; `ease` shapes the motion. Then runs `done`.
 fn slide(hwnd: HWND, from: i32, to: i32, y: i32, ms: u64, ease: fn(f64) -> f64, done: impl FnOnce() + Send + 'static) {
     let hwnd = hwnd.0 as isize;
     std::thread::spawn(move || {
-        let frames = (ms / 16).max(1);
-        for i in 1..=frames {
-            let x = from + (f64::from(to - from) * ease(i as f64 / frames as f64)).round() as i32;
-            move_to(HWND(hwnd as _), x, y);
-            std::thread::sleep(Duration::from_millis(16));
+        let start = Instant::now();
+        loop {
+            // From the time elapsed, not a frame count: a late frame doesn't slow the slide.
+            let t = (start.elapsed().as_secs_f64() * 1000.0 / ms as f64).min(1.0);
+            move_to(HWND(hwnd as _), from + (f64::from(to - from) * ease(t)).round() as i32, y);
+            if t >= 1.0 {
+                break;
+            }
+            // Wait for the screen's next frame, so each step lands on one (Sleep is too coarse).
+            if unsafe { DwmFlush() }.is_err() {
+                std::thread::sleep(Duration::from_millis(8));
+            }
         }
         done();
     });
@@ -414,6 +436,17 @@ fn frame(win: &WebviewWindow, framed: bool) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn beside_the_panel() {
+        use windows::Win32::Foundation::{POINT, RECT};
+        let panel = RECT { left: 1455, top: 227, right: 1905, bottom: 1027 };
+        let at = |x, y| super::beside(&panel, POINT { x, y });
+        assert!(at(1919, 600), "on the screen's edge, level with it");
+        assert!(at(1600, 600), "over it");
+        assert!(!at(1400, 600), "to its left");
+        assert!(!at(1919, 100), "on the edge, above it");
+    }
+
     #[test]
     fn brightness() {
         assert_eq!(super::brightness(&[0, 0, 0, 255].repeat(64)), 0);

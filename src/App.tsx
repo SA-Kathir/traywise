@@ -46,7 +46,8 @@ function App() {
     let leave: number | undefined;
     let clicked = false;
     const close = (after: number) => {
-      leave = window.setTimeout(() => clicked || commands.hidePanel(), after);
+      // Rust says no while the pointer is beside it (still on the edge): try again shortly.
+      leave = window.setTimeout(() => clicked || commands.hidePanel().then((hid) => hid || close(LEAVE_MS)), after);
     };
     const click = () => {
       clicked = true;
