@@ -23,7 +23,7 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 - **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default).
 - **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, or while plugged in. Can keep the screen on too.
 - **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.
-- **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
+- **Quick toggles**: switch Wi-Fi and Bluetooth on or off, switch light/dark mode, show or hide desktop icons, and lock the screen.
 
 Left-click the tray icon, or press **Ctrl+Alt+T** (change it in Settings → Shortcuts), to open or close the panel. Modules are grouped into tabs (Home, Sound, System), and Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
