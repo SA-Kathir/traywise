@@ -1067,3 +1067,9 @@
 .look-dot .tile-main {
   padding-right: var(--tile-pad);
 }
+.look-dot .tile-picker {
+  border-top-color: var(--tw-glass-edge);
+}
+.look-dot .picker-side {
+  color: var(--tw-text-secondary);
+}

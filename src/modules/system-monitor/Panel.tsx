@@ -36,7 +36,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   };
   return (
     <button className={`tile stats size-${size}`} onClick={open} title="Show details">
-      {kind === "monitor" ? settings.monitorReadings.map(reading) : reading(kind === "memory" ? "memory" : "cpu")}
+      {kind === "monitor" ? settings.monitorReadings.map(reading) : reading(kind as ReadingId)}
     </button>
   );
 }
@@ -45,10 +45,11 @@ export function Tiles({ kind, size, open }: TileProps) {
  *  unit, apart for the dot type) and its history for the graph. */
 const READINGS: Record<
   ReadingId,
-  { label: string; unit: string; floor: number; sub: (s: SystemSample) => string; value: (s: SystemSample) => string; history: (p: Point) => number }
+  { label: string; short: string; unit: string; floor: number; sub: (s: SystemSample) => string; value: (s: SystemSample) => string; history: (p: Point) => number }
 > = {
   cpu: {
     label: "CPU",
+    short: "CPU",
     unit: "%",
     floor: CPU_FLOOR,
     sub: (s) => (s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`),
@@ -57,6 +58,7 @@ const READINGS: Record<
   },
   memory: {
     label: "Memory",
+    short: "RAM",
     unit: "GB",
     floor: 10,
     sub: (s) => `of ${Math.round(s.memoryTotal / 1024)} GB`,
@@ -65,6 +67,7 @@ const READINGS: Record<
   },
   download: {
     label: "Download",
+    short: "Down",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
@@ -73,6 +76,7 @@ const READINGS: Record<
   },
   upload: {
     label: "Upload",
+    short: "Up",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
@@ -131,32 +135,36 @@ export default function Panel() {
   );
 }
 
-/** Which two readings the 4×1 and 4×2 tile shows. */
+/** Which two readings the 4×1 and 4×2 tile shows: a row each for its left and right. */
 function TilePicker() {
   const { settings, save } = useSettings();
   return (
-    <div className="stat">
-      <p className="hint">The wide tile shows</p>
+    <div className="tile-picker">
+      <h2>Wide tile</h2>
       {([0, 1] as const).map((slot) => (
-        <div key={slot} className="segmented" role="radiogroup" aria-label={slot === 0 ? "Left reading" : "Right reading"}>
-          {(Object.keys(READINGS) as ReadingId[]).map((id) => {
-            const on = settings.monitorReadings[slot] === id;
-            return (
-              <button
-                key={id}
-                role="radio"
-                aria-checked={on}
-                className={on ? "on" : ""}
-                onClick={() => {
-                  const readings: [ReadingId, ReadingId] = [...settings.monitorReadings];
-                  readings[slot] = id;
-                  save({ ...settings, monitorReadings: readings });
-                }}
-              >
-                {READINGS[id].label}
-              </button>
-            );
-          })}
+        <div key={slot} className="row">
+          <span className="picker-side">{slot === 0 ? "Left" : "Right"}</span>
+          <div className="segmented grow" role="radiogroup" aria-label={slot === 0 ? "Left reading" : "Right reading"}>
+            {(Object.keys(READINGS) as ReadingId[]).map((id) => {
+              const on = settings.monitorReadings[slot] === id;
+              return (
+                <button
+                  key={id}
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={READINGS[id].label}
+                  className={on ? "on" : ""}
+                  onClick={() => {
+                    const readings: [ReadingId, ReadingId] = [...settings.monitorReadings];
+                    readings[slot] = id;
+                    save({ ...settings, monitorReadings: readings });
+                  }}
+                >
+                  {READINGS[id].short}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
