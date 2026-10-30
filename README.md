@@ -19,6 +19,7 @@ Pick a look when you first start it, and change it any time in Settings:
 Each module can be switched on or off in **Settings → Modules**. A module that's off doesn't run at all.
 
 - **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume.
+- **Now playing**: what any app is playing (Spotify, a browser tab, a video player), with its cover art, play/pause, skip, a seek bar, shuffle and repeat. The Sound tab lists every app with media.
 - **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default).
 - **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, or while plugged in. Can keep the screen on too.
 - **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **New module: Now playing.** What any app is playing, with cover art, play/pause, skip, a seek bar, shuffle and repeat (when the app allows them). Its tiles come in 1×1 (play/pause) up to 4×2, and the Sound tab lists every app with media, so you can control any of them. Switch it on in Settings → Modules.
 - **A new look, Dot, now the default.** Monochrome tiles over a dot grid, numbers in a dot-matrix font, and one accent colour. Switched-on tiles turn into a solid plate with a small accent dot. It follows Windows' light or dark mode. Tiles and cards are frosted glass. Settings → Look has its Accent (Red, Amber, Violet, Blue, Green) and Background (Dots, Plain, or Transparent over the desktop). Liquid and Windows are still there.
 - The system monitor's graphs zoom in to what they show, so a quiet CPU's ups and downs are visible, and on its 4×2 tile they're labelled CPU and Network.
 - **Add tiles is a tray over the board** in every look, with a size picker: pick 1×1 up to 4×2, then add tiles at that size.
