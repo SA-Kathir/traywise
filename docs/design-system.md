@@ -3,7 +3,7 @@
 The source of truth is the **Design System** page of the Figma file:
 https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=11-359
 
-This document lists every token with its value, so the app can adopt them later. Nothing in `src/` uses these yet.
+This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them.
 
 ## Direction
 

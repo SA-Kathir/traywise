@@ -3,12 +3,14 @@
 One tray icon, one panel, and a handful of small Windows 11 tools you can switch on or off.
 
 <p align="center">
-  <img src="docs/screenshot-liquid.png" width="300" alt="The Traywise panel in the Liquid look: tiles tinted in a colour preset">
-  <img src="docs/screenshot-windows.png" width="300" alt="The Traywise panel in the Windows look: flat, like Windows 11's own flyouts">
+  <img src="docs/screenshot-dot.png" width="250" alt="The Traywise panel in the Dot look: monochrome tiles over a dot grid, with dot-matrix numbers and a red accent">
+  <img src="docs/screenshot-liquid.png" width="250" alt="The Traywise panel in the Liquid look: tiles tinted in a colour preset">
+  <img src="docs/screenshot-windows.png" width="250" alt="The Traywise panel in the Windows look: flat, like Windows 11's own flyouts">
 </p>
 
 Pick a look when you first start it, and change it any time in Settings:
 
+- **Dot** (the default): monochrome tiles over a dot grid, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
 - **Liquid**: tiles tinted in one of six colours, on a tinted background or floating over your desktop.
 - **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
 
