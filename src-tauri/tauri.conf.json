@@ -17,6 +17,10 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "resources": {
+      "../src/assets/fonts/Doto-OFL.txt": "licenses/Doto-OFL.txt",
+      "../src/assets/fonts/OCR-A-LICENSE.txt": "licenses/OCR-A-LICENSE.txt"
+    },
     "publisher": "Traywise",
     "windows": {
       "nsis": {
