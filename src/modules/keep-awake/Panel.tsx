@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { commands, events, type KeepAwakeState, type Mode } from "../../bindings";
-import { Num, Tile, TileCard } from "../../shell/Tile";
+import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import { useNow } from "../../shell/useNow";
 import keepAwake from ".";
@@ -17,37 +17,101 @@ const STEPS = [1, 5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720];
 
 const useKeepAwake = () => useLive(commands.keepAwakeState, events.keepAwakeChanged);
 
-/** Home tile: switches keep-awake on (until turned off) or off; at 4×2, the page's modes and timer. */
+/** Home tile: a click keeps the PC awake until turned off, or lets it sleep again. 2×2, as in the
+ *  design: a ring of 24 dots that empties as a timer runs out, and 15 min, 1 hour and ∞ shortcuts. */
 export function Tiles({ size, open }: TileProps) {
   const state = useKeepAwake();
   const now = useNow(state?.endsAt != null);
   if (!state) return null;
-  const detail =
-    state.endsAt !== null
-      ? `${clock(Math.max(0, state.endsAt - now))} left`
-      : state.mode === "whilePluggedIn"
-        ? state.active
-          ? "While plugged in"
-          : "Paused on battery"
-        : state.active
-          ? "On"
-          : "Off";
-  if (size === "4x2")
+  const left = state.endsAt === null ? null : Math.max(0, state.endsAt - now);
+  const toggle = () => commands.keepAwakeSetMode(state.mode === "off" ? "on" : "off");
+  if (size !== "2x2") {
+    const detail =
+      left !== null
+        ? size === "1x1"
+          ? clock(left)
+          : `${clock(left)} left`
+        : state.mode === "whilePluggedIn"
+          ? state.active
+            ? "While plugged in"
+            : "Paused on battery"
+          : state.active
+            ? "On"
+            : size === "1x1"
+              ? "Off"
+              : "Off · tap to keep awake";
     return (
-      <TileCard size={size} label="Keep awake" detail={detail} onOpen={open}>
-        <Controls state={state} />
-      </TileCard>
+      <Tile size={size} icon={keepAwake.icon} label="Keep awake" detail={detail} on={state.mode !== "off"} onToggle={toggle} onOpen={open} />
     );
+  }
+  const total = typeof state.mode === "object" ? state.mode.minutes * 60000 : null;
+  // The ring: full while on (a timer's share left while timed), empty while off.
+  const lit = state.mode === "off" ? 0 : left !== null && total ? Math.ceil((left / total) * RING) : RING;
+  const minutes = left === null ? 0 : Math.ceil(left / 60000);
+  const big = left === null ? null : minutes < 60 ? [String(minutes), "min left"] : [clock(left).replace(/:\d\d$/, ""), "h left"];
   return (
-    <Tile
-      size={size}
-      icon={keepAwake.icon}
-      label="Keep awake"
-      detail={detail}
-      on={state.mode !== "off"}
-      onToggle={() => commands.keepAwakeSetMode(state.mode === "off" ? "on" : "off")}
-      onOpen={open}
-    />
+    <div className={`tile awake size-2x2${state.mode !== "off" ? " on" : ""}`}>
+      <button className="tile-title" title="Details" onClick={open}>
+        <span className="tile-icon" aria-hidden>
+          {keepAwake.icon}
+        </span>
+        <span className="tile-label">Keep awake</span>
+      </button>
+      <button className="awake-main" onClick={toggle} aria-pressed={state.mode !== "off"} title={state.mode === "off" ? "Keep awake" : "Let it sleep"}>
+        <Ring lit={lit} />
+        <span className="awake-state">
+          {big ? (
+            <>
+              <Num text={big[0]} />
+              <span className="tile-detail">{big[1]}</span>
+            </>
+          ) : (
+            <span className="tile-label">{state.mode === "off" ? "Off" : state.active ? "On" : "Paused"}</span>
+          )}
+        </span>
+      </button>
+      <span className="tile-detail">
+        {state.endsAt !== null
+          ? `Until ${new Date(state.endsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : state.mode === "off"
+            ? "Sleeps as usual"
+            : state.active
+              ? "Until you turn it off"
+              : "Paused on battery"}
+      </span>
+      <span className="awake-quick">
+        {QUICK.map(([label, mode]) => (
+          <button
+            key={label}
+            className={JSON.stringify(state.mode) === JSON.stringify(mode) ? "on" : ""}
+            onClick={() => commands.keepAwakeSetMode(mode)}
+          >
+            {label}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** The 2×2 tile's shortcuts. */
+const QUICK: [string, Mode][] = [
+  ["15m", { minutes: 15 }],
+  ["1h", { minutes: 60 }],
+  ["∞", "on"],
+];
+
+const RING = 24;
+
+/** 24 dots in a circle; the first `lit` (clockwise from the top) are lit. */
+function Ring({ lit }: { lit: number }) {
+  return (
+    <svg className="awake-ring" viewBox="0 0 64 64" aria-hidden>
+      {Array.from({ length: RING }, (_, i) => {
+        const a = (i / RING) * 2 * Math.PI - Math.PI / 2;
+        return <circle key={i} cx={32 + 27 * Math.cos(a)} cy={32 + 27 * Math.sin(a)} r={2.6} className={i < lit ? "lit" : undefined} />;
+      })}
+    </svg>
   );
 }
 

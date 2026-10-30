@@ -937,3 +937,57 @@
 .look-dot .media-page + .media-page {
   border-top-color: var(--tw-glass-edge);
 }
+
+/* ---- Keep awake 2×2 ------------------------------------------------------------------------ */
+
+/* The ring stands in for the live dot. */
+.look-dot .awake.on::after {
+  display: none;
+}
+.look-dot .awake-ring {
+  fill: var(--tw-control-track);
+}
+.look-dot .awake.on .awake-ring {
+  fill: color-mix(in srgb, var(--tw-text-inverse) 14%, transparent);
+}
+.look-dot .awake-ring .lit {
+  fill: var(--tw-accent-base);
+}
+.look-dot .awake .tile-title .tile-label {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+.look-dot .awake-state .num {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+}
+.look-dot .awake.on :is(.tile-detail, .awake-quick button) {
+  color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
+}
+.look-dot .awake-quick button {
+  min-height: 22px;
+  padding: 0 8px;
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+}
+.look-dot .awake-quick button.on {
+  background-color: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+  box-shadow: none;
+}
+.look-dot .awake.on .awake-quick button.on {
+  background-color: var(--tw-text-inverse);
+  color: var(--tw-control-fill);
+}
+.look-dot .tile.awake .tile-icon,
+.look-dot .tile.awake.on .tile-icon {
+  width: auto;
+  height: auto;
+  background: none;
+}
+/* A countdown is five characters: smaller at 1×1. */
+.look-dot .size-1x1 .tile-detail .num {
+  font-size: 16px;
+}

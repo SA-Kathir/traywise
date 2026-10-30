@@ -1203,3 +1203,60 @@ button.vol-icon:hover {
 .vol.size-1x1 .vol-icon {
   order: 0;
 }
+
+/* ---- Keep awake 2×2 -------------------------------------------------------------------- */
+
+/* The title, then the ring with the time left beside it, a status line and the shortcuts. */
+.awake {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tile-pad);
+  overflow: hidden;
+}
+.awake .tile-title .tile-icon {
+  font-size: 14px;
+}
+.awake-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.awake-main:hover {
+  background: none;
+}
+.awake-ring {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  fill: rgb(var(--ink) / 0.2);
+}
+.awake-ring .lit {
+  fill: var(--accent);
+}
+.awake-state {
+  display: flex;
+  flex-direction: column;
+}
+.awake-state .num {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+.awake .tile-detail {
+  font-size: 12px;
+}
+.awake-quick {
+  display: flex;
+  gap: 4px;
+}
+.awake-quick button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
