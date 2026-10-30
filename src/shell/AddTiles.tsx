@@ -31,7 +31,7 @@ export function AddTiles({
   const rows = enabled.flatMap((id) =>
     Object.entries(modules[id].tiles)
       .filter(([kind]) => !onBoard.has(`${id}/${kind}`))
-      .map(([kind, tile]) => ({ id: `${id}/${kind}`, module: modules[id].name, ...tile })),
+      .map(([kind, tile]) => ({ id: `${id}/${kind}`, module: modules[id].name, icon: modules[id].icon, ...tile })),
   );
   return (
     <>
@@ -53,6 +53,9 @@ export function AddTiles({
         {rows.length === 0 && <p className="hint">Every tile is on your board.</p>}
         {rows.map((t) => (
           <button key={t.id} className="link-row" disabled={!t.sizes.includes(size)} onClick={() => onAdd(t.id, size)}>
+            <span className="module-icon" aria-hidden>
+              {t.icon}
+            </span>
             <span className="grow">
               <span className="tile-label">{t.name}</span>
               <span className="module-desc">

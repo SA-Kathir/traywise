@@ -579,7 +579,7 @@
   margin-right: 2px;
   color: var(--tw-text-primary);
 }
-.look-dot :is(.size-4x1, .size-2x2, .size-4x2) .stat-chip-value .num {
+.look-dot :is(.size-4x1, .size-2x2) .stat-chip-value .num {
   font-size: 20px;
 }
 /* The keep-awake timer's countdown, inside its pill. */
@@ -591,6 +591,9 @@
 .look-dot .graph {
   height: 35px;
   -webkit-mask: radial-gradient(circle, #000 1.6px, transparent 2.1px) 0 100% / 7px 7px;
+}
+.look-dot .stats .graph {
+  height: 56px;
 }
 .look-dot .graph polyline {
   display: none;
@@ -787,6 +790,13 @@
   color: var(--tw-accent-on);
   box-shadow: 0 8px 24px var(--tw-effect-shadow);
   font-weight: 600;
+}
+.look-dot .edit-bar .add-tiles::before {
+  content: "\e710"; /* Segoe Fluent "Add" */
+  margin-right: 8px;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-weight: normal;
+  font-size: 12px;
 }
 /* Room under the board for it. */
 .look-dot .board.editing {
