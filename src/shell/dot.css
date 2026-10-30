@@ -442,6 +442,10 @@
 .look-dot .tile-detail .num {
   font-size: 20px;
   margin-right: 2px;
+  color: var(--tw-text-primary);
+}
+.look-dot .tile.on .tile-detail .num {
+  color: var(--tw-text-inverse);
 }
 .look-dot .size-1x1 .tile-detail .num {
   font-size: 24px;
@@ -481,7 +485,7 @@
 .look-dot .tile.on :is(.tile-detail, .tile-more) {
   color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
 }
-.look-dot .tile.on .tile-icon {
+.look-dot .tile.on:not(.size-1x1) .tile-icon {
   background: color-mix(in srgb, var(--tw-text-inverse) 10%, transparent);
 }
 .look-dot .tile.on::after {
