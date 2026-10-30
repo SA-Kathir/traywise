@@ -258,6 +258,28 @@ mod tests {
         std::fs::write(&path, r#"{ "preset": "forest", "motion": "onOpen" }"#).unwrap();
         assert_eq!(read(&path), Settings { preset: Preset::Forest, ..Settings::default() }, "old field ignored");
 
+        // A 0.1.0 settings file: every newer setting takes its default, nothing is lost.
+        std::fs::write(
+            &path,
+            r#"{ "enabledModules": ["volume-mixer", "keep-awake", "audio-devices", "system-monitor", "quick-toggles"],
+                 "look": "liquid", "transparent": true, "singleHue": false, "preset": "plum",
+                 "micShortcut": "Ctrl+Alt+M", "panelShortcut": "Ctrl+Alt+T", "checkUpdates": true, "onboarded": true }"#,
+        )
+        .unwrap();
+        let upgraded = read(&path);
+        assert_eq!(
+            upgraded,
+            Settings {
+                enabled_modules: vec![ModuleId::VolumeMixer, ModuleId::KeepAwake, ModuleId::AudioDevices, ModuleId::SystemMonitor, ModuleId::QuickToggles],
+                look: Look::Liquid,
+                transparent: true,
+                preset: Preset::Plum,
+                onboarded: true,
+                ..Settings::default()
+            },
+            "0.1.0 file"
+        );
+
         std::fs::write(&path, "{ not json").unwrap();
         assert_eq!(read(&path), Settings::default(), "invalid file");
         assert_eq!(std::fs::read_to_string(dir.join("settings.invalid.json")).unwrap(), "{ not json", "kept aside");

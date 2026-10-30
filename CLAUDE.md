@@ -61,6 +61,7 @@ Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a C
   - Losing focus hides it.
   - Ignore a tray click within 250 ms of a focus-loss hide; it's the same click.
   - Alt+F4 hides instead of quitting.
+  - Optional (Settings › Opening): resting the mouse on the middle of the right screen edge opens it (`shell/edge.rs`, a 1 px native strip; Windows' hover message, no polling). It opens at the right, centred, without focus, slides in and out (`slide` in `shell/panel.rs`), and closes when the pointer leaves unless clicked into. It's shown with ShowWindow, so hide with ShowWindow too and ask Windows (not Tauri) whether it's open. Never `minimizable(false)`: it gives the panel a title bar.
 - **Position:** bottom-right of the primary monitor's work area with a 12 px margin. Physical pixels; convert when using logical builder APIs. The display is scaled 125%.
 - **Bundle identifier:** letters, numbers, hyphens and dots only. An underscore broke the build.
 - **Measure in release builds** (`pnpm tauri build --no-bundle`). Debug builds give misleading speed and memory numbers. The spike's `scripts/measure-memory.ps1` sums the app plus its WebView2 child processes.

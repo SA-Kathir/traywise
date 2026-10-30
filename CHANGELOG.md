@@ -2,28 +2,28 @@
 
 ## 0.2.0 (2026-10-31)
 
-- **Settings and Modules pages redesigned**: grouped cards of tidy rows, each with a line on what it does. The microphones' shortcut moved to the Audio devices page.
-- **Open the panel from the right edge of the screen**: rest the mouse on the middle of the edge and it slides in, then closes when you move away. Optional small handle. Turn it on in Settings › Opening.
-- **Transparent glass adjusts to what's behind it**: more solid over dark wallpapers, lighter over bright ones. As the panel opens, Traywise measures only the brightness behind it (an 8 × 8 sample, deleted at once).
-- Now playing shows a browser's own icon instead of the video's frame, and a music note when there's no picture.
-- The picked tab is shown by its icon in the accent colour.
-- System monitor: Download and Upload tiles, and a tidier picker for the wide tile.
-- The bundled fonts' licences are installed with the app.
-- **The Dot look's words are in OCR-A**, a monospaced, machine-readable typeface, lighter than before, beside the dot-matrix numbers.
-- **New modules: Wi-Fi and Bluetooth**, with their own Connect tab. Wi-Fi shows the network you're on and lets you join another, typing a new network's password right there. Bluetooth connects and disconnects headphones and speakers. Their tiles go up to 2×2 with the network or device name. New boards start with them; Lock and Desktop icons are in Add tiles.
-- **Tiles follow the design** at every size: volume (a level-filled 1×1, a bar with the speaker in it, the apps beside it at 4×2), separate CPU and Memory tiles with clock speed and total memory, a wide tile with any two of CPU, Memory, Download and Upload (picked on the System page), and Keep awake's 2×2 ring with 15 min, 1 hour and ∞ shortcuts.
-- **Tile icons show their state**: a moon or a sun for dark mode, a crossed-out eye for hidden desktop icons, a cup or a sleeping moon for Keep awake, and Wi-Fi and Bluetooth off icons.
-- **New module: Now playing.** What any app is playing, with cover art, play/pause, skip, a seek bar, shuffle and repeat (when the app allows them). Its tiles come in 1×1 (play/pause) up to 4×2, and the Sound tab lists every app with media, so you can control any of them. Switch it on in Settings → Modules.
-- **A new look, Dot, now the default.** Monochrome tiles over a dot grid, numbers in a dot-matrix font, and one accent colour. Switched-on tiles turn into a solid plate with a small accent dot. It follows Windows' light or dark mode. Tiles and cards are frosted glass. Settings → Look has its Accent (Red, Amber, Violet, Blue, Green) and Background (Dots, Plain, or Transparent over the desktop). Liquid and Windows are still there.
-- The system monitor's graphs zoom in to what they show, so a quiet CPU's ups and downs are visible, and on its 4×2 tile they're labelled CPU and Network.
-- **Add tiles is a tray over the board** in every look, with a size picker: pick 1×1 up to 4×2, then add tiles at that size.
+### Highlights
+
+- **A new look, Dot, the default for new installs.** Monochrome frosted tiles over a dot grid, numbers in a dot-matrix font, words in OCR-A, and one accent colour (Red, Amber, Violet, Blue or Green). Switched-on tiles turn into a solid plate with a small accent dot. It follows Windows' light or dark mode, and its background can be Dots, Plain or Transparent; Transparent glass gets more solid over dark wallpapers. Existing installs keep their look; Liquid and Windows are still there.
 - **A customisable home board.** Home is now a grid of tiles you arrange yourself:
-  - Each module offers tiles in several sizes (1×1, 2×1, 4×1, 2×2, 4×2), and bigger ones do more. For example, the mixer goes from a mute button up to the master volume plus three apps, and Keep awake's 4×2 has its modes and timer.
-  - Edit with the pencil button, or hold a tile. Drag tiles (or move them with the arrow keys), change their size, remove them, or add more. Reset goes back to the default board.
-  - **Auto-arrange** fills every gap. Switch it off to keep tiles where you put them; they still move up to close space above them.
-  - Your layout is saved. Switching a module on adds its tiles; switching it off removes them.
-  - Updating from 0.1.0 gives you the new default board.
+  - Tiles come in sizes from 1×1 to 4×2, and bigger ones show more. Their icons show their state (a moon or a sun for dark mode, a crossed-out eye for hidden desktop icons).
+  - Edit with the pencil button, or hold a tile: drag (or use the arrow keys), resize, remove, or add tiles from a tray with a size picker. Reset goes back to the default board.
+  - **Auto-arrange** fills every gap; switch it off to keep tiles where you put them.
+  - Your layout is saved. Switching a module on adds its tiles; switching it off removes them. Updating from 0.1.0 gives you the new default board.
+- **New modules:**
+  - **Now playing**: what any app is playing, with cover art (a browser shows its own icon), play/pause, skip, a seek bar, shuffle and repeat when the app allows them. The Sound tab lists every app with media.
+  - **Wi-Fi**: switch it, see the network you're on, and join another, typing a new network's password right there (it goes straight to Windows).
+  - **Bluetooth**: switch it, see your paired devices, and connect or disconnect headphones and speakers.
+  - Both have their own **Connect** tab, and tiles up to 2×2 with the network or device name.
+- **Open the panel from the right edge of the screen** (Settings › Opening): rest the mouse on the middle of the edge and it slides in, then slides away when you move off. Optional small handle.
+
+### Smaller changes
+
+- System monitor: separate CPU, Memory, Download and Upload tiles, and a wide tile with any two of them (picked on the System page). Graphs zoom in to what they show, so a quiet CPU's ups and downs are visible.
+- Volume and Keep awake tiles follow the new design: a level-filled 1×1 and the apps playing beside the master volume at 4×2; a 2×2 with a ring that empties as a timer runs out.
+- Settings and Modules pages redesigned as grouped cards of tidy rows. The microphones' shortcut moved to the Audio devices page.
 - The panel no longer nudges itself when a setting other than its look is saved.
+- The bundled fonts' licences (Doto, OFL; OCR-A, public domain) are installed with the app.
 
 ## 0.1.0 (2026-10-26)
 

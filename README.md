@@ -20,14 +20,16 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 
 - **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume.
 - **Now playing**: what any app is playing (Spotify, a browser tab, a video player), with its cover art, play/pause, skip, a seek bar, shuffle and repeat. The Sound tab lists every app with media.
-- **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default).
+- **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default, set on its page).
 - **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, or while plugged in. Can keep the screen on too.
 - **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.
 - **Wi-Fi**: switch it on or off, see the network you're on, and join another (a new network's password goes straight to Windows). Showing network names counts as location use in Windows 11.
 - **Bluetooth**: switch it on or off, see your paired devices, and connect or disconnect headphones and speakers.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
 
-Left-click the tray icon, or press **Ctrl+Alt+T** (change it in Settings → Shortcuts), to open or close the panel. Modules are grouped into tabs (Home, Sound, System), and Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
+Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the right edge**: rest the mouse on the middle of the screen's right edge and the panel slides in.
+
+**Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
 ## Install
 
