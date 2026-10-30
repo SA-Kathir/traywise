@@ -991,3 +991,49 @@
 .look-dot .size-1x1 .tile-detail .num {
   font-size: 16px;
 }
+
+/* ---- 2×2 toggle tiles, and the Connect pages ------------------------------------------------ */
+
+.look-dot .tile.size-2x2 .tile-icon,
+.look-dot .tile.on.size-2x2 .tile-icon {
+  justify-self: start;
+  width: auto;
+  height: auto;
+  background: none;
+}
+/* The switch stands in for the live dot. */
+.look-dot .tile.size-2x2:has(.tile-switch)::after {
+  display: none;
+}
+.look-dot .tile-switch {
+  background: var(--tw-control-track);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+}
+.look-dot .tile-switch::before {
+  background: var(--tw-text-secondary);
+}
+.look-dot .tile-switch.on {
+  background: var(--tw-accent-base);
+  box-shadow: none;
+}
+.look-dot .tile-switch.on::before {
+  background: var(--tw-accent-on);
+}
+.look-dot section > .net-row {
+  margin-inline: -8px;
+  padding: 4px 8px;
+  width: auto;
+}
+.look-dot input.text {
+  border: none;
+  border-radius: var(--tw-radius-md);
+  background: var(--tw-control-track);
+  outline: none;
+}
+.look-dot input.text:focus {
+  box-shadow: inset 0 0 0 1.5px var(--tw-accent-base);
+}
+/* Buttons shrink to their content; a row of the card reaches its edges. */
+.look-dot section > button.net-row {
+  width: calc(100% + 16px);
+}

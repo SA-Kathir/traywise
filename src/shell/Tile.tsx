@@ -43,6 +43,8 @@ export function Tile({ size, icon, label, detail, on, onToggle, onOpen }: TilePr
         <span className="tile-detail" title={small ? undefined : detail}>
           <Num text={detail} />
         </span>
+        {/* 2×2, as in the design: a switch at the top right shows it's on or off. */}
+        {size === "2x2" && onToggle && on !== undefined && <span className={`tile-switch${on ? " on" : ""}`} aria-hidden />}
       </button>
       {onOpen && !small && (
         <button className="tile-more" aria-label={`${label} details`} title="Details" onClick={onOpen}>

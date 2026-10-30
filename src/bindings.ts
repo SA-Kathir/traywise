@@ -45,17 +45,32 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
-	/**  Switches Wi-Fi or Bluetooth on or off, like the toggles in Windows' quick settings. */
-	quickTogglesSetRadio: (radioId: RadioId, on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_radio", { radioId, on })),
 	/**  The latest state. Empty while the module is switched off. */
 	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
 	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
 	nowPlayingControl: (key: string, action: MediaAction) => typedError<null, string>(__TAURI_INVOKE("now_playing_control", { key, action })),
+	/**  The current state, with the list as Windows last heard it (`wifi_scan` refreshes it). */
+	wifiState: () => __TAURI_INVOKE<WifiState>("wifi_state"),
+	/**  Looks for networks again (a few seconds), then sends the new list. */
+	wifiScan: () => typedError<null, string>(__TAURI_INVOKE("wifi_scan")),
+	wifiSetOn: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("wifi_set_on", { on })),
+	/**
+	 *  Joins a network. A secured network Windows hasn't saved needs `password`; Windows saves it
+	 *  (as if joined in its own Settings) and Traywise keeps nothing.
+	 */
+	wifiConnect: (ssid: string, password: string | null) => typedError<null, string>(__TAURI_INVOKE("wifi_connect", { ssid, password })),
+	wifiDisconnect: () => typedError<null, string>(__TAURI_INVOKE("wifi_disconnect")),
+	bluetoothState: () => __TAURI_INVOKE<BluetoothState>("bluetooth_state"),
+	bluetoothSetOn: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("bluetooth_set_on", { on })),
+	/**  Connects or disconnects a paired audio device (`id` from the state). */
+	bluetoothConnect: (id: string, connect: boolean) => typedError<null, string>(__TAURI_INVOKE("bluetooth_connect", { id, connect })),
+	openSettings: (page: SettingsPage) => __TAURI_INVOKE<void>("open_settings", { page }),
 };
 
 /** Events */
 export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
+	bluetoothChanged: makeEvent<BluetoothChanged>("bluetooth-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
@@ -63,6 +78,7 @@ export const events = {
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
+	wifiChanged: makeEvent<WifiChanged>("wifi-changed"),
 };
 
 /* Types */
@@ -108,6 +124,25 @@ export type Battery = {
 	charging: boolean,
 	/**  Windows' estimate while on battery, when it has one. */
 	secondsLeft: number | null,
+};
+
+/**  Sent when the panel opens and after each change. */
+export type BluetoothChanged = BluetoothState;
+
+export type BluetoothDeviceInfo = {
+	/**  Windows' id for the device as a whole (its container), for the commands. */
+	id: string,
+	name: string,
+	connected: boolean,
+	/**  Headphones or speakers: Traywise can connect and disconnect it. */
+	audio: boolean,
+};
+
+export type BluetoothState = {
+	/**  The radio; None when this PC has no Bluetooth. */
+	on: boolean | null,
+	/**  Paired devices, connected ones first. */
+	devices: BluetoothDeviceInfo[],
 };
 
 /**
@@ -212,7 +247,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -254,17 +289,10 @@ export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose"
 export type QuickTogglesChanged = QuickTogglesState;
 
 export type QuickTogglesState = {
-	/**  None when this PC has no Wi-Fi radio (or Windows wouldn't say). */
-	wifi: boolean | null,
-	/**  None when this PC has no Bluetooth radio. */
-	bluetooth: boolean | null,
 	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
 	dark: boolean,
 	desktopIcons: boolean,
 };
-
-/**  The radios the Wi-Fi and Bluetooth tiles switch. */
-export type RadioId = "wifi" | "bluetooth";
 
 export type Repeat = "off" | "track" | "list";
 
@@ -293,6 +321,15 @@ export type Settings = {
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
 };
+
+/**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
+export type SettingsPage = 
+/**  Privacy › Location: where Wi-Fi names are allowed. */
+"location" | 
+/**  The Wi-Fi network list, for networks that need more than a password. */
+"wifi" | 
+/**  Bluetooth & devices, to pair a new device. */
+"bluetooth";
 
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */
@@ -332,6 +369,33 @@ export type Target = "master" |
 
 /**  Sent to the UI when a newer version is found. The payload is its version, like "0.2.0". */
 export type UpdateAvailable = string;
+
+/**  Sent when the panel opens and after each change. */
+export type WifiChanged = WifiState;
+
+export type WifiNetwork = {
+	/**  Empty when Windows hides names. */
+	ssid: string,
+	/**  Signal, 0 to 4 bars. */
+	bars: number,
+	/**  Needs a password (or more) to join. */
+	secure: boolean,
+	/**  Joined before: Windows has it saved, so no password is needed. */
+	saved: boolean,
+	/**  "2.4 GHz", "5 GHz" or "6 GHz". */
+	band: string | null,
+};
+
+export type WifiState = {
+	/**  The radio; None when this PC has no Wi-Fi. */
+	on: boolean | null,
+	/**  Windows hides network names: location is off for desktop apps. */
+	namesHidden: boolean,
+	/**  The network in use, if any. */
+	connected: WifiNetwork | null,
+	/**  Networks in range, strongest first (without the connected one). */
+	networks: WifiNetwork[],
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

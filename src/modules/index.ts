@@ -1,16 +1,19 @@
 import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
 import audioDevices from "./audio-devices";
+import bluetooth from "./bluetooth";
 import keepAwake from "./keep-awake";
 import nowPlaying from "./now-playing";
 import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
+import wifi from "./wifi";
 
 /** The panel's tabs after Home. A tab shows only when one of its modules is on and has a page. */
 export const categories = {
   sound: { name: "Sound", icon: String.fromCodePoint(0xe767) }, // Segoe Fluent "Volume"
   system: { name: "System", icon: String.fromCodePoint(0xe770) }, // Segoe Fluent "System"
+  connect: { name: "Connect", icon: String.fromCodePoint(0xe701) }, // Segoe Fluent "Wifi"
   tools: { name: "Tools", icon: String.fromCodePoint(0xe90f) }, // Segoe Fluent "Repair"
 };
 export type Category = keyof typeof categories;
@@ -48,6 +51,8 @@ export const modules: Record<ModuleId, ModuleUi> = {
   "quick-toggles": quickToggles,
   "volume-mixer": volumeMixer,
   "now-playing": nowPlaying,
+  wifi,
+  bluetooth,
   "system-monitor": systemMonitor,
 };
 
@@ -60,8 +65,8 @@ export const tileModule = (id: string) => id.slice(0, id.indexOf("/")) as Module
  *  (Lock and Desktop icons are in Add tiles: with them the rows don't come out even.)
  *  Switching a module on later adds its tiles from here. */
 export const defaultBoard: [id: string, size: Size][] = [
-  ["quick-toggles/wifi", "1x1"],
-  ["quick-toggles/bluetooth", "1x1"],
+  ["wifi/wifi", "1x1"],
+  ["bluetooth/bluetooth", "1x1"],
   ["volume-mixer/mixer", "2x2"],
   ["quick-toggles/dark", "1x1"],
   ["audio-devices/mics", "1x1"],

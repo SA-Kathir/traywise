@@ -4,34 +4,22 @@ import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
 
 // Segoe Fluent Icons glyphs.
+// Each tile's icon shows its state: a moon or a sun, the desktop or a crossed-out eye.
 const MOON = String.fromCodePoint(0xe708);
+const SUN = String.fromCodePoint(0xe706);
 const DESKTOP = String.fromCodePoint(0xe7f4);
+const HIDDEN = String.fromCodePoint(0xed1a);
 const LOCK = String.fromCodePoint(0xe72e);
-const WIFI = String.fromCodePoint(0xe701);
-const BLUETOOTH = String.fromCodePoint(0xe702);
 
-/** Home tiles: Wi-Fi, Bluetooth, dark mode, desktop icons, lock. They have no page of their own. */
+/** Home tiles: dark mode, desktop icons, lock. They have no page of their own. */
 export default function Tiles({ kind, size }: TileProps) {
   const state = useLive(commands.quickTogglesState, events.quickTogglesChanged);
   if (!state) return null;
-  if (kind === "wifi" || kind === "bluetooth") {
-    const on = state[kind]; // null: this PC has no such radio
-    return (
-      <Tile
-        size={size}
-        icon={kind === "wifi" ? WIFI : BLUETOOTH}
-        label={kind === "wifi" ? "Wi-Fi" : "Bluetooth"}
-        detail={on === null ? "Not available" : on ? "On" : "Off"}
-        on={on === true}
-        onToggle={on === null ? undefined : () => commands.quickTogglesSetRadio(kind, !on)}
-      />
-    );
-  }
   if (kind === "dark")
     return (
       <Tile
         size={size}
-        icon={MOON}
+        icon={state.dark ? MOON : SUN}
         label="Dark mode"
         detail={state.dark ? "On" : "Off"}
         on={state.dark}
@@ -42,7 +30,7 @@ export default function Tiles({ kind, size }: TileProps) {
     return (
       <Tile
         size={size}
-        icon={DESKTOP}
+        icon={state.desktopIcons ? DESKTOP : HIDDEN}
         label="Desktop icons"
         detail={state.desktopIcons ? "Shown" : "Hidden"}
         on={state.desktopIcons}

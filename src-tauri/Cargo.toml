@@ -29,7 +29,13 @@ serde_json = "1"
 webview2-com = "0.39.1"
 windows = { version = "0.62", features = [
     "ApplicationModel",
+    "Devices_Bluetooth",
+    "Devices_Enumeration",
     "Devices_Radios",
+    "Devices_WiFi",
+    "Networking_Connectivity",
+    "Security_Credentials",
+    "Win32_Media_KernelStreaming",
     "Foundation",
     "Foundation_Collections",
     "Media",
@@ -58,6 +64,7 @@ windows = { version = "0.62", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 windows-core = "0.62"
+windows-collections = "0.3"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 specta-typescript = "0.0.12"
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }

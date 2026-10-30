@@ -1,5 +1,6 @@
 mod audio;
 mod module;
+mod radios;
 mod modules;
 mod settings;
 mod shell;
@@ -34,9 +35,17 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::quick_toggles::quick_toggles_set_dark,
             modules::quick_toggles::quick_toggles_set_desktop_icons,
             modules::quick_toggles::quick_toggles_lock,
-            modules::quick_toggles::quick_toggles_set_radio,
             modules::now_playing::now_playing_state,
             modules::now_playing::now_playing_control,
+            modules::wifi::wifi_state,
+            modules::wifi::wifi_scan,
+            modules::wifi::wifi_set_on,
+            modules::wifi::wifi_connect,
+            modules::wifi::wifi_disconnect,
+            modules::bluetooth::bluetooth_state,
+            modules::bluetooth::bluetooth_set_on,
+            modules::bluetooth::bluetooth_connect,
+            radios::open_settings,
         ])
         .events(collect_events![
             shell::panel::PanelShown,
@@ -47,6 +56,8 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::system_monitor::SystemSampled,
             modules::quick_toggles::QuickTogglesChanged,
             modules::now_playing::NowPlayingChanged,
+            modules::wifi::WifiChanged,
+            modules::bluetooth::BluetoothChanged,
         ])
 }
 
