@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- **A new look, Dot, now the default.** Monochrome tiles over a dot grid, numbers in a dot-matrix font, and one accent colour. Switched-on tiles turn into a solid plate with a small accent dot. It follows Windows' light or dark mode. Settings → Look has its Accent (Red, Amber, Violet, Blue, Green) and Background (Dots or Plain). Liquid and Windows are still there.
+- **A new look, Dot, now the default.** Monochrome tiles over a dot grid, numbers in a dot-matrix font, and one accent colour. Switched-on tiles turn into a solid plate with a small accent dot. It follows Windows' light or dark mode. Tiles and cards are frosted glass. Settings → Look has its Accent (Red, Amber, Violet, Blue, Green) and Background (Dots, Plain, or Transparent over the desktop). Liquid and Windows are still there.
+- The system monitor's graphs zoom in to what they show, so a quiet CPU's ups and downs are visible, and on its 4×2 tile they're labelled CPU and Network.
 - **Add tiles is a tray over the board** in every look, with a size picker: pick 1×1 up to 4×2, then add tiles at that size.
 - **A customisable home board.** Home is now a grid of tiles you arrange yourself:
   - Each module offers tiles in several sizes (1×1, 2×1, 4×1, 2×2, 4×2), and bigger ones do more. For example, the mixer goes from a mute button up to the master volume plus three apps, and Keep awake's 4×2 has its modes and timer.
