@@ -477,7 +477,7 @@
   grid-column: 1 / -1;
 }
 .look-dot .tile:not(.size-1x1):has(.tile-detail .num) .tile-detail .num {
-  font-size: 28px;
+  font-size: 24px;
   margin-right: 4px;
 }
 /* The details chevron sits bottom right, out of the live dot's way. */
