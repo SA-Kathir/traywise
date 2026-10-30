@@ -12,6 +12,9 @@ const LOCK = String.fromCodePoint(0xe72e);
 const CHEVRON = String.fromCodePoint(0xe76c);
 const CLOSE = String.fromCodePoint(0xe711);
 
+/** Networks listed before "Show more": the strongest few, so the page stays short. */
+const SHOWN = 5;
+
 const useWifi = () => useLive(commands.wifiState, events.wifiChanged);
 
 /** Home tile: Wi-Fi on or off, and the network it's on (at 2×2 with its band). */
@@ -54,6 +57,7 @@ export default function Panel() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
 
   // Look for networks each time the page opens.
   useEffect(() => {
@@ -111,7 +115,9 @@ export default function Panel() {
         </div>
       )}
       {s.on &&
-        s.networks.map((n) =>
+        s.networks
+          .filter((n, i) => all || i < SHOWN || n.ssid === joining)
+          .map((n) =>
           joining === n.ssid ? (
             <form
               key={n.ssid}
@@ -159,6 +165,14 @@ export default function Panel() {
             </button>
           ),
         )}
+      {s.on && !all && s.networks.length > SHOWN && (
+        <button className="link-row" onClick={() => setAll(true)}>
+          <span className="grow">Show {s.networks.length - SHOWN} more</span>
+          <span className="icon" aria-hidden>
+            {String.fromCodePoint(0xe70d)}
+          </span>
+        </button>
+      )}
       {s.on && scanning && <p className="hint">Looking for networks…</p>}
       {error && <p className="error">{error}</p>}
       <button className="link-row" onClick={() => commands.openSettings("wifi")}>
