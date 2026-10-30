@@ -1,6 +1,6 @@
 [package]
 name = "traywise"
-version = "0.1.0"
+version = "0.2.0"
 description = "Free, open-source Windows tray toolkit"
 license = "GPL-3.0-or-later"
 authors = ["Traywise contributors"]

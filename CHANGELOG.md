@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-30)
 
+- **Settings and Modules pages redesigned**: grouped cards of tidy rows, each with a line on what it does. The microphones' shortcut moved to the Audio devices page.
 - **Open the panel from the right edge of the screen**: rest the mouse on the middle of the edge and it slides in, then closes when you move away. Optional small handle. Turn it on in Settings › Opening.
 - **Transparent glass adjusts to what's behind it**: more solid over dark wallpapers, lighter over bright ones. As the panel opens, Traywise measures only the brightness behind it (an 8 × 8 sample, deleted at once).
 - Now playing shows a browser's own icon instead of the video's frame, and a music note when there's no picture.
