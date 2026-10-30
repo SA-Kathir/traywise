@@ -911,3 +911,60 @@
 .look-dot .stat-graphs {
   text-align: left;
 }
+
+/* ---- Now playing --------------------------------------------------------------------------- */
+
+/* No cover art: a square of dots, as in Figma. */
+.look-dot span.media-art {
+  background:
+    radial-gradient(circle, var(--tw-text-tertiary) 1px, transparent 1.5px) 0 0 / 8px 8px,
+    var(--tw-control-track);
+}
+.look-dot .media-art {
+  border-radius: var(--tw-radius-md);
+}
+.look-dot .media-text .tile-label {
+  font-size: 13px;
+}
+.look-dot .media-app,
+.look-dot .media-times .num + .num,
+.look-dot .media-times > :last-child {
+  color: var(--tw-text-tertiary);
+}
+/* Play/pause: the inverted circle. */
+.look-dot .media-play {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+}
+.look-dot .media-play:hover {
+  background: color-mix(in srgb, var(--tw-control-fill) 88%, var(--tw-text-inverse));
+}
+.look-dot .media.size-2x1 .icon-button {
+  width: 26px;
+  min-height: 26px;
+}
+/* The progress: a thin accent line; its thumb shows on hover, where seeking is allowed. */
+.look-dot .media-progress input[type="range"] {
+  height: 12px;
+}
+.look-dot .media-progress input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  background: linear-gradient(to right, var(--tw-accent-base) var(--fill, 0%), var(--tw-control-track) var(--fill, 0%));
+}
+.look-dot .media-progress input[type="range"]::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+  opacity: 0;
+  transition: opacity var(--tw-duration-instant);
+}
+.look-dot .media-progress input[type="range"]:enabled:hover::-webkit-slider-thumb {
+  opacity: 1;
+}
+.look-dot .media-times .num,
+.look-dot .media-elapsed .num {
+  font-size: 18px;
+}
+.look-dot .media-page + .media-page {
+  border-top-color: var(--tw-glass-edge);
+}

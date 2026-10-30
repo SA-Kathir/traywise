@@ -45,6 +45,10 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	/**  The latest state. Empty while the module is switched off. */
+	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
+	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
+	nowPlayingControl: (key: string, action: MediaAction) => typedError<null, string>(__TAURI_INVOKE("now_playing_control", { key, action })),
 };
 
 /** Events */
@@ -52,6 +56,7 @@ export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
+	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
@@ -59,6 +64,15 @@ export const events = {
 };
 
 /* Types */
+export type Abilities = {
+	playPause: boolean,
+	next: boolean,
+	previous: boolean,
+	seek: boolean,
+	shuffle: boolean,
+	repeat: boolean,
+};
+
 /**  Accent colour preset (Dot look). The colours are in `src/shell/dot.css`. */
 export type Accent = "red" | "amber" | "violet" | "blue" | "green";
 
@@ -143,6 +157,38 @@ export type Look =
 /**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
 "windows";
 
+export type MediaAction = "playPause" | "next" | "previous" | 
+/**  Jump to this many milliseconds into the track. */
+({ seek: number }) & { repeat?: never; shuffle?: never } | ({ shuffle: boolean }) & { repeat?: never; seek?: never } | ({ repeat: Repeat }) & { seek?: never; shuffle?: never };
+
+/**  One app's media. */
+export type MediaSession = {
+	/**
+	 *  Which app this is, for the controls: its app id, plus `#2`, `#3` for a second or third
+	 *  session from the same app.
+	 */
+	key: string,
+	/**  The app's name, like "Spotify". */
+	app: string,
+	title: string,
+	artist: string,
+	album: string,
+	/**  The cover art as a data URL, if the app gives one. */
+	artwork: string | null,
+	playing: boolean,
+	/**  Which controls the app allows right now. */
+	can: Abilities,
+	/**  None when the app doesn't say. */
+	shuffle: boolean | null,
+	repeat: Repeat | null,
+	/**  Milliseconds into the track, as of `updated_at`. While playing, the UI moves it on by itself. */
+	positionMs: number,
+	/**  The track's length in milliseconds; 0 when the app doesn't say (a live stream, say). */
+	durationMs: number,
+	/**  When the app last reported its position, in milliseconds since 1970 (like `Date.now()`). */
+	updatedAt: number | null,
+};
+
 /**  Sent to the UI whenever anything in the mixer changes, here or elsewhere in Windows. */
 export type MixerChanged = MixerState;
 
@@ -162,7 +208,17 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing";
+
+/**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
+export type NowPlayingChanged = NowPlayingState;
+
+/**  Everything the panel shows. */
+export type NowPlayingState = {
+	sessions: MediaSession[],
+	/**  The session Windows considers current (the one its own media card shows): what the tiles show. */
+	current: string | null,
+};
 
 export type OutputDevice = {
 	/**  Windows' id for the device. Stays the same across restarts. */
@@ -196,6 +252,8 @@ export type QuickTogglesState = {
 	dark: boolean,
 	desktopIcons: boolean,
 };
+
+export type Repeat = "off" | "track" | "list";
 
 export type Settings = {
 	enabledModules: ModuleId[],

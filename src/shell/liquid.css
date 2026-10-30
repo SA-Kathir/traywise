@@ -958,3 +958,145 @@ button.primary {
 button.primary:hover {
   background: color-mix(in srgb, var(--accent) 88%, rgb(var(--ink)));
 }
+
+/* ---- Now playing ----------------------------------------------------------------------- */
+
+/* Tiles: the artwork at the left (2×2: top left, with the app's name beside it), then the title,
+   the artist, the progress and the buttons. The page: one block per app. */
+.media {
+  display: flex;
+  gap: 12px;
+  padding: var(--tile-pad, 16px);
+  overflow: hidden;
+  text-align: left;
+}
+.media-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.media h2 {
+  margin: 0;
+}
+.media-art {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgb(var(--ink) / 0.08);
+}
+.media-text {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+  line-height: 16px;
+}
+button.media-text:hover {
+  background: none;
+}
+.media-text > *,
+.media-app {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-app {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+}
+.media-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.media-row .icon-button {
+  font-size: 12px;
+}
+.media-play {
+  border-radius: 50%;
+}
+.media-progress {
+  flex: 1;
+  min-width: 0;
+}
+.media-progress input[type="range"] {
+  display: block;
+  width: 100%;
+}
+.media-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.media-elapsed {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.media.size-2x1 {
+  padding-block: 8px;
+}
+.media.size-2x2 {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-content: space-between;
+  gap: 4px 10px;
+}
+.media.size-2x2 .media-body {
+  display: contents;
+}
+.media.size-2x2 .media-art {
+  width: 40px;
+  height: 40px;
+}
+.media.size-2x2 .media-app {
+  align-self: start;
+}
+.media.size-2x2 :is(.media-text, .media-progress, .media-row) {
+  grid-column: 1 / -1;
+}
+.media.size-4x2 .media-art {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.media-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.media-page + .media-page {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+.media-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.media-head .media-text {
+  flex: 1;
+}
+.media-page .media-row {
+  justify-content: center;
+  gap: 12px;
+}
+.media-glyph {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}

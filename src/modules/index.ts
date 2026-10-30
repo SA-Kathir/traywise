@@ -2,6 +2,7 @@ import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
 import audioDevices from "./audio-devices";
 import keepAwake from "./keep-awake";
+import nowPlaying from "./now-playing";
 import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
@@ -46,6 +47,7 @@ export const modules: Record<ModuleId, ModuleUi> = {
   "audio-devices": audioDevices,
   "quick-toggles": quickToggles,
   "volume-mixer": volumeMixer,
+  "now-playing": nowPlaying,
   "system-monitor": systemMonitor,
 };
 
@@ -54,7 +56,8 @@ export const tileModule = (id: string) => id.slice(0, id.indexOf("/")) as Module
 
 /** A new user's board, in order; tiles of modules that are off are left out. Packed, it's:
  *  Dark, Lock and the mixer (2×2) on top, Microphones and Desktop icons under the first two, then
- *  Keep awake and Output side by side, and the system monitor across the bottom. */
+ *  Keep awake and Output side by side, the system monitor across, and Now playing at the bottom.
+ *  Switching a module on later adds its tiles from here. */
 export const defaultBoard: [id: string, size: Size][] = [
   ["quick-toggles/dark", "1x1"],
   ["quick-toggles/lock", "1x1"],
@@ -64,4 +67,5 @@ export const defaultBoard: [id: string, size: Size][] = [
   ["keep-awake/keep-awake", "2x1"],
   ["audio-devices/output", "2x1"],
   ["system-monitor/monitor", "4x2"],
+  ["now-playing/media", "4x2"],
 ];

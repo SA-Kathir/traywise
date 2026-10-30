@@ -10,8 +10,8 @@ const CHEVRON = String.fromCodePoint(0xe76c);
 
 type TileProps = {
   size: Size;
-  /** A Segoe Fluent Icons glyph. */
-  icon: string;
+  /** A Segoe Fluent Icons glyph, or an icon element. */
+  icon: ReactNode;
   label: string;
   /** One short line under the label: the state or a value. */
   detail: string;
