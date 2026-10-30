@@ -59,6 +59,9 @@ export const events = {
 };
 
 /* Types */
+/**  Accent colour preset (Dot look). The colours are in `src/shell/dot.css`. */
+export type Accent = "red" | "amber" | "violet" | "blue" | "green";
+
 /**  One app with audio on the default output device (all of its audio sessions together). */
 export type AppAudio = {
 	pid: number,
@@ -133,6 +136,8 @@ export type Level = {
 
 /**  How the panel is drawn. The styles are in `src/shell/liquid.css`. */
 export type Look = 
+/**  Monochrome tiles over a dot grid, one accent colour and dot-matrix numbers (docs/design-system.md). */
+"dot" | 
 /**  Glass cards over a colour preset's background. */
 "liquid" | 
 /**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
@@ -200,6 +205,10 @@ export type Settings = {
 	/**  Liquid: cards in one even hue, instead of lighter at the top left fading darker. */
 	singleHue: boolean,
 	preset: Preset,
+	/**  Dot: the accent colour. */
+	accent: Accent,
+	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
+	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
 	/**  Global shortcut that opens or closes the panel, like "Ctrl+Alt+T". */

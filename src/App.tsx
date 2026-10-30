@@ -9,6 +9,7 @@ import { SettingsPage, useSave } from "./shell/Settings";
 import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
+import "./shell/dot.css";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
@@ -58,7 +59,7 @@ function App() {
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);

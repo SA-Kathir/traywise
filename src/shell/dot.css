@@ -1,0 +1,136 @@
+/* The Dot look: monochrome tiles over a dot grid, one accent colour, dot-matrix numbers. The tokens
+   are docs/design-system.md's (the Figma file's variables); everything below them uses only the
+   tokens. It sets the shared --ink, --accent and --on-accent too, so liquid.css's structure works
+   unchanged, and overrides only what looks different. */
+
+/* Doto (SIL Open Font License, Doto-OFL.txt beside it), Black weight, cut down to digits, A–Z and
+   a few signs: dot type is only for numbers and the wordmark. Bundled, never loaded from the web. */
+@font-face {
+  font-family: Doto;
+  src: url("../assets/fonts/doto-black.woff2") format("woff2");
+  font-weight: 900;
+  font-display: block;
+}
+
+/* ---- Tokens ---------------------------------------------------------------------------- */
+
+.look-dot {
+  /* Theme, dark. */
+  --tw-bg-base: #0b0b0c;
+  --tw-bg-deep: #000;
+  --tw-bg-dot: rgb(255 255 255 / 0.1);
+  --tw-glass-tile: rgb(255 255 255 / 0.06);
+  --tw-glass-tile-hover: rgb(255 255 255 / 0.1);
+  --tw-glass-tile-pressed: rgb(255 255 255 / 0.04);
+  --tw-glass-float: rgb(28 28 30 / 0.72);
+  --tw-glass-edge: rgb(255 255 255 / 0.08);
+  --tw-glass-edge-strong: rgb(255 255 255 / 0.14);
+  --tw-text-primary: #f4f4f2;
+  --tw-text-secondary: rgb(255 255 255 / 0.6);
+  --tw-text-tertiary: rgb(255 255 255 / 0.4);
+  --tw-text-disabled: rgb(255 255 255 / 0.24);
+  --tw-text-inverse: #0b0b0c;
+  --tw-control-track: rgb(255 255 255 / 0.12);
+  --tw-control-fill: #f4f4f2;
+  --tw-control-thumb: #fff;
+  --tw-control-quiet-hover: rgb(255 255 255 / 0.08);
+  --tw-accent-text: var(--tw-accent-base);
+  --tw-status-success: #34c77b;
+  --tw-status-warning: #f2a33a;
+  --tw-status-danger: #ff7a1a;
+  --tw-effect-shadow: rgb(0 0 0 / 0.4);
+  --tw-effect-scrim: rgb(0 0 0 / 0.4);
+
+  /* Dimension. */
+  --tw-radius-xs: 4px;
+  --tw-radius-sm: 8px;
+  --tw-radius-md: 12px;
+  --tw-radius-lg: 16px;
+  --tw-radius-tile: 20px;
+  --tw-radius-full: 999px;
+  --tw-blur-float: 12px;
+
+  /* Motion. */
+  --tw-duration-instant: 80ms;
+  --tw-duration-fast: 140ms;
+  --tw-duration-base: 220ms;
+  --tw-duration-slow: 320ms;
+  --tw-ease-standard: cubic-bezier(0, 0, 0, 1);
+  --tw-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --tw-ease-snap: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Type. */
+  --tw-font-display: Doto, var(--display);
+
+  /* The shared variables liquid.css is built on. */
+  --ink: 255 255 255;
+  --accent: var(--tw-accent-base);
+  --on-accent: var(--tw-accent-on);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  .look-dot {
+    --tw-bg-base: #f4f4f2;
+    --tw-bg-deep: #eaeae7;
+    --tw-bg-dot: rgb(0 0 0 / 0.12);
+    --tw-glass-tile: rgb(255 255 255 / 0.72);
+    --tw-glass-tile-hover: rgb(255 255 255 / 0.88);
+    --tw-glass-tile-pressed: rgb(255 255 255 / 0.6);
+    --tw-glass-float: rgb(250 250 248 / 0.74);
+    --tw-glass-edge: rgb(0 0 0 / 0.06);
+    --tw-glass-edge-strong: rgb(0 0 0 / 0.12);
+    --tw-text-primary: #0b0b0c;
+    --tw-text-secondary: rgb(0 0 0 / 0.6);
+    --tw-text-tertiary: rgb(0 0 0 / 0.4);
+    --tw-text-disabled: rgb(0 0 0 / 0.24);
+    --tw-text-inverse: #fff;
+    --tw-control-track: rgb(0 0 0 / 0.1);
+    --tw-control-fill: #0b0b0c;
+    --tw-control-quiet-hover: rgb(0 0 0 / 0.06);
+    --tw-accent-text: var(--tw-accent-strong);
+    --tw-status-success: #137f4b;
+    --tw-status-warning: #a8620a;
+    --tw-status-danger: #b84a08;
+    --tw-effect-shadow: rgb(0 0 0 / 0.14);
+    --tw-effect-scrim: rgb(0 0 0 / 0.2);
+    --ink: 0 0 0;
+    color-scheme: light;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .look-dot {
+    --tw-duration-instant: 0ms;
+    --tw-duration-fast: 0ms;
+    --tw-duration-base: 0ms;
+    --tw-duration-slow: 0ms;
+  }
+}
+
+/* Accent presets (Settings › Accent). */
+.accent-red { --tw-accent-base: #d92b24; --tw-accent-strong: #b81f19; --tw-accent-soft: #ff7a72; --tw-accent-on: #fff; }
+.accent-amber { --tw-accent-base: #f2a33a; --tw-accent-strong: #a8620a; --tw-accent-soft: #ffc774; --tw-accent-on: #140f0a; }
+.accent-violet { --tw-accent-base: #a98bff; --tw-accent-strong: #6a48db; --tw-accent-soft: #c7b4ff; --tw-accent-on: #140f0a; }
+.accent-blue { --tw-accent-base: #5aa9ff; --tw-accent-strong: #1d64c8; --tw-accent-soft: #9ccbff; --tw-accent-on: #140f0a; }
+.accent-green { --tw-accent-base: #34c77b; --tw-accent-strong: #137f4b; --tw-accent-soft: #7fe0aa; --tw-accent-on: #140f0a; }
+.accent-red, .accent-amber, .accent-violet, .accent-blue, .accent-green {
+  --tw-accent-tint: color-mix(in srgb, var(--tw-accent-base) 16%, transparent);
+}
+
+/* ---- Background and text ----------------------------------------------------------------- */
+
+/* App-drawn, never read from the desktop: a 12 px dot grid over a gentle fade, or the fade alone. */
+.look-dot {
+  background:
+    radial-gradient(var(--tw-bg-dot) 0.9px, transparent 1.1px) 0 0 / 12px 12px,
+    linear-gradient(var(--tw-bg-base), var(--tw-bg-deep));
+  color: var(--tw-text-primary);
+}
+.look-dot.plain {
+  background: linear-gradient(var(--tw-bg-base) 30%, var(--tw-bg-deep));
+}
+/* html scrolls the panel, so the grid stays put under it and the panel itself is see-through. */
+.panel.look-dot {
+  background: none;
+}

@@ -21,6 +21,10 @@ pub struct Settings {
     /// Liquid: cards in one even hue, instead of lighter at the top left fading darker.
     pub single_hue: bool,
     pub preset: Preset,
+    /// Dot: the accent colour.
+    pub accent: Accent,
+    /// Dot: a plain gradient behind the tiles instead of the dot grid.
+    pub plain_background: bool,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
     /// Global shortcut that opens or closes the panel, like "Ctrl+Alt+T".
@@ -50,10 +54,12 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             enabled_modules: vec![ModuleId::VolumeMixer],
-            look: Look::Liquid,
+            look: Look::Dot,
             transparent: false,
             single_hue: false,
             preset: Preset::Ocean,
+            accent: Accent::Red,
+            plain_background: false,
             mic_shortcut: "Ctrl+Alt+M".into(),
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
@@ -68,6 +74,8 @@ impl Default for Settings {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Look {
+    /// Monochrome tiles over a dot grid, one accent colour and dot-matrix numbers (docs/design-system.md).
+    Dot,
     /// Glass cards over a colour preset's background.
     Liquid,
     /// Flat, like Windows 11's own flyouts, following Windows' light or dark mode.
@@ -85,6 +93,17 @@ pub enum Preset {
     Plum,
     Ember,
     Rose,
+}
+
+/// Accent colour preset (Dot look). The colours are in `src/shell/dot.css`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Accent {
+    Red,
+    Amber,
+    Violet,
+    Blue,
+    Green,
 }
 
 pub struct SettingsState {
@@ -198,6 +217,8 @@ mod tests {
             transparent: true,
             single_hue: true,
             preset: Preset::Graphite,
+            accent: Accent::Blue,
+            plain_background: true,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,

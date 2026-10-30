@@ -206,7 +206,7 @@ pub fn refresh_frame(app: &AppHandle) {
 /// Whether the window gets Windows 11's frame: every look except transparent Liquid, whose cards
 /// float over the desktop, where a frame would outline empty space.
 fn framed(settings: &Settings) -> bool {
-    settings.look == Look::Windows || !settings.transparent
+    settings.look != Look::Liquid || !settings.transparent
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none
