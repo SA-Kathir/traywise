@@ -23,6 +23,7 @@
   --tw-glass-tile-hover: rgb(255 255 255 / 0.1);
   --tw-glass-tile-pressed: rgb(255 255 255 / 0.04);
   --tw-glass-float: rgb(28 28 30 / 0.72);
+  --tw-glass-float-hover: rgb(48 48 50 / 0.76);
   --tw-glass-edge: rgb(255 255 255 / 0.08);
   --tw-glass-edge-strong: rgb(255 255 255 / 0.14);
   --tw-text-primary: #f4f4f2;
@@ -78,6 +79,7 @@
     --tw-glass-tile-hover: rgb(255 255 255 / 0.88);
     --tw-glass-tile-pressed: rgb(255 255 255 / 0.6);
     --tw-glass-float: rgb(250 250 248 / 0.74);
+    --tw-glass-float-hover: rgb(255 255 255 / 0.9);
     --tw-glass-edge: rgb(0 0 0 / 0.06);
     --tw-glass-edge-strong: rgb(0 0 0 / 0.12);
     --tw-text-primary: #0b0b0c;
@@ -167,18 +169,22 @@
   letter-spacing: 0;
 }
 
-/* ---- Level-1 glass: cards ---------------------------------------------------------------- */
+/* ---- Frosted glass: cards ---------------------------------------------------------------- */
 
-/* A faint tint and a 1 px inside edge, no blur and no shadow at rest. */
+/* Every card is the spec's level-2 glass (the owner's pick after seeing the Add tiles tray): a
+   frosted tint over a blur of what's behind it, a stronger 1 px edge and a soft shadow. */
 .look-dot :is(section, .tile, .stats) {
   border: none;
   border-radius: var(--tw-radius-tile);
-  background: var(--tw-glass-tile);
-  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+  background: var(--tw-glass-float);
+  backdrop-filter: blur(var(--tw-blur-float)) saturate(1.2);
+  box-shadow:
+    inset 0 0 0 1px var(--tw-glass-edge-strong),
+    0 8px 24px var(--tw-effect-shadow);
   transition: background var(--tw-duration-instant) var(--tw-ease-standard);
 }
 .look-dot .stats:hover {
-  background: var(--tw-glass-tile-hover);
+  background: var(--tw-glass-float-hover);
 }
 
 /* ---- Buttons ------------------------------------------------------------------------------ */
@@ -403,10 +409,10 @@
   --tile-pad: 12px;
 }
 .look-dot .tile:has(> .tile-main:hover) {
-  background: var(--tw-glass-tile-hover);
+  background: var(--tw-glass-float-hover);
 }
 .look-dot .tile:has(> .tile-main:active) {
-  background: var(--tw-glass-tile-pressed);
+  background: var(--tw-glass-float);
 }
 .look-dot :is(.tile-main, .tile-title, .tile-more) {
   min-height: 0;
@@ -482,6 +488,13 @@
   background: var(--tw-control-fill);
   color: var(--tw-text-inverse);
 }
+/* Hovered, the plate stays a plate (only a shade darker), so its text and icon stay readable. */
+.look-dot .tile.on:has(> .tile-main:hover) {
+  background: color-mix(in srgb, var(--tw-control-fill) 88%, var(--tw-text-inverse));
+}
+.look-dot .tile.on:has(> .tile-main:active) {
+  background: color-mix(in srgb, var(--tw-control-fill) 78%, var(--tw-text-inverse));
+}
 .look-dot .tile.on :is(.tile-detail, .tile-more) {
   color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
 }
@@ -503,7 +516,7 @@
 .look-dot .tile.level {
   background:
     linear-gradient(to top, var(--tw-control-track) var(--level), transparent var(--level)),
-    var(--tw-glass-tile);
+    var(--tw-glass-float);
 }
 
 /* Tiles with controls: the title is an overline, and sliders are bars whose fill is the thumb. */
@@ -628,19 +641,11 @@
   background: var(--tw-accent-base);
 }
 
-/* ---- Level-2 glass: floating layers -------------------------------------------------------- */
+/* ---- Add tiles tray ---------------------------------------------------------------------- */
 
-/* Frost (blur) only here, and only while something floats, so it costs nothing at rest. */
+/* The tray is a section, so it's already frosted glass like the cards. */
 .look-dot .tray {
-  left: 8px;
-  right: 8px;
   padding: 8px 16px 16px;
-  border-radius: var(--tw-radius-tile);
-  background: var(--tw-glass-float);
-  backdrop-filter: blur(var(--tw-blur-float)) saturate(1.2);
-  box-shadow:
-    inset 0 0 0 1px var(--tw-glass-edge-strong),
-    0 8px 24px var(--tw-effect-shadow);
   animation: dot-tray-in var(--tw-duration-slow) var(--tw-ease-standard);
 }
 /* The sheet's handle. */
