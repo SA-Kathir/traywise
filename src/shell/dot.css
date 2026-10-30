@@ -512,13 +512,6 @@
   background: var(--tw-accent-base);
   pointer-events: none;
 }
-/* A level (volume at 1×1): the tile fills from the bottom up to it. */
-.look-dot .tile.level {
-  background:
-    linear-gradient(to top, var(--tw-control-track) var(--level), transparent var(--level)),
-    var(--tw-glass-float);
-}
-
 /* Tiles with controls: the title is an overline, and sliders are bars whose fill is the thumb. */
 .look-dot .tile-title .tile-label {
   font-size: 11px;
@@ -530,14 +523,20 @@
 .look-dot button.tile-title:hover .tile-label {
   color: var(--tw-accent-text);
 }
-.look-dot .tile-card input[type="range"] {
+/* Volume: a bar whose fill is the thumb, with the speaker inside it (it mutes). The speaker and
+   the 1×1's number invert against what's under them, so they read on the fill and off it. */
+.look-dot .vol-bar input[type="range"] {
   height: 28px;
 }
-.look-dot .tile-card input[type="range"]::-webkit-slider-runnable-track {
+.look-dot .vol-bar input[type="range"]::-webkit-slider-runnable-track {
   height: 28px;
   border-radius: var(--tw-radius-md);
 }
-.look-dot .tile-card input[type="range"]::-webkit-slider-thumb {
+.look-dot :is(.size-2x2, .size-4x2) .vol-bar input[type="range"],
+.look-dot :is(.size-2x2, .size-4x2) .vol-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 36px;
+}
+.look-dot .vol-bar input[type="range"]::-webkit-slider-thumb {
   width: 4px;
   height: 28px;
   margin-top: 0;
@@ -545,60 +544,33 @@
   background: transparent;
   box-shadow: none;
 }
-/* At 4×2, four rows: thinner bars. (Pseudo-elements can't go in :is(), hence three rules.) */
-.look-dot .size-4x2 .mixer-row :is(input[type="range"], .icon-button) {
-  height: 22px;
-  min-height: 22px;
-}
-.look-dot .size-4x2 .mixer-row input[type="range"]::-webkit-slider-runnable-track {
-  height: 22px;
-  border-radius: 9px;
-}
-.look-dot .size-4x2 .mixer-row input[type="range"]::-webkit-slider-thumb {
-  height: 22px;
-}
-.look-dot .tile-card .mixer-row {
-  position: relative;
-  flex: none;
-  gap: 6px;
-}
-/* Each bar's app icon and name sit inside it, at the left (the bar starts after the 28 px mute
-   button and the gap). The name inverts against what's under it, so it reads on the fill and on
-   the empty track alike. */
-.look-dot .tile-card :is(.app-icon, .mixer-name) {
-  display: block;
+.look-dot .vol-bar .vol-icon {
   position: absolute;
+  left: 4px;
   top: 50%;
   translate: 0 -50%;
-  pointer-events: none;
 }
-.look-dot .tile-card .app-icon {
-  left: 42px;
-  width: 16px;
-  height: 16px;
-}
-.look-dot .tile-card .app-icon.glyph {
-  font-size: 14px;
-  line-height: 16px;
-}
-.look-dot .tile-card :is(.app-icon.glyph, .mixer-name) {
+.look-dot :is(.vol-bar .vol-icon, .vol.size-1x1 > *) {
   color: #fff;
   mix-blend-mode: difference;
 }
-.look-dot .tile-card .mixer-name {
-  left: 64px;
-  right: 54px;
-  width: auto;
-  font-size: 12px;
-  font-weight: 600;
+.look-dot .vol.size-1x1::before {
+  background: var(--tw-control-fill);
 }
-.look-dot .tile-card.size-2x2 .mixer-name {
-  right: 8px;
+.look-dot .vol .num {
+  font-size: 20px;
 }
-.look-dot .tile-card .icon-button {
-  width: 28px;
-  min-height: 28px;
-  font-size: 14px;
+.look-dot .vol.size-1x1 .num {
+  font-size: 24px;
+}
+.look-dot .vol-big .num {
+  font-size: 48px;
+}
+.look-dot .vol .tile-title .tile-detail {
+  color: var(--tw-text-tertiary);
+}
+.look-dot .vol-apps .tile-detail {
+  color: var(--tw-text-secondary);
 }
 .look-dot .mixer-value {
   margin-left: 4px;

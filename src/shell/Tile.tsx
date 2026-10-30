@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { Size } from "../modules";
 
 // The two building blocks of every tile on the home board. Modules draw their tiles with these,
@@ -21,19 +21,14 @@ type TileProps = {
   onToggle?: () => void;
   /** Opens the module's own page. Without one there's no chevron. */
   onOpen?: () => void;
-  /** A level from 0 to 100 (volume): the Dot look fills the tile up to it. */
-  level?: number;
 };
 
 /** A one-click tile, like Windows' quick settings. At 1×1 it's the icon and the detail only (the
  *  name is in its tooltip), with no chevron. */
-export function Tile({ size, icon, label, detail, on, onToggle, onOpen, level }: TileProps) {
+export function Tile({ size, icon, label, detail, on, onToggle, onOpen }: TileProps) {
   const small = size === "1x1";
   return (
-    <div
-      className={`tile size-${size}${on ? " on" : ""}${level === undefined ? "" : " level"}`}
-      style={level === undefined ? undefined : ({ "--level": `${level}%` } as CSSProperties)}
-    >
+    <div className={`tile size-${size}${on ? " on" : ""}`}>
       <button
         className="tile-main"
         aria-pressed={on}

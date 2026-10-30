@@ -273,16 +273,6 @@ button.tile-title:hover {
   margin: 0;
   font-size: 10px;
 }
-/* The mixer's rows keep the slider long: names only where there's room, the device icon not at
-   2×1, and at 2×2 no number (the slider shows it). */
-.tile-card:not(.size-4x2, .size-4x1) .mixer-name,
-.tile-card.size-2x1 .app-icon,
-.tile-card.size-2x2 .mixer-value {
-  display: none;
-}
-.tile-card .mixer-row + .mixer-row {
-  margin-top: 0;
-}
 /* Keep awake at 4×2: the page's modes and timer, a little tighter. */
 .tile-card .segmented button {
   padding: 5px 0;
@@ -1103,4 +1093,97 @@ button.media-text:hover {
 .media-page > .hint {
   font-size: 12px;
   text-align: center;
+}
+
+/* ---- Volume tile ----------------------------------------------------------------------- */
+
+/* The level as a number and a bar (speaker first; the Dot look puts it inside the bar). 1×1: the
+   whole tile fills to the level. 4×2: the apps in a column beside it. */
+.vol {
+  display: flex;
+  gap: 16px;
+  padding: var(--tile-pad);
+  overflow: hidden;
+  text-align: left;
+}
+.vol-main,
+.vol-apps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+.vol-apps {
+  justify-content: center;
+  gap: 6px;
+}
+.vol-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.vol-head .tile-title {
+  width: auto;
+  min-width: 0;
+}
+.vol .tile-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vol .num {
+  font-variant-numeric: tabular-nums;
+}
+.vol-big {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 1;
+}
+.vol-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vol-bar input[type="range"] {
+  width: 100%;
+}
+.vol-icon {
+  order: -1;
+  padding: 0;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 14px;
+  line-height: 1;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.vol-icon:hover {
+  background: none;
+}
+.vol.size-1x1 {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: none;
+}
+.vol.size-1x1::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--level);
+  background: rgb(var(--ink) / 0.18);
+  pointer-events: none;
+}
+.vol.size-1x1 > * {
+  position: relative;
+}
+.vol.size-1x1 .vol-icon {
+  order: 0;
 }

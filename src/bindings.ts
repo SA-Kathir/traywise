@@ -198,6 +198,8 @@ export type MixerChanged = MixerState;
 export type MixerState = {
 	/**  None when there's no output device. */
 	master: Level | null,
+	/**  The output device's name, like "Headphones (Realtek(R) Audio)". */
+	device: string | null,
 	apps: AppAudio[],
 };
 
