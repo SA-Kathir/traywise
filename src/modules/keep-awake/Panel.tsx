@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { commands, events, type KeepAwakeState, type Mode } from "../../bindings";
 import { Num, Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
+import { useNow } from "../../shell/useNow";
 import keepAwake from ".";
 import type { TileProps } from "..";
 
@@ -112,18 +113,6 @@ function Controls({ state }: { state: KeepAwakeState }) {
       </div>
     </>
   );
-}
-
-/** The current time, ticking every second while `ticking`. */
-function useNow(ticking: boolean) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!ticking) return;
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [ticking]);
-  return now;
 }
 
 function status(state: KeepAwakeState) {
