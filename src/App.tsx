@@ -21,6 +21,8 @@ const EDIT = String.fromCodePoint(0xe70f);
 
 /** How long the mouse can be outside an edge-opened panel before it closes. */
 const LEAVE_MS = 400;
+/** …and how long it stays if the mouse never comes in (it rested on the edge, then went elsewhere). */
+const NEVER_ENTERED_MS = 1500;
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -38,11 +40,12 @@ function App() {
 
   useEffect(() => {
     // Opened from the screen's edge: close it once the mouse has left (and not come back, or
-    // clicked in, within LEAVE_MS).
+    // clicked in, within LEAVE_MS), or if it never comes in at all.
     let leave: number | undefined;
-    const left = () => {
-      leave = window.setTimeout(() => document.hasFocus() || commands.hidePanel(), LEAVE_MS);
+    const close = (after: number) => {
+      leave = window.setTimeout(() => document.hasFocus() || commands.hidePanel(), after);
     };
+    const left = () => close(LEAVE_MS);
     const back = () => clearTimeout(leave);
     const root = document.documentElement;
     const unlisten = events.panelShown.listen((e) => {
@@ -55,9 +58,7 @@ function App() {
       if (hover) {
         root.addEventListener("mouseleave", left);
         root.addEventListener("mouseenter", back);
-        // It slides in from the edge (once; not with Windows' animation effects off).
-        if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
-          document.querySelector(".panel")?.animate([{ transform: "translateX(24px)", opacity: 0 }, {}], { duration: 220, easing: "cubic-bezier(0, 0, 0, 1)" });
+        close(NEVER_ENTERED_MS);
       }
       setView("home"); // every open starts on the main view, like Windows' own flyouts
       setEditing(false);

@@ -17,7 +17,11 @@ use windows::Win32::Graphics::Gdi::{
     BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
-use windows::Win32::UI::WindowsAndMessaging::{GetWindowRect, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetWindowPos, ShowWindow};
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetWindowRect, SPI_GETCLIENTAREAANIMATION, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
+    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
+};
+use windows::core::BOOL;
 
 use super::webview;
 use crate::module::Modules;
@@ -42,6 +46,8 @@ pub struct PanelState {
     /// Opened by resting the mouse on the screen's edge (not the tray or the shortcut): it sits at
     /// the right, centred, doesn't take the keyboard, and closes when the mouse leaves.
     hover: AtomicBool,
+    /// An edge-opened panel is sliding out: a second close request waits for it.
+    closing: AtomicBool,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -57,6 +63,8 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .resizable(false)
         .always_on_top(true)
         .skip_taskbar(true)
+        // A minimised panel counts as open and blocked opening it again (Show desktop can minimise it).
+        .minimizable(false)
         // Set per look by `frame`.
         .shadow(false)
         .build()?;
@@ -85,7 +93,7 @@ pub fn toggle(app: &AppHandle) {
         .lock()
         .unwrap()
         .is_some_and(|t| t.elapsed() < REOPEN_GUARD);
-    if win.is_visible().unwrap_or(false) {
+    if is_open(&win) {
         hide(&win);
     } else if !just_hidden {
         app.state::<PanelState>().hover.store(false, Ordering::Relaxed);
@@ -96,7 +104,7 @@ pub fn toggle(app: &AppHandle) {
 /// The mouse rested on the screen's edge (`shell::edge`): open the panel there, if it's closed.
 pub fn hover_open(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL)
-        && !win.is_visible().unwrap_or(false)
+        && !is_open(&win)
     {
         app.state::<PanelState>().hover.store(true, Ordering::Relaxed);
         show(&win);
@@ -136,14 +144,20 @@ pub fn set_shortcut(app: &AppHandle, keys: &str) -> Result<(), String> {
 /// Opens the panel if it isn't already open. Used when Traywise is launched a second time.
 pub fn open(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL)
-        && !win.is_visible().unwrap_or(false)
+        && !is_open(&win)
     {
         app.state::<PanelState>().hover.store(false, Ordering::Relaxed);
         show(&win);
     }
 }
 
+/// Shown and not minimised (a minimised window still counts as visible to Windows).
+fn is_open(win: &WebviewWindow) -> bool {
+    win.is_visible().unwrap_or(false) && !win.is_minimized().unwrap_or(false)
+}
+
 fn show(win: &WebviewWindow) {
+    win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
     let hover = win.state::<PanelState>().hover.load(Ordering::Relaxed);
@@ -153,10 +167,23 @@ fn show(win: &WebviewWindow) {
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
     if hover {
         // Shown without taking the keyboard, so typing elsewhere carries on; a click gives it focus.
+        // It slides in from beyond the screen's edge (SW_SHOWNOACTIVATE also un-minimises).
         if let Ok(hwnd) = win.hwnd() {
+            let mut r = RECT::default();
+            let _ = unsafe { GetWindowRect(hwnd, &mut r) };
+            let animate = animations_on();
+            if animate {
+                move_to(hwnd, offscreen(&r), r.top);
+            }
             let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
+            if animate {
+                slide(hwnd, offscreen(&r), r.left, r.top, SLIDE_IN_MS, |t| 1.0 - (1.0 - t).powi(3), || {});
+            }
         }
     } else {
+        if win.is_minimized().unwrap_or(false) {
+            let _ = win.unminimize();
+        }
         let _ = win.show();
         let _ = win.set_focus();
     }
@@ -218,11 +245,68 @@ fn brightness(bgra: &[u8]) -> u8 {
 }
 
 fn hide(win: &WebviewWindow) {
+    let state = win.state::<PanelState>();
+    // An edge-opened panel slides back out first.
+    if state.hover.load(Ordering::Relaxed) && is_open(win) && animations_on() && let Ok(hwnd) = win.hwnd() {
+        if state.closing.swap(true, Ordering::Relaxed) {
+            return; // already sliding out
+        }
+        let mut r = RECT::default();
+        let _ = unsafe { GetWindowRect(hwnd, &mut r) };
+        let w = win.clone();
+        slide(hwnd, r.left, offscreen(&r), r.top, SLIDE_OUT_MS, |t| t * t * t, move || {
+            let w2 = w.clone();
+            let _ = w.run_on_main_thread(move || hide_now(&w2));
+        });
+        return;
+    }
+    hide_now(win);
+}
+
+fn hide_now(win: &WebviewWindow) {
+    win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
     let _ = win.hide();
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
+}
+
+/// The edge drawer's slide: in, easing to a stop; out, speeding away.
+const SLIDE_IN_MS: u64 = 200;
+const SLIDE_OUT_MS: u64 = 150;
+
+/// Where the panel sits just beyond the screen's right edge (it rests 12 px in from it).
+fn offscreen(r: &RECT) -> i32 {
+    r.right + 16
+}
+
+fn move_to(hwnd: HWND, x: i32, y: i32) {
+    let _ = unsafe { SetWindowPos(hwnd, None, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE) };
+}
+
+/// Moves the window from `from` to `to` (its left edge) over `ms`, about 60 times a second, on a
+/// thread of its own; `ease` shapes the motion. Then runs `done`.
+fn slide(hwnd: HWND, from: i32, to: i32, y: i32, ms: u64, ease: fn(f64) -> f64, done: impl FnOnce() + Send + 'static) {
+    let hwnd = hwnd.0 as isize;
+    std::thread::spawn(move || {
+        let frames = (ms / 16).max(1);
+        for i in 1..=frames {
+            let x = from + (f64::from(to - from) * ease(i as f64 / frames as f64)).round() as i32;
+            move_to(HWND(hwnd as _), x, y);
+            std::thread::sleep(Duration::from_millis(16));
+        }
+        done();
+    });
+}
+
+/// Windows' "Animation effects" setting (Accessibility › Visual effects): off means no slide.
+fn animations_on() -> bool {
+    let mut on = BOOL(1);
+    let _ = unsafe {
+        SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION, 0, Some(&mut on as *mut BOOL as *mut c_void), SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0))
+    };
+    on.as_bool()
 }
 
 /// The panel's Quit button, the same as the tray menu's.
