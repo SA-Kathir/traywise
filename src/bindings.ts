@@ -200,7 +200,7 @@ export type QuickTogglesState = {
 export type Settings = {
 	enabledModules: ModuleId[],
 	look: Look,
-	/**  Liquid: no panel background, so the cards float over the desktop. */
+	/**  Liquid and Dot: no panel background, so the cards float over the desktop. */
 	transparent: boolean,
 	/**  Liquid: cards in one even hue, instead of lighter at the top left fading darker. */
 	singleHue: boolean,

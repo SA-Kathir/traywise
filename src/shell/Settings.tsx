@@ -109,12 +109,28 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
               ))}
             </div>
             <h2>Background</h2>
-            <Choice
-              label="Background"
-              options={["Dots", "Plain"]}
-              value={settings.plainBackground}
-              onChange={(plainBackground) => save({ ...settings, plainBackground })}
-            />
+            <div className="segmented" role="radiogroup" aria-label="Background">
+              {(
+                [
+                  ["Dots", false, false],
+                  ["Plain", true, false],
+                  ["Transparent", settings.plainBackground, true],
+                ] as const
+              ).map(([text, plainBackground, transparent]) => {
+                const on = transparent ? settings.transparent : !settings.transparent && settings.plainBackground === plainBackground;
+                return (
+                  <button
+                    key={text}
+                    role="radio"
+                    aria-checked={on}
+                    className={on ? "on" : ""}
+                    onClick={() => save({ ...settings, plainBackground, transparent })}
+                  >
+                    {text}
+                  </button>
+                );
+              })}
+            </div>
           </>
         )}
         {/* The Windows look uses Windows' own colours instead. */}

@@ -843,3 +843,24 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* ---- Transparent background ---------------------------------------------------------------- */
+
+/* The cards float over the desktop (shown through the window, never read; the blur can't reach
+   it, so cards are just their tint there). What isn't already a card gets one, to read over any
+   wallpaper. */
+.look-dot.clear {
+  background: none;
+}
+.look-dot.clear :is(header, .tabs, .edit-bar, .welcome, .setup-intro) {
+  padding: 6px 8px 6px 16px;
+  border-radius: var(--tw-radius-tile);
+  background: var(--tw-glass-float);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+}
+.look-dot.clear .tabs {
+  padding: 0;
+}
+.look-dot.clear :is(.welcome, .setup-intro) {
+  padding: 24px 16px;
+}
