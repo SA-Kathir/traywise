@@ -30,9 +30,9 @@ export type ModuleUi = {
   /** A Segoe Fluent Icons glyph. */
   icon: string;
   category: Category;
-  /** One line on the Modules page: what it does. */
+  /** One short line on the Modules page (about 20 letters): what it does. */
   description: string;
-  /** What it costs while nothing is happening, on the Modules page. */
+  /** What it does while nothing is happening, after "Idle: " on the Modules page. */
   idle: string;
   /** The tiles it offers for the home board, by kind: a name, and the sizes it comes in, smallest
    *  first (resizing cycles through them). Plain data, so listing them doesn't load the module. */
