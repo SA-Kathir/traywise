@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
+import { useEffect, useState, type ReactNode } from "react";
 import { commands, type Accent, type Look, type Preset, type Settings } from "../bindings";
 import { modules } from "../modules";
 
@@ -51,9 +52,11 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
   const { save, error, setError } = useSave(props);
   // null until Windows has answered.
   const [autostart, setAutostart] = useState<boolean | null>(null);
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     commands.getAutostart().then((r) => (r.status === "ok" ? setAutostart(r.data) : setError(r.error)));
+    getVersion().then(setVersion);
   }, []);
 
   async function toggleAutostart(on: boolean) {
@@ -62,13 +65,17 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
     else setError(r.error);
   }
 
+  const dotBackground = settings.transparent ? "transparent" : settings.plainBackground ? "plain" : "dots";
+
   return (
     <>
       <section>
-        <button className="link-row" onClick={openModules}>
-          <span className="grow">Modules</span>
-          <span className="hint">
-            {settings.enabledModules.length} of {Object.keys(modules).length} on
+        <button className="setting link" onClick={openModules}>
+          <span className="setting-text">
+            <span className="setting-label">Modules</span>
+            <span className="setting-desc">
+              {settings.enabledModules.length} of {Object.keys(modules).length} on
+            </span>
           </span>
           <span className="icon" aria-hidden>
             {CHEVRON}
@@ -77,155 +84,159 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
       </section>
 
       <section>
-        <h2>Look</h2>
-        <div className="segmented" role="radiogroup" aria-label="Look">
-          {LOOKS.map((l) => (
-            <button
-              key={l.id}
-              role="radio"
-              aria-checked={settings.look === l.id}
-              className={settings.look === l.id ? "on" : ""}
-              onClick={() => save({ ...settings, look: l.id })}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
+        <h2>Appearance</h2>
+        <Row label="Look" stacked>
+          <Pick label="Look" options={LOOKS} value={settings.look} onChange={(look) => save({ ...settings, look })} />
+        </Row>
         {settings.look === "dot" && (
           <>
-            <div className="swatches" role="radiogroup" aria-label="Accent">
-              {ACCENTS.map((a) => (
-                <button
-                  key={a.id}
-                  role="radio"
-                  aria-checked={settings.accent === a.id}
-                  className={settings.accent === a.id ? "on" : ""}
-                  onClick={() => save({ ...settings, accent: a.id })}
-                >
-                  {/* Its own accent class, so the swatch shows that colour. */}
-                  <span className={`swatch dot-swatch accent-${a.id}`} aria-hidden />
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <h2>Background</h2>
-            <div className="segmented" role="radiogroup" aria-label="Background">
-              {(
-                [
-                  ["Dots", false, false],
-                  ["Plain", true, false],
-                  ["Transparent", settings.plainBackground, true],
-                ] as const
-              ).map(([text, plainBackground, transparent]) => {
-                const on = transparent ? settings.transparent : !settings.transparent && settings.plainBackground === plainBackground;
-                return (
+            <Row label="Accent">
+              <div className="colour-pick" role="radiogroup" aria-label="Accent">
+                {ACCENTS.map((a) => (
                   <button
-                    key={text}
+                    key={a.id}
                     role="radio"
-                    aria-checked={on}
-                    className={on ? "on" : ""}
-                    onClick={() => save({ ...settings, plainBackground, transparent })}
+                    aria-checked={settings.accent === a.id}
+                    aria-label={a.label}
+                    title={a.label}
+                    className={settings.accent === a.id ? "on" : ""}
+                    onClick={() => save({ ...settings, accent: a.id })}
                   >
-                    {text}
+                    {/* Its own accent class, so the dot shows that colour. */}
+                    <span className={`swatch dot-swatch accent-${a.id}`} aria-hidden />
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            </Row>
+            <Row label="Background" stacked>
+              <Pick
+                label="Background"
+                options={[
+                  { id: "dots", label: "Dots" },
+                  { id: "plain", label: "Plain" },
+                  { id: "transparent", label: "Transparent" },
+                ]}
+                value={dotBackground}
+                onChange={(b) =>
+                  save({ ...settings, transparent: b === "transparent", plainBackground: b === "transparent" ? settings.plainBackground : b === "plain" })
+                }
+              />
+            </Row>
           </>
-        )}
-        {/* The Windows look uses Windows' own colours instead. */}
-        {settings.look === "liquid" && (
-          <div className="swatches" role="radiogroup" aria-label="Colour">
-            {PRESETS.map((p) => (
-              <button
-                key={p.id}
-                role="radio"
-                aria-checked={settings.preset === p.id}
-                className={settings.preset === p.id ? "on" : ""}
-                onClick={() => save({ ...settings, preset: p.id })}
-              >
-                {/* Its own preset class, so the swatch shows that preset's colours. */}
-                <span className={`swatch bg-${p.id}`} aria-hidden />
-                {p.label}
-              </button>
-            ))}
-          </div>
         )}
         {settings.look === "liquid" && (
           <>
-            <h2>Background</h2>
-            <Choice
-              label="Background"
-              options={["Tinted", "Transparent"]}
-              value={settings.transparent}
-              onChange={(transparent) => save({ ...settings, transparent })}
-            />
-            <h2>Tiles</h2>
-            <Choice
-              label="Tiles"
-              options={["Shaded", "Single hue"]}
-              value={settings.singleHue}
-              onChange={(singleHue) => save({ ...settings, singleHue })}
-            />
+            <Row label="Colour">
+              <div className="colour-pick" role="radiogroup" aria-label="Colour">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    role="radio"
+                    aria-checked={settings.preset === p.id}
+                    aria-label={p.label}
+                    title={p.label}
+                    className={settings.preset === p.id ? "on" : ""}
+                    onClick={() => save({ ...settings, preset: p.id })}
+                  >
+                    {/* Its own preset class, so the swatch shows that preset's colours. */}
+                    <span className={`swatch bg-${p.id}`} aria-hidden />
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <Row label="Background" stacked>
+              <Choice
+                label="Background"
+                options={["Tinted", "Transparent"]}
+                value={settings.transparent}
+                onChange={(transparent) => save({ ...settings, transparent })}
+              />
+            </Row>
+            <Row label="Tiles" stacked>
+              <Choice label="Tiles" options={["Shaded", "Single hue"]} value={settings.singleHue} onChange={(singleHue) => save({ ...settings, singleHue })} />
+            </Row>
           </>
         )}
-      </section>
-
-      <section>
-        <h2>Shortcuts</h2>
-        <div className="row">
-          <span className="grow">Open or close Traywise</span>
-          <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
-        </div>
-        {settings.enabledModules.includes("audio-devices") && (
-          <div className="row">
-            <span className="grow">Mute all microphones</span>
-            <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
-          </div>
-        )}
+        {settings.look === "windows" && <p className="setting-desc">Follows Windows' light or dark mode and its colours.</p>}
       </section>
 
       <section>
         <h2>Opening</h2>
-        <label className="row">
-          <span className="grow">Open from the right edge</span>
-          <input type="checkbox" checked={settings.edgeOpen} onChange={(e) => save({ ...settings, edgeOpen: e.target.checked })} />
-        </label>
-        <label className="row">
-          <span className="grow">Show a handle on the edge</span>
-          <input
-            type="checkbox"
-            disabled={!settings.edgeOpen}
+        <Row label="Shortcut" desc="Opens or closes Traywise">
+          <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
+        </Row>
+        <SwitchRow
+          label="Open from the right edge"
+          desc="Rest the mouse on its middle"
+          checked={settings.edgeOpen}
+          onChange={(edgeOpen) => save({ ...settings, edgeOpen })}
+        />
+        {settings.edgeOpen && (
+          <SwitchRow
+            label="Show a handle"
+            desc="A small mark on the edge, where to rest the mouse"
             checked={settings.edgeHandle}
-            onChange={(e) => save({ ...settings, edgeHandle: e.target.checked })}
+            onChange={(edgeHandle) => save({ ...settings, edgeHandle })}
           />
-        </label>
-        <p className="hint">Rest the mouse on the middle of the right edge for a moment. It closes when the mouse leaves.</p>
+        )}
       </section>
 
       <section>
         <h2>System</h2>
-        <label className="row">
-          <span className="grow">Start with Windows</span>
-          <input
-            type="checkbox"
-            disabled={autostart === null}
-            checked={autostart ?? false}
-            onChange={(e) => toggleAutostart(e.target.checked)}
-          />
-        </label>
-        <label className="row">
-          <span className="grow">Check for updates</span>
-          <input
-            type="checkbox"
-            checked={settings.checkUpdates}
-            onChange={(e) => save({ ...settings, checkUpdates: e.target.checked })}
-          />
-        </label>
+        <SwitchRow label="Start with Windows" checked={autostart ?? false} disabled={autostart === null} onChange={toggleAutostart} />
+        <SwitchRow
+          label="Check for updates"
+          desc="About once a day, from GitHub"
+          checked={settings.checkUpdates}
+          onChange={(checkUpdates) => save({ ...settings, checkUpdates })}
+        />
+        <Row label="Traywise" desc="Free and open source, under the GPL">
+          <span className="setting-value">{version}</span>
+        </Row>
       </section>
 
       {error && <p className="error">{error}</p>}
     </>
+  );
+}
+
+/** A setting: its name (and a line on what it does), then its control; `stacked` puts the
+ *  control under the name, for choices that need the width. */
+export function Row(props: { label: string; desc?: string; stacked?: boolean; children: ReactNode }) {
+  return (
+    <div className={props.stacked ? "setting stacked" : "setting"}>
+      <span className="setting-text">
+        <span className="setting-label">{props.label}</span>
+        {props.desc && <span className="setting-desc">{props.desc}</span>}
+      </span>
+      {props.children}
+    </div>
+  );
+}
+
+/** A setting that's on or off; the whole row toggles it. */
+export function SwitchRow(props: { label: string; desc?: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <label className="setting">
+      <span className="setting-text">
+        <span className="setting-label">{props.label}</span>
+        {props.desc && <span className="setting-desc">{props.desc}</span>}
+      </span>
+      <input type="checkbox" checked={props.checked} disabled={props.disabled} onChange={(e) => props.onChange(e.target.checked)} />
+    </label>
+  );
+}
+
+/** One of a few choices, as a segmented control. */
+function Pick<T extends string>(props: { label: string; options: { id: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+  return (
+    <div className="segmented" role="radiogroup" aria-label={props.label}>
+      {props.options.map((o) => (
+        <button key={o.id} role="radio" aria-checked={props.value === o.id} className={props.value === o.id ? "on" : ""} onClick={() => props.onChange(o.id)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -248,7 +259,7 @@ function Choice(props: { label: string; options: [string, string]; value: boolea
 const MODIFIER_KEYS = ["Control", "Alt", "Shift", "Meta"];
 
 /** Click, then press the new key combination (with Ctrl, Alt, Shift or Win). Esc cancels. */
-function ShortcutPicker({ keys, onChange }: { keys: string; onChange: (keys: string) => void }) {
+export function ShortcutPicker({ keys, onChange }: { keys: string; onChange: (keys: string) => void }) {
   const [listening, setListening] = useState(false);
 
   function onKeyDown(e: React.KeyboardEvent) {

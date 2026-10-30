@@ -104,14 +104,12 @@ body {
   margin-right: auto;
   padding: 3px 14px 5px;
 }
-.look-liquid.clear :is(header h1, .modules-all, .welcome, .setup-intro) {
+.look-liquid.clear :is(header h1, .welcome, .setup-intro) {
   border-radius: 14px;
   background: var(--tint);
   border: 1px solid var(--tint-edge);
 }
-.look-liquid.clear .modules-all {
-  padding: 6px 8px 6px 14px;
-}
+
 .look-liquid.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
 }
@@ -519,18 +517,11 @@ label.row + label.row,
 div.row + div.row {
   margin-top: 10px;
 }
-/* The Modules heading doubles as the select-all row. */
-.modules-all h2 {
-  margin: 0;
-}
-.modules-all .hint {
-  font-size: 12px;
-}
+
 .grow {
   flex: 1;
 }
-.segmented + h2,
-.swatches + h2 {
+.segmented + h2 {
   margin-top: 12px;
 }
 .segmented + .segmented,
@@ -538,8 +529,7 @@ div.row + div.row {
 label.row + .hint,
 .segmented + .row,
 .row.mics + p,
-.segmented + .hint,
-.segmented + .swatches {
+.segmented + .hint {
   margin-top: 8px;
 }
 
@@ -673,19 +663,7 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
-/* Colour presets: a 3 x 2 grid, each with a swatch of its own colours. */
-.swatches {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.swatches button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  text-align: left;
-}
+
 .swatch {
   width: 16px;
   height: 16px;
@@ -830,22 +808,6 @@ section > .link-row:only-child {
   margin-top: 0;
 }
 
-.module-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  cursor: pointer;
-}
-.module-row + .module-row {
-  border-top: 1px solid rgb(var(--ink) / 0.08);
-}
-.module-row > .grow {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
 .module-icon {
   width: 22px;
   flex: none;
@@ -1349,4 +1311,100 @@ button.net-row {
   width: 44px;
   flex: none;
   color: rgb(var(--ink) / 0.6);
+}
+
+/* ---- Settings rows (Settings, Modules, module options) ---------------------------------- */
+
+/* A setting: its name and a line on what it does, then its control at the right (or under it,
+   `stacked`). Rows in a card are split by a hairline. */
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+  padding: 10px 0;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+label.setting,
+button.setting {
+  cursor: pointer;
+}
+button.setting:hover {
+  background: none;
+}
+.setting + .setting {
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+section > h2 + .setting {
+  padding-top: 2px;
+}
+section > .setting:last-child {
+  padding-bottom: 2px;
+}
+.setting.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.setting-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setting-desc,
+.module-idle {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+}
+.module-idle {
+  color: rgb(var(--ink) / 0.45);
+}
+.setting-value {
+  color: rgb(var(--ink) / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.setting .icon {
+  margin: 0;
+}
+/* Colours to pick from: a row of round swatches; the picked one gets a ring. */
+.colour-pick {
+  display: flex;
+  gap: 6px;
+}
+.colour-pick button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+}
+.colour-pick button.on {
+  box-shadow: inset 0 0 0 2px rgb(var(--ink) / 0.85);
+}
+.colour-pick .swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+/* Modules: the icon in a round well. */
+.setting.module .module-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.08);
 }

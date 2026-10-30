@@ -312,21 +312,19 @@
 /* ---- List rows ------------------------------------------------------------------------------ */
 
 /* 8/12 padding, radius 12, a wash on hover, no dividers. */
-.look-dot :is(.link-row, .module-row) {
+.look-dot :is(.link-row) {
   min-height: 0;
   padding: 8px 12px;
   border-radius: var(--tw-radius-md);
   background: transparent;
   box-shadow: none;
 }
-.look-dot :is(.link-row, .module-row):hover {
+.look-dot :is(.link-row):hover {
   background: var(--tw-control-quiet-hover);
 }
-.look-dot .module-row + .module-row {
-  border-top: none;
-}
+
 /* Rows inside a card reach its edges, like the Figma list rows. */
-.look-dot section > :is(.link-row, .module-row) {
+.look-dot section > :is(.link-row) {
   margin-inline: -8px;
   width: auto;
 }
@@ -842,15 +840,11 @@
   background: var(--tw-accent-base);
   box-shadow: none;
 }
-.look-dot .swatches button {
-  border-radius: var(--tw-radius-md);
-}
+
 .look-dot .looks button {
   border-radius: var(--tw-radius-lg);
 }
-.look-dot .swatches button {
-  padding: 0 10px;
-}
+
 .look-dot .looks button {
   padding: 14px 16px;
 }
@@ -1072,4 +1066,27 @@
 }
 .look-dot .picker-side {
   color: var(--tw-text-secondary);
+}
+
+/* ---- Settings rows ---------------------------------------------------------------------------- */
+
+.look-dot .setting + .setting {
+  border-top-color: var(--tw-glass-edge);
+}
+.look-dot :is(.setting-desc, .setting-value) {
+  font-size: 11px;
+  color: var(--tw-text-secondary);
+}
+.look-dot .module-idle {
+  font-size: 11px;
+  color: var(--tw-text-tertiary);
+}
+.look-dot button.setting.link:hover .setting-label {
+  color: var(--tw-accent-text);
+}
+.look-dot .colour-pick button.on {
+  box-shadow: inset 0 0 0 2px var(--tw-text-primary);
+}
+.look-dot .setting.module .module-icon {
+  background: var(--tw-control-track);
 }
