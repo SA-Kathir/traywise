@@ -237,6 +237,8 @@ export type PanelShown = null;
 
 export type Point = {
 	cpu: number,
+	/**  Memory in use, percent. */
+	memory: number,
 	/**  Bytes a second. */
 	download: number,
 	upload: number,
@@ -303,6 +305,8 @@ export type ShortcutStatus = {
 export type SystemSample = {
 	/**  Percent of all cores together. None for the first second after opening. */
 	cpu: number | null,
+	/**  The processor's current clock speed in MHz, as Task Manager's "Speed". */
+	cpuMhz: number | null,
 	/**  MiB. */
 	memoryUsed: number,
 	memoryTotal: number,

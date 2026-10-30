@@ -305,13 +305,13 @@ button.tile-title:hover {
   font-size: 10px;
 }
 
-/* System monitor: its readings (one to four, two to a row at 2×2), and at 4×2 the graphs. */
+/* System monitor: one reading (CPU or Memory), or both side by side at 4×1 and 4×2. Up to 2×1 the
+   graph sits at the right; at 2×2 and 4×2 under the number. */
 .stats {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
+  gap: 12px;
   padding: var(--tile-pad);
+  text-align: left;
 }
 .stats:hover {
   background: linear-gradient(
@@ -320,33 +320,48 @@ button.tile-title:hover {
     color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
   );
 }
-.stat-chips {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+.reading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
 }
-.size-2x2 .stat-chips {
-  grid-auto-flow: row;
-  grid-template-columns: 1fr 1fr;
-  row-gap: 14px;
+.reading + .reading {
+  padding-left: 12px;
+  border-left: 1px solid rgb(var(--ink) / 0.1);
 }
-.stat-graphs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-/* Each graph under its name. */
-.stat-graphs > span {
+.reading-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  justify-content: space-between;
 }
-.stat-chip {
+.reading-head {
   display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.reading-sub {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.5);
+  white-space: nowrap;
+}
+.reading-graph {
+  flex: none;
+  width: 48px;
+  align-self: center;
+}
+:is(.size-2x2, .size-4x2) .reading {
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
+}
+:is(.size-2x2, .size-4x2) .reading-text {
+  justify-content: flex-start;
+  gap: 8px;
+}
+:is(.size-2x2, .size-4x2) .reading-graph {
+  width: auto;
+  align-self: stretch;
 }
 .stat-chip-value {
   font-family: var(--display);
@@ -355,8 +370,9 @@ button.tile-title:hover {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.size-1x1 .stat-chip-value {
-  font-size: 18px;
+:is(.size-2x2, .size-4x2) .stat-chip-value {
+  font-size: 40px;
+  line-height: 1;
 }
 .stat-chip-label {
   font-size: 11px;

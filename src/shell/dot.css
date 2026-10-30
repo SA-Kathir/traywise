@@ -580,17 +580,7 @@
   line-height: 1;
 }
 
-/* System monitor: each reading's name above its dot-matrix number, left aligned. */
-.look-dot .stats {
-  justify-content: space-between;
-  padding: var(--tile-pad);
-}
-.look-dot .stat-chip {
-  flex-direction: column-reverse;
-  align-items: flex-start;
-  gap: 4px;
-  overflow: hidden;
-}
+/* System monitor: overline names, dot-matrix numbers with their unit beside them. */
 .look-dot .stat-chip-label {
   font-size: 11px;
   line-height: 14px;
@@ -605,11 +595,21 @@
   color: var(--tw-text-secondary);
 }
 .look-dot .stat-chip-value .num {
-  margin-right: 2px;
+  margin-right: 3px;
+  font-size: 24px;
   color: var(--tw-text-primary);
 }
-.look-dot :is(.size-4x1, .size-2x2) .stat-chip-value .num {
-  font-size: 20px;
+.look-dot :is(.size-2x2, .size-4x2) .stat-chip-value .num {
+  font-size: 56px;
+}
+.look-dot .reading-sub {
+  color: var(--tw-text-tertiary);
+}
+.look-dot .reading + .reading {
+  border-left-color: var(--tw-glass-edge);
+}
+.look-dot .reading-graph .graph-dots {
+  margin-top: 0;
 }
 /* The keep-awake timer's countdown, inside its pill. */
 .look-dot .segmented.timer .num {
@@ -879,9 +879,6 @@
 }
 .look-dot.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
-}
-.look-dot .stat-graphs {
-  text-align: left;
 }
 
 /* ---- Now playing --------------------------------------------------------------------------- */

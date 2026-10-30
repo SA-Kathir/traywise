@@ -72,7 +72,7 @@ impl Sampler {
     }
 
     fn sample(&mut self) -> SystemSample {
-        let cpu = self.cpu.as_ref().and_then(Cpu::read);
+        let (cpu, cpu_mhz) = self.cpu.as_ref().map_or((None, None), Cpu::read);
         self.networks.refresh(true);
         let elapsed = self.last.elapsed();
         self.last = Instant::now();
@@ -80,8 +80,12 @@ impl Sampler {
         // type if the numbers look doubled.
         let (received, sent) = self.networks.values().fold((0, 0), |(r, s), n| (r + n.received(), s + n.transmitted()));
         let (download, upload) = (per_second(received, elapsed), per_second(sent, elapsed));
-        push_history(&mut self.history, Point { cpu: cpu.unwrap_or(0), download, upload });
-        self.read(cpu, Some(download), Some(upload))
+        let mut sample = self.read(cpu, Some(download), Some(upload));
+        sample.cpu_mhz = cpu_mhz;
+        let memory = (u64::from(sample.memory_used) * 100 / u64::from(sample.memory_total.max(1))) as u8;
+        push_history(&mut self.history, Point { cpu: cpu.unwrap_or(0), memory, download, upload });
+        sample.history = self.history.clone();
+        sample
     }
 
     fn read(&mut self, cpu: Option<u8>, download: Option<u32>, upload: Option<u32>) -> SystemSample {
@@ -89,6 +93,7 @@ impl Sampler {
         let (disk_free, disk_total) = system_drive_space();
         SystemSample {
             cpu,
+            cpu_mhz: None,
             memory_used: mib(self.system.used_memory()),
             memory_total: mib(self.system.total_memory()),
             download,
@@ -107,6 +112,9 @@ impl Sampler {
 struct Cpu {
     query: PDH_HQUERY,
     counter: PDH_HCOUNTER,
+    /// The clock speed as Task Manager shows it: the base frequency times the performance percent.
+    frequency: PDH_HCOUNTER,
+    performance: PDH_HCOUNTER,
 }
 
 impl Cpu {
@@ -117,28 +125,35 @@ impl Cpu {
         if status != 0 {
             return report_pdh(status);
         }
-        let mut cpu = Self { query, counter: PDH_HCOUNTER::default() }; // dropping it closes the query
+        // Dropping it closes the query.
+        let mut cpu = Self { query, counter: PDH_HCOUNTER::default(), frequency: PDH_HCOUNTER::default(), performance: PDH_HCOUNTER::default() };
         let path = w!(r"\Processor Information(_Total)\% Processor Utility");
         let status = unsafe { PdhAddEnglishCounterW(cpu.query, path, 0, &mut cpu.counter) };
         if status != 0 {
             return report_pdh(status);
         }
-        unsafe { PdhCollectQueryData(cpu.query) };
+        // The speed is extra: without these counters it's just not shown.
+        unsafe {
+            PdhAddEnglishCounterW(cpu.query, w!(r"\Processor Information(_Total)\Processor Frequency"), 0, &mut cpu.frequency);
+            PdhAddEnglishCounterW(cpu.query, w!(r"\Processor Information(_Total)\% Processor Performance"), 0, &mut cpu.performance);
+            PdhCollectQueryData(cpu.query);
+        }
         Some(cpu)
     }
 
-    /// Percent, 0 to 100 (Windows caps it, like Task Manager), since the previous reading.
-    fn read(&self) -> Option<u8> {
-        let mut value = PDH_FMT_COUNTERVALUE::default();
-        let status = unsafe {
-            PdhCollectQueryData(self.query);
-            PdhGetFormattedCounterValue(self.counter, PDH_FMT_DOUBLE, None, &mut value)
-        };
-        if status != 0 || value.CStatus != 0 {
-            return None;
-        }
-        Some(unsafe { value.Anonymous.doubleValue }.clamp(0.0, 100.0).round() as u8)
+    /// (use in percent, 0 to 100, as Task Manager caps it; clock speed in MHz) since the previous reading.
+    fn read(&self) -> (Option<u8>, Option<u32>) {
+        unsafe { PdhCollectQueryData(self.query) };
+        let used = value(self.counter).map(|v| v.clamp(0.0, 100.0).round() as u8);
+        let mhz = value(self.frequency).zip(value(self.performance)).map(|(f, p)| (f * p / 100.0).round() as u32);
+        (used, mhz)
     }
+}
+
+fn value(counter: PDH_HCOUNTER) -> Option<f64> {
+    let mut value = PDH_FMT_COUNTERVALUE::default();
+    let status = unsafe { PdhGetFormattedCounterValue(counter, PDH_FMT_DOUBLE, None, &mut value) };
+    (status == 0 && value.CStatus == 0).then_some(unsafe { value.Anonymous.doubleValue })
 }
 
 impl Drop for Cpu {
