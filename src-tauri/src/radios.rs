@@ -18,6 +18,12 @@ pub fn mta() {
     });
 }
 
+/// Runs work that waits on Windows (a Wi-Fi scan takes seconds) on a thread meant for waiting,
+/// not on the async threads every command shares.
+pub async fn blocking<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> T {
+    tauri::async_runtime::spawn_blocking(work).await.expect("a blocking task panicked")
+}
+
 /// Whether this PC's radio of a kind is on; None if it has none.
 pub fn radio_on(kind: RadioKind) -> Option<bool> {
     radio(kind).ok().flatten().map(|r| r.State() == Ok(RadioState::On))

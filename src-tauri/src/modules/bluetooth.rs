@@ -25,7 +25,7 @@ use windows::core::{GUID, HSTRING, Interface, Result};
 
 use crate::audio;
 use crate::module::{Module, ModuleId};
-use crate::radios::{mta, radio_on, set_radio};
+use crate::radios::{blocking, mta, radio_on, set_radio};
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -181,30 +181,36 @@ fn ks_request(device: &IMMDevice, connect: bool) -> Result<()> {
 #[tauri::command]
 #[specta::specta]
 pub async fn bluetooth_state() -> BluetoothState {
-    read()
+    blocking(read).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn bluetooth_set_on(app: AppHandle, on: bool) -> std::result::Result<(), String> {
-    let result = set_radio(RadioKind::Bluetooth, on);
-    publish(&app);
-    result
+    blocking(move || {
+        let result = set_radio(RadioKind::Bluetooth, on);
+        publish(&app);
+        result
+    })
+    .await
 }
 
 /// Connects or disconnects a paired audio device (`id` from the state).
 #[tauri::command]
 #[specta::specta]
 pub async fn bluetooth_connect(app: AppHandle, id: String, connect: bool) -> std::result::Result<(), String> {
-    let result = match connect_audio(&id, connect) {
-        Ok(true) => Ok(()),
-        Ok(false) => Err("Windows didn't take the request; try Bluetooth settings".into()),
-        Err(e) => Err(e.to_string()),
-    };
-    // The driver answers at once but connecting takes a moment: report what Windows says then.
-    std::thread::sleep(std::time::Duration::from_secs(2));
-    publish(&app);
-    result
+    blocking(move || {
+        let result = match connect_audio(&id, connect) {
+            Ok(true) => Ok(()),
+            Ok(false) => Err("Windows didn't take the request; try Bluetooth settings".into()),
+            Err(e) => Err(e.to_string()),
+        };
+        // The driver answers at once but connecting takes a moment: report what Windows says then.
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        publish(&app);
+        result
+    })
+    .await
 }
 
 #[cfg(test)]

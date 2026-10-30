@@ -14,7 +14,7 @@ use windows::Security::Credentials::PasswordCredential;
 use windows::core::{HSTRING, Result};
 
 use crate::module::{Module, ModuleId};
-use crate::radios::{mta, radio_on, set_radio};
+use crate::radios::{blocking, mta, radio_on, set_radio};
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -169,26 +169,32 @@ fn saved_networks() -> Vec<String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn wifi_state() -> WifiState {
-    read()
+    blocking(read).await
 }
 
 /// Looks for networks again (a few seconds), then sends the new list.
 #[tauri::command]
 #[specta::specta]
 pub async fn wifi_scan(app: AppHandle) -> std::result::Result<(), String> {
-    if let Some(adapter) = adapter().map_err(|e| e.to_string())? {
-        adapter.ScanAsync().and_then(|scan| scan.join()).map_err(|e| e.to_string())?;
-    }
-    publish(&app);
-    Ok(())
+    blocking(move || {
+        if let Some(adapter) = adapter().map_err(|e| e.to_string())? {
+            adapter.ScanAsync().and_then(|scan| scan.join()).map_err(|e| e.to_string())?;
+        }
+        publish(&app);
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn wifi_set_on(app: AppHandle, on: bool) -> std::result::Result<(), String> {
-    let result = set_radio(RadioKind::WiFi, on);
-    publish(&app);
-    result
+    blocking(move || {
+        let result = set_radio(RadioKind::WiFi, on);
+        publish(&app);
+        result
+    })
+    .await
 }
 
 /// Joins a network. A secured network Windows hasn't saved needs `password`; Windows saves it
@@ -196,9 +202,12 @@ pub async fn wifi_set_on(app: AppHandle, on: bool) -> std::result::Result<(), St
 #[tauri::command]
 #[specta::specta]
 pub async fn wifi_connect(app: AppHandle, ssid: String, password: Option<String>) -> std::result::Result<(), String> {
-    let result = connect(&ssid, password).unwrap_or_else(|e| Err(e.to_string()));
-    publish(&app);
-    result
+    blocking(move || {
+        let result = connect(&ssid, password).unwrap_or_else(|e| Err(e.to_string()));
+        publish(&app);
+        result
+    })
+    .await
 }
 
 fn connect(ssid: &str, password: Option<String>) -> Result<std::result::Result<(), String>> {
@@ -233,9 +242,12 @@ fn connect(ssid: &str, password: Option<String>) -> Result<std::result::Result<(
 #[tauri::command]
 #[specta::specta]
 pub async fn wifi_disconnect(app: AppHandle) -> std::result::Result<(), String> {
-    let result = adapter().map_err(|e| e.to_string()).and_then(|a| a.map_or(Ok(()), |a| a.Disconnect().map_err(|e| e.to_string())));
-    publish(&app);
-    result
+    blocking(move || {
+        let result = adapter().map_err(|e| e.to_string()).and_then(|a| a.map_or(Ok(()), |a| a.Disconnect().map_err(|e| e.to_string())));
+        publish(&app);
+        result
+    })
+    .await
 }
 
 #[cfg(test)]
