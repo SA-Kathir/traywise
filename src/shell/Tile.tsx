@@ -10,8 +10,8 @@ const CHEVRON = String.fromCodePoint(0xe76c);
 
 type TileProps = {
   size: Size;
-  /** A Segoe Fluent Icons glyph. */
-  icon: string;
+  /** A Segoe Fluent Icons glyph, or an icon element. */
+  icon: ReactNode;
   label: string;
   /** One short line under the label: the state or a value. */
   detail: string;
@@ -41,8 +41,10 @@ export function Tile({ size, icon, label, detail, on, onToggle, onOpen }: TilePr
         </span>
         {!small && <span className="tile-label">{label}</span>}
         <span className="tile-detail" title={small ? undefined : detail}>
-          {detail}
+          <Num text={detail} />
         </span>
+        {/* 2×2, as in the design: a switch at the top right shows it's on or off. */}
+        {size === "2x2" && onToggle && on !== undefined && <span className={`tile-switch${on ? " on" : ""}`} aria-hidden />}
       </button>
       {onOpen && !small && (
         <button className="tile-more" aria-label={`${label} details`} title="Details" onClick={onOpen}>
@@ -91,5 +93,18 @@ export function TileCard({
       )}
       {children}
     </div>
+  );
+}
+
+/** A reading with its digits in dot type (the Dot look) and its unit beside them in the UI font:
+ *  "23%" is 23 then %. Text that doesn't start with a number stays as it is. */
+export function Num({ text }: { text: string }) {
+  const [, digits, rest] = /^([\d.:×]+)(.*)$/s.exec(text) ?? [];
+  if (!digits) return text;
+  return (
+    <>
+      <span className="num">{digits}</span>
+      {rest}
+    </>
   );
 }

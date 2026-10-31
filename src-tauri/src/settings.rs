@@ -16,11 +16,15 @@ pub struct Settings {
     // invalid, so it falls back to defaults; skip unknown ids instead once modules get removed.
     pub enabled_modules: Vec<ModuleId>,
     pub look: Look,
-    /// Liquid: no panel background, so the cards float over the desktop.
+    /// Liquid and Dot: no panel background, so the cards float over the desktop.
     pub transparent: bool,
     /// Liquid: cards in one even hue, instead of lighter at the top left fading darker.
     pub single_hue: bool,
     pub preset: Preset,
+    /// Dot: the accent colour.
+    pub accent: Accent,
+    /// Dot: a plain gradient behind the tiles instead of the dot grid.
+    pub plain_background: bool,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
     /// Global shortcut that opens or closes the panel, like "Ctrl+Alt+T".
@@ -33,6 +37,22 @@ pub struct Settings {
     pub board: Option<Vec<BoardTile>>,
     /// Home board: tiles fill gaps (true), or stay where they're put (false).
     pub auto_arrange: bool,
+    /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
+    pub monitor_readings: [Reading; 2],
+    /// Resting the mouse on the middle of the screen's right edge opens the panel.
+    pub edge_open: bool,
+    /// With `edge_open`, a small pill on the edge shows where.
+    pub edge_handle: bool,
+}
+
+/// A reading the system monitor graphs.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Reading {
+    Cpu,
+    Memory,
+    Download,
+    Upload,
 }
 
 /// A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
@@ -50,16 +70,21 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             enabled_modules: vec![ModuleId::VolumeMixer],
-            look: Look::Liquid,
+            look: Look::Dot,
             transparent: false,
             single_hue: false,
             preset: Preset::Ocean,
+            accent: Accent::Red,
+            plain_background: false,
             mic_shortcut: "Ctrl+Alt+M".into(),
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
             board: None,
             auto_arrange: true,
+            monitor_readings: [Reading::Cpu, Reading::Memory],
+            edge_open: false,
+            edge_handle: false,
         }
     }
 }
@@ -68,6 +93,8 @@ impl Default for Settings {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Look {
+    /// Monochrome tiles over a dot grid, one accent colour and dot-matrix numbers (docs/design-system.md).
+    Dot,
     /// Glass cards over a colour preset's background.
     Liquid,
     /// Flat, like Windows 11's own flyouts, following Windows' light or dark mode.
@@ -85,6 +112,17 @@ pub enum Preset {
     Plum,
     Ember,
     Rose,
+}
+
+/// Accent colour preset (Dot look). The colours are in `src/shell/dot.css`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Accent {
+    Red,
+    Amber,
+    Violet,
+    Blue,
+    Green,
 }
 
 pub struct SettingsState {
@@ -151,6 +189,7 @@ pub fn set_settings(
     crate::shell::panel::set_shortcut(&app, &settings.panel_shortcut)?;
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
+    crate::shell::edge::apply(&app, &settings);
     // Only the look decides the frame. Re-framing resizes the window, which visibly nudges the
     // panel, so don't do it for every other save (like each tile moved on the home board).
     let reframe = {
@@ -198,12 +237,17 @@ mod tests {
             transparent: true,
             single_hue: true,
             preset: Preset::Graphite,
+            accent: Accent::Blue,
+            plain_background: true,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
             board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
             auto_arrange: false,
+            monitor_readings: [Reading::Upload, Reading::Cpu],
+            edge_open: true,
+            edge_handle: true,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");
@@ -213,6 +257,28 @@ mod tests {
 
         std::fs::write(&path, r#"{ "preset": "forest", "motion": "onOpen" }"#).unwrap();
         assert_eq!(read(&path), Settings { preset: Preset::Forest, ..Settings::default() }, "old field ignored");
+
+        // A 0.1.0 settings file: every newer setting takes its default, nothing is lost.
+        std::fs::write(
+            &path,
+            r#"{ "enabledModules": ["volume-mixer", "keep-awake", "audio-devices", "system-monitor", "quick-toggles"],
+                 "look": "liquid", "transparent": true, "singleHue": false, "preset": "plum",
+                 "micShortcut": "Ctrl+Alt+M", "panelShortcut": "Ctrl+Alt+T", "checkUpdates": true, "onboarded": true }"#,
+        )
+        .unwrap();
+        let upgraded = read(&path);
+        assert_eq!(
+            upgraded,
+            Settings {
+                enabled_modules: vec![ModuleId::VolumeMixer, ModuleId::KeepAwake, ModuleId::AudioDevices, ModuleId::SystemMonitor, ModuleId::QuickToggles],
+                look: Look::Liquid,
+                transparent: true,
+                preset: Preset::Plum,
+                onboarded: true,
+                ..Settings::default()
+            },
+            "0.1.0 file"
+        );
 
         std::fs::write(&path, "{ not json").unwrap();
         assert_eq!(read(&path), Settings::default(), "invalid file");

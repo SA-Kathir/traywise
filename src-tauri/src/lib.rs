@@ -1,5 +1,6 @@
 mod audio;
 mod module;
+mod radios;
 mod modules;
 mod settings;
 mod shell;
@@ -14,6 +15,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         .commands(collect_commands![
             shell::panel::panel_painted,
             shell::panel::quit,
+            shell::panel::hide_panel,
             settings::get_settings,
             settings::set_settings,
             settings::get_autostart,
@@ -34,6 +36,17 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::quick_toggles::quick_toggles_set_dark,
             modules::quick_toggles::quick_toggles_set_desktop_icons,
             modules::quick_toggles::quick_toggles_lock,
+            modules::now_playing::now_playing_state,
+            modules::now_playing::now_playing_control,
+            modules::wifi::wifi_state,
+            modules::wifi::wifi_scan,
+            modules::wifi::wifi_set_on,
+            modules::wifi::wifi_connect,
+            modules::wifi::wifi_disconnect,
+            modules::bluetooth::bluetooth_state,
+            modules::bluetooth::bluetooth_set_on,
+            modules::bluetooth::bluetooth_connect,
+            radios::open_settings,
         ])
         .events(collect_events![
             shell::panel::PanelShown,
@@ -43,6 +56,9 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::audio_devices::AudioDevicesChanged,
             modules::system_monitor::SystemSampled,
             modules::quick_toggles::QuickTogglesChanged,
+            modules::now_playing::NowPlayingChanged,
+            modules::wifi::WifiChanged,
+            modules::bluetooth::BluetoothChanged,
         ])
 }
 
@@ -94,6 +110,7 @@ pub fn run() {
             app.manage(updater::UpdateState::default());
             updater::check(app.handle());
             shell::panel::create(app)?;
+            shell::edge::apply(app.handle(), &app.state::<settings::SettingsState>().get());
             let keys = app.state::<settings::SettingsState>().get().panel_shortcut;
             if let Err(e) = shell::panel::set_shortcut(app.handle(), &keys) {
                 eprintln!("{e}");

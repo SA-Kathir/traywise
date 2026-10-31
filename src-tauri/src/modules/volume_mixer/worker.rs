@@ -97,6 +97,7 @@ fn publish(app: &AppHandle, device: &mut Option<Device>, names: &mut HashMap<u32
 
 /// The default output device, with our callbacks registered on it.
 struct Device {
+    name: Option<String>,
     endpoint: IAudioEndpointVolume,
     endpoint_events: IAudioEndpointVolumeCallback,
     manager: IAudioSessionManager2,
@@ -125,7 +126,8 @@ impl Device {
                 endpoint.RegisterControlChangeNotify(&endpoint_events)?;
                 let session_created: IAudioSessionNotification = Notify(tx.clone()).into();
                 manager.RegisterSessionNotification(&session_created)?;
-                Ok(Self { endpoint, endpoint_events, manager, session_created, sessions: HashMap::new(), tx: tx.clone() })
+                let name = audio::friendly_name(&device).ok();
+                Ok(Self { name, endpoint, endpoint_events, manager, session_created, sessions: HashMap::new(), tx: tx.clone() })
             }
         };
         open().map_err(|e| eprintln!("volume-mixer: no output device ({e})")).ok()
@@ -187,7 +189,7 @@ impl Device {
             }
             keep
         });
-        Ok(MixerState { master: Some(master), apps })
+        Ok(MixerState { master: Some(master), device: self.name.clone(), apps })
     }
 
     fn set_volume(&mut self, target: Target, percent: u8) -> Result<()> {

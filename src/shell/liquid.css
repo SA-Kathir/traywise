@@ -104,14 +104,12 @@ body {
   margin-right: auto;
   padding: 3px 14px 5px;
 }
-.look-liquid.clear :is(header h1, .modules-all, .welcome, .setup-intro) {
+.look-liquid.clear :is(header h1, .welcome, .setup-intro) {
   border-radius: 14px;
   background: var(--tint);
   border: 1px solid var(--tint-edge);
 }
-.look-liquid.clear .modules-all {
-  padding: 6px 8px 6px 14px;
-}
+
 .look-liquid.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
 }
@@ -251,9 +249,6 @@ section,
   gap: 6px;
   overflow: hidden;
 }
-.size-4x2.tile-card {
-  gap: 4px;
-}
 .tile-title {
   display: flex;
   align-items: center;
@@ -272,20 +267,6 @@ button.tile-title:hover {
 .tile-title .icon {
   margin: 0;
   font-size: 10px;
-}
-/* The mixer's rows keep the slider long: names only where there's room, the device icon not at
-   2×1, and at 2×2 no number (the slider shows it). */
-.tile-card:not(.size-4x2, .size-4x1) .mixer-name,
-.tile-card.size-2x1 .app-icon,
-.tile-card.size-2x2 .mixer-value {
-  display: none;
-}
-.tile-card .mixer-row + .mixer-row {
-  margin-top: 0;
-}
-/* Keep awake at 4×2: the page's modes and timer, a little tighter. */
-.tile-card .segmented button {
-  padding: 5px 0;
 }
 /* Output's device list at 2×2: the first few; the page has them all. */
 .tile-card .segmented.vertical {
@@ -315,13 +296,13 @@ button.tile-title:hover {
   font-size: 10px;
 }
 
-/* System monitor: its readings (one to four, two to a row at 2×2), and at 4×2 the graphs. */
+/* System monitor: one reading (CPU or Memory), or both side by side at 4×1 and 4×2. Up to 2×1 the
+   graph sits at the right; at 2×2 and 4×2 under the number. */
 .stats {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
+  gap: 12px;
   padding: var(--tile-pad);
+  text-align: left;
 }
 .stats:hover {
   background: linear-gradient(
@@ -330,27 +311,48 @@ button.tile-title:hover {
     color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
   );
 }
-.stat-chips {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+.reading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
 }
-.size-2x2 .stat-chips {
-  grid-auto-flow: row;
-  grid-template-columns: 1fr 1fr;
-  row-gap: 14px;
+.reading + .reading {
+  padding-left: 12px;
+  border-left: 1px solid rgb(var(--ink) / 0.1);
 }
-.stat-graphs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.stat-chip {
+.reading-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
+  justify-content: space-between;
+}
+.reading-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.reading-sub {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.5);
+  white-space: nowrap;
+}
+.reading-graph {
+  flex: none;
+  width: 48px;
+  align-self: center;
+}
+:is(.size-2x2, .size-4x2) .reading {
+  flex-direction: column;
+}
+:is(.size-2x2, .size-4x2) .reading-text {
+  justify-content: flex-start;
+  gap: 8px;
+}
+:is(.size-2x2, .size-4x2) .reading-graph {
+  width: auto;
+  align-self: stretch;
 }
 .stat-chip-value {
   font-family: var(--display);
@@ -359,8 +361,9 @@ button.tile-title:hover {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.size-1x1 .stat-chip-value {
-  font-size: 18px;
+:is(.size-2x2, .size-4x2) .stat-chip-value {
+  font-size: 40px;
+  line-height: 1;
 }
 .stat-chip-label {
   font-size: 11px;
@@ -435,6 +438,36 @@ button.tile-title:hover {
   right: 4px;
   bottom: 4px;
 }
+/* The tray of tiles to add: a card over the bottom of the board, above a dimmed board. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.4);
+}
+.tray {
+  position: fixed;
+  z-index: 4;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  max-height: 75%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tray .link-row {
+  margin-top: 0;
+}
+.tray .link-row > .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+header .hint {
+  font-size: 12px;
+}
 .look-windows .board.editing :is(.board-slot, .board-tile) {
   border-radius: 8px;
 }
@@ -484,18 +517,11 @@ label.row + label.row,
 div.row + div.row {
   margin-top: 10px;
 }
-/* The Modules heading doubles as the select-all row. */
-.modules-all h2 {
-  margin: 0;
-}
-.modules-all .hint {
-  font-size: 12px;
-}
+
 .grow {
   flex: 1;
 }
-.segmented + h2,
-.swatches + h2 {
+.segmented + h2 {
   margin-top: 12px;
 }
 .segmented + .segmented,
@@ -503,8 +529,7 @@ div.row + div.row {
 label.row + .hint,
 .segmented + .row,
 .row.mics + p,
-.segmented + .hint,
-.segmented + .swatches {
+.segmented + .hint {
   margin-top: 8px;
 }
 
@@ -559,6 +584,10 @@ label.row + .hint,
   width: 100%;
   height: 20px;
   margin-top: 4px;
+}
+/* The Dot look's graph; the others draw the line. */
+.graph-dots {
+  display: none;
 }
 .graph polyline {
   fill: none;
@@ -634,19 +663,7 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
-/* Colour presets: a 3 x 2 grid, each with a swatch of its own colours. */
-.swatches {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.swatches button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  text-align: left;
-}
+
 .swatch {
   width: 16px;
   height: 16px;
@@ -791,22 +808,6 @@ section > .link-row:only-child {
   margin-top: 0;
 }
 
-.module-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  cursor: pointer;
-}
-.module-row + .module-row {
-  border-top: 1px solid rgb(var(--ink) / 0.08);
-}
-.module-row > .grow {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
 .module-icon {
   width: 22px;
   flex: none;
@@ -917,4 +918,493 @@ button.primary {
 }
 button.primary:hover {
   background: color-mix(in srgb, var(--accent) 88%, rgb(var(--ink)));
+}
+
+/* ---- Now playing ----------------------------------------------------------------------- */
+
+/* Tiles: the artwork at the left (2×2: top left, with the app's name beside it), then the title,
+   the artist, the progress and the buttons. The page: one block per app. */
+.media {
+  display: flex;
+  gap: 12px;
+  padding: var(--tile-pad, 16px);
+  overflow: hidden;
+  text-align: left;
+}
+.media-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.media h2 {
+  margin: 0;
+}
+.media-art {
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 22px;
+  color: rgb(var(--ink) / 0.5);
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgb(var(--ink) / 0.08);
+}
+.media-text {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+  line-height: 16px;
+}
+button.media-text:hover {
+  background: none;
+}
+.media-text > *,
+.media-app {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-app {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+}
+.media-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.media-row .icon-button {
+  font-size: 12px;
+}
+.media-play {
+  border-radius: 50%;
+}
+.media-progress {
+  flex: 1;
+  min-width: 0;
+}
+.media-progress input[type="range"] {
+  display: block;
+  width: 100%;
+}
+.media-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.media-elapsed {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.media.size-2x1 {
+  padding-block: 8px;
+}
+.media.size-2x2 {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-content: space-between;
+  gap: 4px 10px;
+}
+.media.size-2x2 .media-body {
+  display: contents;
+}
+.media.size-2x2 .media-art {
+  width: 40px;
+  height: 40px;
+}
+.media.size-2x2 .media-app {
+  align-self: start;
+}
+.media.size-2x2 :is(.media-text, .media-progress, .media-row) {
+  grid-column: 1 / -1;
+}
+.media.size-4x2 .media-art {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.media-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.media-page + .media-page {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+.media-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.media-head .media-text {
+  flex: 1;
+}
+.media-page .media-row {
+  justify-content: center;
+  gap: 12px;
+}
+.media-glyph {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}
+.media-page > .hint {
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---- Volume tile ----------------------------------------------------------------------- */
+
+/* The level as a number and a bar (speaker first; the Dot look puts it inside the bar). 1×1: the
+   whole tile fills to the level. 4×2: the apps in a column beside it. */
+.vol {
+  display: flex;
+  gap: 16px;
+  padding: var(--tile-pad);
+  overflow: hidden;
+  text-align: left;
+}
+.vol-main,
+.vol-apps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+.vol-apps {
+  justify-content: center;
+  gap: 6px;
+}
+.vol-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.vol-head .tile-title {
+  width: auto;
+  min-width: 0;
+}
+.vol .tile-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vol .num {
+  font-variant-numeric: tabular-nums;
+}
+.vol-big {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 1;
+}
+.vol-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vol-bar input[type="range"] {
+  width: 100%;
+}
+.vol-icon {
+  order: -1;
+  padding: 0;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 14px;
+  line-height: 1;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.vol-icon:hover {
+  background: none;
+}
+.vol.size-1x1 {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: none;
+}
+.vol.size-1x1::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--level);
+  background: rgb(var(--ink) / 0.18);
+  pointer-events: none;
+}
+.vol.size-1x1 > * {
+  position: relative;
+}
+.vol.size-1x1 .vol-icon {
+  order: 0;
+}
+
+/* ---- Keep awake 2×2 -------------------------------------------------------------------- */
+
+/* The title, then the ring with the time left beside it, a status line and the shortcuts. */
+.awake {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tile-pad);
+  overflow: hidden;
+}
+.awake .tile-title .tile-icon {
+  font-size: 14px;
+}
+.awake-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.awake-main:hover {
+  background: none;
+}
+.awake-ring {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  fill: rgb(var(--ink) / 0.2);
+}
+.awake-ring .lit {
+  fill: var(--accent);
+}
+.awake-state {
+  display: flex;
+  flex-direction: column;
+}
+.awake-state .num {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+.awake .tile-detail {
+  font-size: 12px;
+}
+.awake-quick {
+  display: flex;
+  gap: 4px;
+}
+.awake-quick button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
+
+/* 2×2: the icon top left, a switch top right, the name and state at the bottom. */
+.tile.size-2x2 .tile-main {
+  padding: var(--tile-pad);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto auto;
+}
+.tile.size-2x2 .tile-icon {
+  grid-row: auto;
+  align-self: start;
+}
+.tile-switch {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgb(var(--ink) / 0.2);
+}
+.tile-switch::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.85);
+}
+.tile-switch.on {
+  background: var(--accent);
+}
+.tile-switch.on::before {
+  left: 18px;
+  background: var(--on-accent);
+}
+/* A network or a device: its icon, its name over its state, then its button. */
+.net-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.net-row > .grow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.net-row .icon {
+  margin: 0;
+}
+input.text {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 10px;
+  font: inherit;
+  color: inherit;
+  border: 1px solid rgb(var(--ink) / 0.15);
+  border-radius: 8px;
+  background: rgb(var(--ink) / 0.06);
+  user-select: text;
+}
+button.net-row {
+  width: 100%;
+}
+
+/* The system monitor page's picker for its wide tile: a heading, then a row each for left and right. */
+.tile-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+.tile-picker h2 {
+  margin: 0;
+}
+.tile-picker .row + .row {
+  margin-top: 0;
+}
+.picker-side {
+  width: 44px;
+  flex: none;
+  color: rgb(var(--ink) / 0.6);
+}
+
+/* ---- Settings rows (Settings, Modules, module options) ---------------------------------- */
+
+/* A setting: its name and a line on what it does, then its control at the right (or under it,
+   `stacked`). Rows in a card are split by a hairline. */
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+  padding: 10px 0;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+label.setting,
+button.setting {
+  cursor: pointer;
+}
+button.setting:hover {
+  background: none;
+}
+.setting + .setting {
+  border-top: 1px solid rgb(var(--ink) / 0.08);
+}
+section > h2 + .setting {
+  padding-top: 2px;
+}
+section > .setting:last-child {
+  padding-bottom: 2px;
+}
+.setting.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.setting-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setting-desc,
+.module-idle {
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.6);
+}
+.module-idle {
+  color: rgb(var(--ink) / 0.45);
+}
+.setting-value {
+  color: rgb(var(--ink) / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.setting .icon {
+  margin: 0;
+}
+/* Colours to pick from: a row of round swatches; the picked one gets a ring. */
+.colour-pick {
+  display: flex;
+  gap: 6px;
+}
+.colour-pick button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+}
+.colour-pick button.on {
+  box-shadow: inset 0 0 0 2px rgb(var(--ink) / 0.85);
+}
+.colour-pick .swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+/* Modules: the icon in a round well. */
+.setting.module .module-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.08);
 }

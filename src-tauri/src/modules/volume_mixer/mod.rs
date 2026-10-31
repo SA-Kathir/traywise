@@ -20,6 +20,8 @@ use crate::module::{Module, ModuleId};
 pub struct MixerState {
     /// None when there's no output device.
     pub master: Option<Level>,
+    /// The output device's name, like "Headphones (Realtek(R) Audio)".
+    pub device: Option<String>,
     pub apps: Vec<AppAudio>,
 }
 
