@@ -25,6 +25,8 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::volume_mixer::mixer_state,
             modules::volume_mixer::mixer_set_volume,
             modules::volume_mixer::mixer_set_mute,
+            modules::volume_mixer::mixer_set_output,
+            modules::volume_mixer::mixer_reset_outputs,
             modules::keep_awake::keep_awake_state,
             modules::keep_awake::keep_awake_set_mode,
             modules::keep_awake::keep_awake_set_display,

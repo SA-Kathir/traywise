@@ -33,6 +33,10 @@ export const commands = {
 	/**  Sets a volume, in percent (0 to 100). */
 	mixerSetVolume: (target: Target, volume: number) => typedError<null, string>(__TAURI_INVOKE("mixer_set_volume", { target, volume })),
 	mixerSetMute: (target: Target, muted: boolean) => typedError<null, string>(__TAURI_INVOKE("mixer_set_mute", { target, muted })),
+	/**  Sends an app to an output device (an id from `outputs`), or back to the default with null. */
+	mixerSetOutput: (pid: number, device: string | null) => typedError<null, string>(__TAURI_INVOKE("mixer_set_output", { pid, device })),
+	/**  Sends every app back to the default output device. */
+	mixerResetOutputs: () => typedError<null, string>(__TAURI_INVOKE("mixer_reset_outputs")),
 	/**  The latest state. Default (off) while the module is switched off. */
 	keepAwakeState: () => __TAURI_INVOKE<KeepAwakeState>("keep_awake_state"),
 	/**  Picking a timed mode (again) restarts its timer. */
@@ -100,7 +104,7 @@ export type Abilities = {
 /**  Accent colour preset (Dot look). The colours are in `src/shell/dot.css`. */
 export type Accent = "red" | "amber" | "violet" | "blue" | "green";
 
-/**  One app with audio on the default output device (all of its audio sessions together). */
+/**  One app playing sound, on any output device (all of its audio sessions together). */
 export type AppAudio = {
 	pid: number,
 	/**  Windows' own sounds (notifications, errors), not an app. */
@@ -111,6 +115,8 @@ export type AppAudio = {
 	/**  Percent, 0 to 100. */
 	volume: number,
 	muted: boolean,
+	/**  The device id it's set to play through. None: it follows the default. */
+	output: string | null,
 };
 
 /**  Sent to the UI whenever a device is plugged in, removed, or becomes the default. */
@@ -242,6 +248,8 @@ export type MixerState = {
 	/**  The output device's name, like "Headphones (Realtek(R) Audio)". */
 	device: string | null,
 	apps: AppAudio[],
+	/**  Devices an app can be sent to. Empty where Windows doesn't support per-app output. */
+	outputs: OutputDevice[],
 };
 
 export type Mode = "off" | 
