@@ -35,36 +35,42 @@ export function newTile(id: string): Placed {
   return placed(id, defaultBoard.find(([d]) => d === id)?.[1] ?? info(id).sizes[0]);
 }
 
-/** The board to show: the saved one (or the default, before it's first changed), less any tile
- *  this version doesn't know (a hand-edited or newer settings file) or whose module is off. A size
- *  the tile no longer comes in (Keep awake's old 2×2) becomes its default size. */
-export function boardToShow(saved: Placed[] | null, enabled: ModuleId[], auto: boolean): Placed[] {
-  if (!saved) return startingBoard(enabled);
+/** The pages to show: the saved ones (or the default board as one page, before it's first changed),
+ *  less any tile this version doesn't know (a hand-edited or newer settings file), whose module is
+ *  off, or that's already on an earlier page. A size the tile no longer comes in (Keep awake's old
+ *  2×2) becomes its default size. */
+export function pagesToShow(saved: Placed[][] | null, enabled: ModuleId[], auto: boolean): Placed[][] {
+  if (!saved?.length) return [startingBoard(enabled)];
   const seen = new Set<string>();
-  const known = saved.flatMap((t) => {
-    const module = tileModule(t.id);
-    const kind = enabled.includes(module) && !seen.has(t.id) && modules[module].tiles[kindOf(t.id)];
-    seen.add(t.id);
-    if (!kind) return [];
-    return [kind.sizes.includes(sizeOf(t)) ? t : { ...newTile(t.id), x: t.x, y: t.y }];
+  return saved.map((page) => {
+    const known = page.flatMap((t) => {
+      const module = tileModule(t.id);
+      const kind = enabled.includes(module) && !seen.has(t.id) && modules[module].tiles[kindOf(t.id)];
+      seen.add(t.id);
+      if (!kind) return [];
+      return [kind.sizes.includes(sizeOf(t)) ? t : { ...newTile(t.id), x: t.x, y: t.y }];
+    });
+    // A resized tile may now overlap its neighbours: settle them either way.
+    return auto ? pack(known) : compact(known);
   });
-  // A resized tile may now overlap its neighbours: settle them either way.
-  return auto ? pack(known) : compact(known);
 }
 
-/** After modules are switched on or off: the tiles of those switched off go, and those switched on
- *  get their default tiles. Nothing to do before the board is first changed (it's the default). */
-export function withModules(saved: Placed[] | null, before: ModuleId[], after: ModuleId[], auto: boolean) {
+/** After modules are switched on or off: the tiles of those switched off go from every page, and
+ *  those switched on get their default tiles on page 1. Nothing to do before the board is first
+ *  changed (it's the default). */
+export function withModules(saved: Placed[][] | null, before: ModuleId[], after: ModuleId[], auto: boolean) {
   if (!saved) return null;
-  let board = saved.filter((t) => after.includes(tileModule(t.id)));
+  const pages = saved.map((page) => page.filter((t) => after.includes(tileModule(t.id))));
+  let first = pages[0] ?? [];
   for (const [id] of defaultBoard) {
     const module = tileModule(id);
-    if (after.includes(module) && !before.includes(module) && !board.some((t) => t.id === id)) {
+    if (after.includes(module) && !before.includes(module) && !pages.some((p) => p.some((t) => t.id === id))) {
       const { w, h } = newTile(id);
-      board = add(board, id, w, h, auto);
+      first = add(first, id, w, h, auto);
     }
   }
-  return auto ? pack(board) : board;
+  pages[0] = first;
+  return auto ? pages.map(pack) : pages;
 }
 
 function placed(id: string, size: Size): Placed {

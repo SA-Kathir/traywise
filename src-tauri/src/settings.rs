@@ -33,8 +33,9 @@ pub struct Settings {
     pub check_updates: bool,
     /// Whether first-run setup (pick a look, then modules) is done.
     pub onboarded: bool,
-    /// The home board's tiles. None until it's first changed: the UI shows its default board.
-    pub board: Option<Vec<BoardTile>>,
+    /// The home board's pages, each with its own tiles. None until it's first changed: the UI shows
+    /// its default board as one page. (A 0.2 file's single `board` becomes page 1 when read.)
+    pub pages: Option<Vec<Vec<BoardTile>>>,
     /// Home board: tiles fill gaps (true), or stay where they're put (false).
     pub auto_arrange: bool,
     /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
@@ -80,7 +81,7 @@ impl Default for Settings {
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
-            board: None,
+            pages: None,
             auto_arrange: true,
             monitor_readings: [Reading::Cpu, Reading::Memory],
             edge_open: false,
@@ -148,7 +149,11 @@ fn read(path: &Path) -> Settings {
     let Ok(text) = std::fs::read_to_string(path) else { return Settings::default() };
     // Lay the file's fields over the defaults (rather than `#[serde(default)]`, which would make
     // every field optional in the generated TypeScript type).
-    let merged = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&text).and_then(|file| {
+    let merged = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&text).and_then(|mut file| {
+        // 0.2 had one board: it becomes page 1.
+        if let Some(board) = file.remove("board").filter(|b| b.is_array()) {
+            file.entry("pages").or_insert(serde_json::Value::Array(vec![board]));
+        }
         let serde_json::Value::Object(mut fields) = serde_json::to_value(Settings::default())? else {
             unreachable!("Settings serializes to a JSON object")
         };
@@ -243,7 +248,7 @@ mod tests {
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
-            board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
+            pages: Some(vec![vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }], vec![]]),
             auto_arrange: false,
             monitor_readings: [Reading::Upload, Reading::Cpu],
             edge_open: true,
@@ -279,6 +284,16 @@ mod tests {
             },
             "0.1.0 file"
         );
+
+        // A 0.2 file's single board becomes page 1; a board never changed (null) stays the default.
+        std::fs::write(&path, r#"{ "board": [{ "id": "wifi/wifi", "w": 1, "h": 1, "x": 3, "y": 0 }] }"#).unwrap();
+        assert_eq!(
+            read(&path).pages,
+            Some(vec![vec![BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0 }]]),
+            "0.2 board"
+        );
+        std::fs::write(&path, r#"{ "board": null }"#).unwrap();
+        assert_eq!(read(&path), Settings::default(), "0.2 default board");
 
         std::fs::write(&path, "{ not json").unwrap();
         assert_eq!(read(&path), Settings::default(), "invalid file");

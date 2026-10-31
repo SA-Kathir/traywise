@@ -3,7 +3,7 @@ import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
 import { AddTiles } from "./shell/AddTiles";
 import { add, pack, type Placed } from "./shell/board";
-import { Board, boardToShow } from "./shell/HomeBoard";
+import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { SettingsContext } from "./shell/SettingsContext";
@@ -112,9 +112,11 @@ function App() {
     enabled.some((id) => modules[id].category === c && modules[id].Panel),
   );
   const auto = settings.autoArrange;
-  const tiles = boardToShow(settings.board, enabled, auto);
+  const pages = pagesToShow(settings.pages, enabled, auto);
+  const current = 0; // the page on screen
+  const tiles = pages[current];
   // Every change to the board is saved straight away.
-  const setBoard = (board: Placed[]) => save({ ...settings, board });
+  const setBoard = (board: Placed[]) => save({ ...settings, pages: pages.map((p, i) => (i === current ? board : p)) });
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
@@ -210,7 +212,7 @@ function App() {
               type="checkbox"
               checked={auto}
               onChange={(e) =>
-                save({ ...settings, autoArrange: e.target.checked, board: e.target.checked ? pack(tiles) : tiles })
+                save({ ...settings, autoArrange: e.target.checked, pages: e.target.checked ? pages.map(pack) : pages })
               }
             />
           </label>
@@ -220,7 +222,7 @@ function App() {
             onClick={() => {
               if (!confirmReset) return setConfirmReset(true);
               setConfirmReset(false);
-              save({ ...settings, board: null, autoArrange: true }); // back to the default board
+              save({ ...settings, pages: null, autoArrange: true }); // back to the default board, one page
             }}
           >
             {confirmReset ? "Reset board?" : "Reset"}
@@ -261,7 +263,7 @@ function App() {
       {editHome && adding && (
         <AddTiles
           enabled={enabled}
-          tiles={tiles}
+          tiles={pages.flat()}
           onAdd={(id, size: Size) => {
             const [w, h] = size.split("x").map(Number);
             setBoard(add(tiles, id, w, h, auto));

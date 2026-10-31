@@ -15,8 +15,8 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
   /** Saves which modules are on; the home board loses the tiles of those switched off and gets the
    *  default tiles of those switched on. */
   function saveOn(enabledModules: ModuleId[]) {
-    const board = withModules(settings.board, on, enabledModules, settings.autoArrange);
-    save({ ...settings, enabledModules, board });
+    const pages = withModules(settings.pages, on, enabledModules, settings.autoArrange);
+    save({ ...settings, enabledModules, pages });
   }
 
   function toggle(id: ModuleId, enable: boolean) {

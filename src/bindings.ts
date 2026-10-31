@@ -333,8 +333,11 @@ export type Settings = {
 	checkUpdates: boolean,
 	/**  Whether first-run setup (pick a look, then modules) is done. */
 	onboarded: boolean,
-	/**  The home board's tiles. None until it's first changed: the UI shows its default board. */
-	board: BoardTile[] | null,
+	/**
+	 *  The home board's pages, each with its own tiles. None until it's first changed: the UI shows
+	 *  its default board as one page. (A 0.2 file's single `board` becomes page 1 when read.)
+	 */
+	pages: BoardTile[][] | null,
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
 	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
