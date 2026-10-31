@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { commands, events, type Display, type Project } from "../../bindings";
 import { Slider } from "../../shell/Slider";
 import { Num, Tile, TileCard } from "../../shell/Tile";
@@ -10,11 +10,35 @@ const SUN = String.fromCodePoint(0xe706);
 const LAPTOP = String.fromCodePoint(0xe7f8);
 const MONITOR = String.fromCodePoint(0xe7f4);
 
-const PROJECTS: { project: Project; label: string; short: string; icon: string }[] = [
-  { project: "pcOnly", label: "PC screen only", short: "PC only", icon: LAPTOP },
-  { project: "duplicate", label: "Duplicate", short: "Duplicate", icon: String.fromCodePoint(0xe8c8) }, // "Copy"
-  { project: "extend", label: "Extend", short: "Extend", icon: String.fromCodePoint(0xee4c) }, // two panes side by side
-  { project: "secondOnly", label: "Second screen only", short: "2nd only", icon: MONITOR },
+/** The design's Project icons: two screens side by side; a screen that's off is four corner dots. */
+const Screen = ({ x, on, wide }: { x: number; on: boolean; wide?: boolean }) =>
+  on ? (
+    <rect x={x + 0.5} y={2.5} width={wide ? 19 : 8} height={7} rx={1.2} fill="none" stroke="currentColor" />
+  ) : (
+    <g fill="currentColor">
+      {[
+        [x + 1, 3],
+        [x + 7, 3],
+        [x + 1, 9],
+        [x + 7, 9],
+      ].map(([cx, cy]) => (
+        <circle key={`${cx}${cy}`} cx={cx} cy={cy} r={0.9} />
+      ))}
+    </g>
+  );
+const icon = (left: boolean, right: boolean, wide = false) => (
+  <svg className="project-icon" viewBox="0 0 20 12" aria-hidden>
+    {wide ? <Screen x={0} on wide /> : <Screen x={0} on={left} />}
+    {!wide && <Screen x={11} on={right} />}
+    {left && right && !wide && <path d="M4.5 6h0M15.5 6h0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
+  </svg>
+);
+
+const PROJECTS: { project: Project; label: string; short: string; icon: ReactNode }[] = [
+  { project: "pcOnly", label: "PC screen only", short: "PC only", icon: icon(true, false) },
+  { project: "duplicate", label: "Duplicate", short: "Duplicate", icon: icon(true, true) },
+  { project: "extend", label: "Extend", short: "Extend", icon: icon(true, true, true) },
+  { project: "secondOnly", label: "Second screen only", short: "2nd only", icon: icon(false, true) },
 ];
 
 const useDisplays = () => useLive(commands.displaysState, events.displaysChanged);
@@ -107,17 +131,17 @@ function Bar({ display }: { display: Display }) {
 
 function ProjectTile({ project, size, open }: { project: Project | null; size: TileProps["size"]; open: () => void }) {
   const current = PROJECTS.find((p) => p.project === project);
-  if (size === "2x1" && current)
+  if (size === "2x1")
     return (
-      <TileCard size={size} label="Project" detail={current.short} onOpen={open}>
-        <Choices project={current.project} icons />
+      <TileCard size={size} label="Project" detail={current?.short ?? "One screen"} onOpen={open}>
+        <Choices project={current?.project ?? null} icons />
       </TileCard>
     );
   const next = current && PROJECTS[(PROJECTS.indexOf(current) + 1) % PROJECTS.length];
   return (
     <Tile
       size={size}
-      icon={current?.icon ?? LAPTOP}
+      icon={(current ?? PROJECTS[0]).icon}
       label="Project"
       detail={current ? current.short : "One screen"}
       onToggle={next && (() => commands.displaysSetProject(next.project))}
@@ -126,10 +150,11 @@ function ProjectTile({ project, size, open }: { project: Project | null; size: T
   );
 }
 
-/** The four Win+P choices: icons only on the 2×1 tile, a 2×2 grid with names on the page. */
-function Choices({ project, icons }: { project: Project; icons?: boolean }) {
+/** The four Win+P choices: icons only on the 2×1 tile, a 2×2 grid with names on the page.
+ *  With one screen (no `project`) they're dimmed and can't be picked. */
+function Choices({ project, icons }: { project: Project | null; icons?: boolean }) {
   return (
-    <div className={`segmented${icons ? "" : " project-grid"}`} role="radiogroup" aria-label="Project">
+    <div className={`segmented${icons ? " icons" : " project-grid"}${project ? "" : " unavailable"}`} role="radiogroup" aria-label="Project">
       {PROJECTS.map((p) => (
         <button
           key={p.project}
@@ -137,6 +162,7 @@ function Choices({ project, icons }: { project: Project; icons?: boolean }) {
           aria-checked={project === p.project}
           className={project === p.project ? "on" : ""}
           title={p.label}
+          disabled={!project}
           onClick={() => commands.displaysSetProject(p.project)}
         >
           <span className="icon" aria-hidden>

@@ -93,7 +93,7 @@ function Gauge({ percent }: { percent: number }) {
 
 function Modes({ mode, icons }: { mode: PowerMode; icons?: boolean }) {
   return (
-    <div className="segmented" role="radiogroup" aria-label="Power mode">
+    <div className={`segmented${icons ? " icons" : ""}`} role="radiogroup" aria-label="Power mode">
       {MODES.map((m) => (
         <button
           key={m.mode}

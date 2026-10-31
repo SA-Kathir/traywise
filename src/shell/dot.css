@@ -1114,3 +1114,23 @@
 .look-dot .battery-big .num {
   font-size: 32px;
 }
+
+/* ---- Displays: Project choices ---------------------------------------------------------------- */
+
+/* Glass with a hairline; the picked one is the inverted plate. */
+.look-dot .segmented.project-grid {
+  gap: 6px;
+  border-radius: 0;
+  background: none;
+}
+.look-dot .segmented.project-grid button {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--tw-radius-md);
+  background: var(--tw-control-track);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+}
+.look-dot .segmented.project-grid button.on {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+}

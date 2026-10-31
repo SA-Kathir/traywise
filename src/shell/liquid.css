@@ -663,13 +663,27 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
-/* Displays' Project choices: two by two, icon beside the name. */
+/* Displays' Project choices: four buttons two by two (not a track), icon beside the name. */
 .segmented.project-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
 }
-.segmented.project-grid .icon {
-  margin-right: 6px;
+.segmented.project-grid button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgb(var(--ink) / 0.12);
+  text-align: left;
+}
+.hint + h2 {
+  margin-top: 12px;
 }
 
 .swatch {
@@ -1461,4 +1475,23 @@ section > .setting:last-child {
 }
 .critical :is(.num, .gauge) {
   color: #e8622a;
+}
+
+/* Displays' Project icons (drawn, not glyphs): sized like a glyph. */
+.project-icon {
+  width: 22px;
+  height: 14px;
+  vertical-align: middle;
+}
+.segmented.unavailable {
+  opacity: 0.4;
+}
+/* Icon-only choices in a 2×1 tile (Power mode, Project): narrow enough for four. */
+.segmented.icons button {
+  min-width: 0;
+  padding: 0 4px;
+}
+/* A card's title stays on one line; its detail gives way (ellipsis) instead. */
+.tile-card .tile-title .tile-label {
+  white-space: nowrap;
 }
