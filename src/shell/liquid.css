@@ -1416,3 +1416,49 @@ section > .setting:last-child {
   border-radius: 50%;
   background: rgb(var(--ink) / 0.08);
 }
+
+/* ---- Power: battery gauge -------------------------------------------------------------------- */
+
+.gauge {
+  width: 44px;
+  height: 18px;
+  flex: none;
+  color: rgb(var(--ink) / 0.7);
+  fill: rgb(var(--ink) / 0.18);
+}
+.gauge .lit {
+  fill: rgb(var(--ink));
+}
+.battery.size-1x1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.battery-level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.battery-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.battery-big .num {
+  font-size: 28px;
+}
+.battery-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+:is(.low, .critical) :is(.num, .gauge) {
+  color: #e0902c;
+}
+:is(.low, .critical) .gauge .lit {
+  fill: currentColor;
+}
+.critical :is(.num, .gauge) {
+  color: #e8622a;
+}

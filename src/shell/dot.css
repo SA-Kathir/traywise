@@ -1094,3 +1094,23 @@
 .look-dot .tile:not(.size-1x1):has(.tile-detail .num):has(.tile-more) .tile-main {
   padding-right: 24px;
 }
+
+/* ---- Power: battery gauge -------------------------------------------------------------------- */
+
+/* Levels stay neutral; only a low battery takes the status colours. */
+.look-dot .gauge {
+  color: var(--tw-text-secondary);
+  fill: var(--tw-control-track);
+}
+.look-dot .gauge .lit {
+  fill: var(--tw-text-primary);
+}
+.look-dot .low :is(.num, .gauge) {
+  color: var(--tw-status-warning);
+}
+.look-dot .critical :is(.num, .gauge) {
+  color: var(--tw-status-danger);
+}
+.look-dot .battery-big .num {
+  font-size: 32px;
+}
