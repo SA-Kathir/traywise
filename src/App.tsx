@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
 import { AddTiles } from "./shell/AddTiles";
-import { add, pack, type Placed } from "./shell/board";
+import { add, moveToPage, pack, type Placed } from "./shell/board";
 import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { Pages } from "./shell/Pages";
@@ -19,6 +19,13 @@ const GEAR = String.fromCodePoint(0xe713);
 const POWER = String.fromCodePoint(0xe7e8);
 const BACK = String.fromCodePoint(0xe72b);
 const EDIT = String.fromCodePoint(0xe70f);
+const LEFT = String.fromCodePoint(0xe76b);
+const RIGHT = String.fromCodePoint(0xe76c);
+const ADD = String.fromCodePoint(0xe710);
+const DELETE = String.fromCodePoint(0xe74d);
+
+/** Pages on the home board, at most. */
+const MAX_PAGES = 5;
 
 /** How long the mouse can be outside an edge-opened panel before it closes. */
 const LEAVE_MS = 400;
@@ -34,6 +41,8 @@ function App() {
   const [adding, setAdding] = useState(false);
   // Reset asks once more before it throws the layout away.
   const [confirmReset, setConfirmReset] = useState(false);
+  // …and so does removing a page that has tiles.
+  const [confirmRemove, setConfirmRemove] = useState(false);
   // The home board's page on screen.
   const [page, setPage] = useState(0);
 
@@ -122,6 +131,17 @@ function App() {
   const tiles = pages[current];
   // Every change to the board is saved straight away.
   const setBoard = (board: Placed[]) => save({ ...settings, pages: pages.map((p, i) => (i === current ? board : p)) });
+  /** Saves the pages and shows page `show`. */
+  const setPages = (next: Placed[][], show: number) => {
+    save({ ...settings, pages: next });
+    setPage(show);
+  };
+  // Swaps this page with the one before (-1) or after (+1); it stays on screen.
+  const movePage = (by: number) => {
+    const next = [...pages];
+    [next[current], next[current + by]] = [next[current + by], next[current]];
+    setPages(next, current + by);
+  };
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
@@ -164,7 +184,7 @@ function App() {
         {editHome ? (
           <div className="grow">
             <h1>{title}</h1>
-            <p className="hint">Drag to move, corner to resize</p>
+            <p className="hint">{pages.length > 1 ? "Drag to move, or onto a page dot" : "Drag to move, corner to resize"}</p>
           </div>
         ) : (
           <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
@@ -237,6 +257,42 @@ function App() {
           </button>
         </div>
       )}
+      {editHome && (
+        <div className="row page-bar">
+          <button className="icon-button" aria-label="Move page left" title="Move page left" disabled={current === 0} onClick={() => movePage(-1)}>
+            {LEFT}
+          </button>
+          <span className="grow">
+            Page {current + 1} of {pages.length}
+          </span>
+          <button className="icon-button" aria-label="Move page right" title="Move page right" disabled={current === pages.length - 1} onClick={() => movePage(1)}>
+            {RIGHT}
+          </button>
+          <button
+            className={confirmRemove ? "on" : "icon-button"}
+            aria-label="Remove page"
+            title="Remove page (its tiles go back to Add tiles)"
+            disabled={pages.length === 1}
+            onBlur={() => setConfirmRemove(false)}
+            onClick={() => {
+              if (tiles.length > 0 && !confirmRemove) return setConfirmRemove(true);
+              setConfirmRemove(false);
+              setPages(pages.filter((_, i) => i !== current), Math.max(0, current - 1));
+            }}
+          >
+            {confirmRemove ? "Remove page?" : DELETE}
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Add page"
+            title="Add a page after this one"
+            disabled={pages.length >= MAX_PAGES}
+            onClick={() => setPages([...pages.slice(0, current + 1), [], ...pages.slice(current + 1)], current + 1)}
+          >
+            {ADD}
+          </button>
+        </div>
+      )}
 
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
@@ -265,6 +321,7 @@ function App() {
               auto={auto}
               onChange={setBoard}
               onLongPress={() => setEditing(true)}
+              onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage(pages, id, current, to, auto) })}
             />
           )}
         </Pages>

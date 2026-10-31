@@ -92,7 +92,17 @@ type BoardProps = {
   onChange: (tiles: Placed[]) => void;
   /** A tile was held down: start edit mode. */
   onLongPress: () => void;
+  /** A tile was dropped on a page's dot (`data-page`, from Pages): move it to that page. */
+  onMoveToPage: (id: string, page: number) => void;
 };
+
+/** The page dot under the pointer, if any (under the dragged tile too). */
+const dotAt = (e: PointerEvent) =>
+  document.elementsFromPoint(e.clientX, e.clientY).find((el): el is HTMLElement => el instanceof HTMLElement && el.dataset.page !== undefined);
+
+/** Lights up the dot a dragged tile would go to on release. */
+const markDot = (dot?: HTMLElement) =>
+  document.querySelectorAll("[data-page]").forEach((el) => el.classList.toggle("drop", el === dot));
 
 /** A tile being dragged. `tiles` is the board as it's shown: every step is worked out from `from`,
  *  the board before the drag, so tiles that made room spring back once the dragged one moves on. */
@@ -117,7 +127,7 @@ type Drag = {
 
 /** The home board: each tile in its cells of the 4-column grid, drawn by its module. In edit mode
  *  the tiles stop working and can be dragged (or moved with the arrow keys), resized and removed. */
-export function Board({ tiles, open, editing, auto, onChange, onLongPress }: BoardProps) {
+export function Board({ tiles, open, editing, auto, onChange, onLongPress, onMoveToPage }: BoardProps) {
   const board = useRef<HTMLDivElement>(null);
   // The drag lives in a ref, read by the pointer handlers: several pointer events can arrive before
   // React draws again, and each must see the last one's result. The state copy is for drawing.
@@ -235,6 +245,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
     const drag = dragging.current;
     if (!drag) return;
     const moved = drag.moved || Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > DRAG_PX;
+    markDot(moved ? dotAt(e) : undefined);
     const { x, y } = cellAt(e, drag.grabX, drag.grabY);
     const pointer = { pointerX: e.clientX, pointerY: e.clientY };
     if (moved === drag.moved && x === drag.x && y === drag.y) {
@@ -245,11 +256,16 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
     setDrag({ ...drag, ...pointer, moved, x, y, tiles: next });
   }
 
-  function pointerUp() {
+  function pointerUp(e: PointerEvent) {
     cancelPress();
+    markDot();
     const d = dragging.current;
     const el = d?.moved && slot(d.id);
-    if (d && el) {
+    const dot = el && dotAt(e);
+    if (d && el && dot) {
+      el.style.transform = "";
+      onMoveToPage(d.id, Number(dot.dataset.page));
+    } else if (d && el) {
       // Glide from under the pointer into its cell, like any other tile that moved.
       const r = lastRects.get(d.id);
       const m = new DOMMatrix(getComputedStyle(el).transform);
@@ -266,6 +282,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
 
   function cancelDrag() {
     cancelPress();
+    markDot();
     const d = dragging.current;
     if (d) slot(d.id)?.style.removeProperty("transform");
     setDrag(null);

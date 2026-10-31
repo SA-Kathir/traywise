@@ -12,7 +12,8 @@ const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").match
 
 /** The home board's pages: only the one on screen is drawn (`children`). The others are reached by
  *  dragging sideways (`swipe`; off in edit mode, where dragging moves tiles), a sideways wheel (a
- *  touchpad, or Shift with a mouse wheel), Ctrl+←/→, or the dots underneath. */
+ *  touchpad, or Shift with a mouse wheel), Ctrl+←/→, PageUp/PageDown, or the dots underneath. In
+ *  edit mode a tile dropped on a dot moves to that page (`data-page`, read by the board). */
 export function Pages({
   count,
   page,
@@ -47,8 +48,9 @@ export function Pages({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const by = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
-      if (!by || !e.ctrlKey || (e.target as Element).closest("input, textarea")) return;
+      const arrow = e.ctrlKey && { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+      const by = arrow || { PageUp: -1, PageDown: 1 }[e.key];
+      if (!by || (e.target as Element).closest("input, textarea")) return;
       e.preventDefault();
       turn(by);
     };
@@ -109,6 +111,7 @@ export function Pages({
           {Array.from({ length: count }, (_, i) => (
             <button
               key={i}
+              data-page={i}
               aria-label={`Page ${i + 1}`}
               title={`Page ${i + 1}`}
               aria-current={i === page ? "page" : undefined}

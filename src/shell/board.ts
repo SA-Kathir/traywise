@@ -127,3 +127,12 @@ export function remove(tiles: Placed[], id: string, auto: boolean): Placed[] {
   const rest = tiles.filter((t) => t.id !== id);
   return auto ? pack(rest) : compact(rest);
 }
+
+/** Moves tile `id` from page `from` to page `to`, where it's added like a new tile, at its size. */
+export function moveToPage(pages: Placed[][], id: string, from: number, to: number, auto: boolean): Placed[][] {
+  const t = pages[from].find((t) => t.id === id);
+  if (!t || from === to || !pages[to]) return pages;
+  return pages.map((p, i) =>
+    i === from ? remove(p, id, auto) : i === to ? add(p, id, t.w, t.h, auto) : p,
+  );
+}

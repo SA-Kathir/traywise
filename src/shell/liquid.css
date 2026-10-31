@@ -1445,3 +1445,15 @@ section > .setting:last-child {
 .page-dots button[aria-current]::before {
   background: rgb(var(--ink));
 }
+/* A dragged tile over a dot: dropped there, it moves to that page. */
+.page-dots button.drop::before {
+  transform: scale(2);
+  background: var(--accent);
+}
+.page-bar {
+  gap: 4px;
+  font-size: 13px;
+}
+.page-bar .grow {
+  text-align: center;
+}
