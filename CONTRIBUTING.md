@@ -50,7 +50,7 @@ Rules:
 | `fix/<name>` | One bug fix | You, branched from `develop` |
 
 - Branch from `develop`, and open your pull request against `develop`.
-- **To release:** merge `develop` into `main`, then tag the merge `vX.Y.Z`. The tag triggers the release build.
+- **To release:** give `CHANGELOG.md` a `## X.Y.Z (date)` section, merge `develop` into `main`, then tag the merge `vX.Y.Z`. The tag triggers the release build, which puts that section on the GitHub release as its notes (`scripts/release-notes.mjs`; the build stops if the section is missing).
 - **Urgent fix for a released version:** branch `fix/<name>` from `main`, release it from `main` as a patch, then merge `main` back into `develop`.
 
 ## Pull requests
