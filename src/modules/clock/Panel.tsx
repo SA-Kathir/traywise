@@ -189,11 +189,12 @@ function analogue(now: Date, size: TileProps["size"]) {
         <Face date={now} />
       </span>
     );
+  // 4×1 shares its row with the zone's box: the face tells the time, so just the day beside it.
   return (
     <>
       <Face date={now} />
       <span className="clock-here">
-        <Time date={now} />
+        {size === "2x1" && <Time date={now} />}
         <span className="clock-over">{day(now, "short")}</span>
       </span>
     </>

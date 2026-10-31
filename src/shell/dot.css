@@ -1020,7 +1020,11 @@
   font-size: 48px;
 }
 .look-dot .clock.size-4x2 .clock-here .num {
-  font-size: 52px;
+  font-size: 40px;
+}
+/* 4×1 shares its row with the zone's box: a little smaller, so "11:17 PM" leaves the city room. */
+.look-dot .clock.size-4x1 .clock-here .num {
+  font-size: 28px;
 }
 .look-dot .clock-well .num {
   font-size: 18px;
@@ -1029,7 +1033,7 @@
   font-size: 16px;
 }
 .look-dot .clock-well.full .num {
-  font-size: 32px;
+  font-size: 26px;
 }
 .look-dot .clock-over {
   font-size: 10px;
