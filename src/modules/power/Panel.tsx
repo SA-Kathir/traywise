@@ -6,20 +6,21 @@ import type { TileProps } from "..";
 
 // Segoe Fluent Icons glyphs, closest to the design's leaf, gauge and bolt.
 const BOLT = String.fromCodePoint(0xe945);
-const MODES: { mode: PowerMode; label: string; icon: string }[] = [
-  { mode: "efficiency", label: "Efficiency", icon: String.fromCodePoint(0xec0a) },
-  { mode: "balanced", label: "Balanced", icon: String.fromCodePoint(0xec49) },
-  { mode: "performance", label: "Performance", icon: BOLT },
+/** `short` fits a 1×1 tile, which has room for about seven letters. */
+const MODES: { mode: PowerMode; label: string; short: string; icon: string }[] = [
+  { mode: "efficiency", label: "Efficiency", short: "Eco", icon: String.fromCodePoint(0xec0a) },
+  { mode: "balanced", label: "Balanced", short: "Balance", icon: String.fromCodePoint(0xec49) },
+  { mode: "performance", label: "Performance", short: "Max", icon: BOLT },
 ];
 
 const usePower = () => useLive(commands.powerState, events.powerChanged);
 
-/** "4 h 10 left", "35 min left", "Charging": the 2×1 battery tile's second line. */
+/** "4h 10m", "35m", "Charging": the battery's second line, short enough for a 2×1 tile. */
 function left({ charging, secondsLeft }: Battery) {
   if (charging) return "Charging";
   if (secondsLeft === null) return "On battery";
   const minutes = Math.round(secondsLeft / 60);
-  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} left` : `${minutes} min left`;
+  return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
 }
 
 /** Under 20 % in the warning colour, under 10 % in the danger colour. */
@@ -60,7 +61,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   const current = MODES.find((m) => m.mode === mode);
   if (size === "2x1" && current)
     return (
-      <TileCard size={size} label="Power mode" detail={current.label} onOpen={open}>
+      <TileCard size={size} label="Power mode" onOpen={open}>
         <Modes mode={current.mode} icons />
       </TileCard>
     );
@@ -70,7 +71,7 @@ export function Tiles({ kind, size, open }: TileProps) {
       size={size}
       icon={(current ?? MODES[1]).icon}
       label="Power mode"
-      detail={current ? current.label : "Unavailable"}
+      detail={current ? (size === "1x1" ? current.short : current.label) : "None"}
       onToggle={next && (() => commands.powerSetMode(next.mode))}
       onOpen={open}
     />
@@ -103,10 +104,13 @@ function Modes({ mode, icons }: { mode: PowerMode; icons?: boolean }) {
           title={m.label}
           onClick={() => commands.powerSetMode(m.mode)}
         >
-          <span className="icon" aria-hidden>
-            {m.icon}
-          </span>
-          {!icons && ` ${m.label}`}
+          {icons ? (
+            <span className="icon" aria-hidden>
+              {m.icon}
+            </span>
+          ) : (
+            m.label
+          )}
         </button>
       ))}
     </div>
@@ -119,26 +123,22 @@ export default function Panel() {
   const at = state.energySaverAt;
   return (
     <>
-      <h2>Power mode</h2>
-      {state.mode ? <Modes mode={state.mode} /> : <p className="hint">Windows offers power modes only on the Balanced power plan.</p>}
+      {state.mode ? <Modes mode={state.mode} /> : <p className="hint">Power modes need the Balanced power plan.</p>}
       {state.battery && (
-        <>
-          <h2>Battery</h2>
-          <div className={`row battery-row${low(state.battery.percent)}`}>
-            <span className="battery-big">
-              <Num text={`${state.battery.percent}%`} />
-            </span>
-            <span className="grow">{left(state.battery)}</span>
-          </div>
-        </>
+        <div className={`row battery-row${low(state.battery.percent)}`}>
+          <span className="battery-big">
+            <Num text={`${state.battery.percent}%`} />
+          </span>
+          <span className="grow tile-detail">{left(state.battery)}</span>
+          <Gauge percent={state.battery.percent} />
+        </div>
       )}
       <div className="row">
         <span className="grow">
           Energy saver
-          <br />
-          <span className="hint">{state.energySaver ? "On" : at && at < 100 ? `Off · turns on at ${at}%` : "Off"}</span>
+          <span className="tile-detail block">{state.energySaver ? "On" : at && at < 100 ? `Off · on at ${at}%` : "Off"}</span>
         </span>
-        <button onClick={() => commands.openSettings("energySaver")}>Open Settings</button>
+        <button onClick={() => commands.openSettings("energySaver")}>Settings</button>
       </div>
     </>
   );

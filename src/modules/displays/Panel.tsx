@@ -34,11 +34,12 @@ const icon = (left: boolean, right: boolean, wide = false) => (
   </svg>
 );
 
-const PROJECTS: { project: Project; label: string; short: string; icon: ReactNode }[] = [
-  { project: "pcOnly", label: "PC screen only", short: "PC only", icon: icon(true, false) },
-  { project: "duplicate", label: "Duplicate", short: "Duplicate", icon: icon(true, true) },
-  { project: "extend", label: "Extend", short: "Extend", icon: icon(true, true, true) },
-  { project: "secondOnly", label: "Second screen only", short: "2nd only", icon: icon(false, true) },
+/** `label` is the tooltip, `page` the System page's button, `short` the 1×1 tile (about seven letters). */
+const PROJECTS: { project: Project; label: string; page: string; short: string; icon: ReactNode }[] = [
+  { project: "pcOnly", label: "PC screen only", page: "PC only", short: "PC only", icon: icon(true, false) },
+  { project: "duplicate", label: "Duplicate", page: "Duplicate", short: "Mirror", icon: icon(true, true) },
+  { project: "extend", label: "Extend", page: "Extend", short: "Extend", icon: icon(true, true, true) },
+  { project: "secondOnly", label: "Second screen only", page: "2nd only", short: "2nd only", icon: icon(false, true) },
 ];
 
 const useDisplays = () => useLive(commands.displaysState, events.displaysChanged);
@@ -63,7 +64,10 @@ export function Tiles({ kind, size, open }: TileProps) {
         </span>
       </button>
     );
-  if (size !== "4x2")
+  const changeable = state.displays.filter((d) => d.brightness !== null);
+  // 4×2 with one screen: the 2×2 layout, wider, rather than one row and a gap.
+  const big = size === "2x2" || (size === "4x2" && changeable.length === 1);
+  if (size !== "4x2" || big)
     return (
       <div className={`tile vol size-${size}`}>
         <div className="vol-main">
@@ -72,9 +76,9 @@ export function Tiles({ kind, size, open }: TileProps) {
               <span className="tile-label">Brightness</span>
               {size === "4x1" && <span className="tile-detail">{main.name}</span>}
             </button>
-            {size !== "2x2" && <Num text={String(level)} />}
+            {!big && <Num text={String(level)} />}
           </div>
-          {size === "2x2" && (
+          {big && (
             <>
               <span className="vol-big">
                 <Num text={String(level)} />
@@ -95,8 +99,7 @@ export function Tiles({ kind, size, open }: TileProps) {
             <span className="tile-label">Brightness</span>
           </button>
         </div>
-        {state.displays
-          .filter((d) => d.brightness !== null)
+        {changeable
           .slice(0, 3)
           .map((d) => (
             <div key={d.id} className="vol-app">
@@ -133,7 +136,7 @@ function ProjectTile({ project, size, open }: { project: Project | null; size: T
   const current = PROJECTS.find((p) => p.project === project);
   if (size === "2x1")
     return (
-      <TileCard size={size} label="Project" detail={current?.short ?? "One screen"} onOpen={open}>
+      <TileCard size={size} label="Project" onOpen={open}>
         <Choices project={current?.project ?? null} icons />
       </TileCard>
     );
@@ -143,7 +146,7 @@ function ProjectTile({ project, size, open }: { project: Project | null; size: T
       size={size}
       icon={(current ?? PROJECTS[0]).icon}
       label="Project"
-      detail={current ? current.short : "One screen"}
+      detail={current ? current.short : "Single"}
       onToggle={next && (() => commands.displaysSetProject(next.project))}
       onOpen={open}
     />
@@ -168,7 +171,7 @@ function Choices({ project, icons }: { project: Project | null; icons?: boolean 
           <span className="icon" aria-hidden>
             {p.icon}
           </span>
-          {!icons && p.label}
+          {!icons && p.page}
         </button>
       ))}
     </div>
@@ -181,25 +184,28 @@ export default function Panel() {
   return (
     <>
       {state.displays.map((d) => (
-        <div key={d.id} className="mixer-row">
-          <span className="app-icon glyph" aria-hidden>
-            {d.internal ? LAPTOP : MONITOR}
-          </span>
-          <span className="mixer-name" title={d.name}>
-            {d.name}
-          </span>
-          {d.brightness === null ? (
-            <span className="hint">Can't change</span>
-          ) : (
-            <Slider name={d.name} what="brightness" value={d.brightness} onChange={setBrightness(d)} />
-          )}
+        <div key={d.id} className="display-row">
+          <div className="row">
+            <span className="icon" aria-hidden>
+              {d.internal ? LAPTOP : MONITOR}
+            </span>
+            <span className="grow" title={d.name}>
+              {d.name}
+            </span>
+            {d.brightness === null ? <span className="tile-detail">Can't change</span> : <Num text={String(d.brightness)} />}
+          </div>
+          {d.brightness !== null && <Bar display={d} />}
         </div>
       ))}
       {state.displays.some((d) => !d.internal && d.brightness === null) && (
-        <p className="hint">To change a monitor's brightness from here, turn on DDC/CI in the monitor's own menu.</p>
+        <p className="hint">Turn on DDC/CI in a monitor's own menu to change it here.</p>
       )}
-      <h2>Project</h2>
-      {state.project ? <Choices project={state.project} /> : <p className="hint">Connect a second screen to choose how they're used.</p>}
+      {state.project && (
+        <>
+          <h2>Project</h2>
+          <Choices project={state.project} />
+        </>
+      )}
     </>
   );
 }

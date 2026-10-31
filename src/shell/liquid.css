@@ -1448,6 +1448,27 @@ section > .setting:last-child {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
+  padding: var(--tile-pad, 10px 12px);
+}
+.battery.size-1x1 .gauge {
+  width: 34px;
+  height: 14px;
+}
+.battery.size-1x1 .icon {
+  font-size: 12px;
+}
+/* Displays page: a screen's name and level on one line, its slider under them. */
+.display-row + .display-row {
+  margin-top: 8px;
+}
+.display-row .row {
+  gap: 8px;
+}
+.display-row .vol-bar {
+  margin-top: 4px;
+}
+.tile-detail.block {
+  display: block;
 }
 .battery-level {
   display: flex;
@@ -1494,4 +1515,7 @@ section > .setting:last-child {
 /* A card's title stays on one line; its detail gives way (ellipsis) instead. */
 .tile-card .tile-title .tile-label {
   white-space: nowrap;
+}
+.display-row + .hint {
+  margin-top: 8px;
 }
