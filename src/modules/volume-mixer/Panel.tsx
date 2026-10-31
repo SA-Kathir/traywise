@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { commands, events, type Target } from "../../bindings";
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
+import { commands, events, type AppAudio, type OutputDevice, type Target } from "../../bindings";
 import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
@@ -100,25 +100,71 @@ export function Tiles({ size, open }: TileProps) {
 
 export default function Panel() {
   const state = useMixer();
+  // The app whose output list is open.
+  const [picking, setPicking] = useState<number | null>(null);
   if (!state) return null;
   if (!state.master) return <p className="hint">No output device.</p>;
+  // Empty where Windows doesn't support it; with one device there's nothing to pick.
+  const canRoute = state.outputs.length > 1;
+  const moved = state.apps.filter((a) => a.output).length;
 
   return (
     <>
       <Row name="Master" glyph={DEVICE} volume={state.master.volume} muted={state.master.muted} target="master" />
       {state.apps.map((app) => (
-        <Row
-          key={app.pid}
-          name={app.name}
-          icon={app.icon}
-          glyph={app.systemSounds ? BELL : APP}
-          volume={app.volume}
-          muted={app.muted}
-          target={{ app: app.pid }}
-        />
+        <Fragment key={app.pid}>
+          <Row
+            name={app.name}
+            icon={app.icon}
+            glyph={app.systemSounds ? BELL : APP}
+            volume={app.volume}
+            muted={app.muted}
+            target={{ app: app.pid }}
+            output={canRoute && !app.systemSounds ? outputName(app, state.outputs) : undefined}
+            onOutput={() => setPicking(picking === app.pid ? null : app.pid)}
+          />
+          {canRoute && picking === app.pid && <OutputPicker app={app} outputs={state.outputs} onPicked={() => setPicking(null)} />}
+        </Fragment>
       ))}
       {state.apps.length === 0 && <p className="hint">No apps are playing audio.</p>}
+      {canRoute && moved > 0 && (
+        <div className="row mixer-reset">
+          <span className="grow hint">{moved === 1 ? "1 app" : `${moved} apps`} not on Default</span>
+          <button onClick={() => commands.mixerResetOutputs()}>Reset all</button>
+        </div>
+      )}
     </>
+  );
+}
+
+/** "Default", or the short name of the device the app is set to. */
+const outputName = (app: AppAudio, outputs: OutputDevice[]) => {
+  const device = app.output && outputs.find((d) => d.id === app.output);
+  return device ? shortName(device.name) : "Default";
+};
+
+function OutputPicker({ app, outputs, onPicked }: { app: AppAudio; outputs: OutputDevice[]; onPicked: () => void }) {
+  const pick = (id: string | null) => {
+    if (id !== app.output) commands.mixerSetOutput(app.pid, id);
+    onPicked();
+  };
+  const current = outputs.find((d) => d.isDefault);
+  const choices = [{ id: null, name: current ? `Default (${shortName(current.name)})` : "Default" }, ...outputs];
+  return (
+    <div className="segmented vertical mixer-outputs" role="radiogroup" aria-label={`${app.name} output`}>
+      {choices.map((d) => (
+        <button
+          key={d.id ?? "default"}
+          role="radio"
+          aria-checked={d.id === app.output}
+          className={d.id === app.output ? "on" : ""}
+          title={d.name}
+          onClick={() => pick(d.id)}
+        >
+          {d.name}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -130,9 +176,12 @@ type RowProps = {
   volume: number;
   muted: boolean;
   target: Target;
+  /** The app's output device, shown under its name; clicking it calls `onOutput`. */
+  output?: string;
+  onOutput?: () => void;
 };
 
-function Row({ name, icon, glyph, volume, muted, target }: RowProps) {
+function Row({ name, icon, glyph, volume, muted, target, output, onOutput }: RowProps) {
   return (
     <div className="mixer-row">
       <button
@@ -152,6 +201,11 @@ function Row({ name, icon, glyph, volume, muted, target }: RowProps) {
       )}
       <span className="mixer-name" title={name}>
         {name}
+        {output && (
+          <button className="mixer-output" title="Output device" onClick={onOutput}>
+            {output}
+          </button>
+        )}
       </span>
       <VolumeSlider name={name} value={volume} onChange={(v) => commands.mixerSetVolume(target, v)} />
     </div>

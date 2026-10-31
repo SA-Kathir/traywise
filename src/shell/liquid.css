@@ -539,6 +539,7 @@ label.row + .hint,
   gap: 8px;
 }
 .mixer-row + .mixer-row,
+.mixer-outputs + .mixer-row,
 .mixer-row + .hint {
   margin-top: 8px;
 }
@@ -564,6 +565,26 @@ label.row + .hint,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* The app's output device, under its name. */
+.mixer-name .mixer-output {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  color: rgb(var(--ink) / 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mixer-name .mixer-output:hover {
+  background: transparent;
+  color: var(--accent);
+}
+.mixer-outputs,
+.mixer-reset {
+  margin-top: 6px;
 }
 .mixer-value {
   width: 3ch;
