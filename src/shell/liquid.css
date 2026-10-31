@@ -1449,6 +1449,12 @@ button.clock-main:hover {
   width: 100%;
 }
 
+/* Focus 2×2 (it shares Keep awake's layout): the bell before its status line. */
+.focus-bell {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 11px;
+}
+
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
 
 /* 2×2: the icon top left, a switch top right, the name and state at the bottom. */

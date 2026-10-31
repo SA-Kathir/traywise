@@ -1,6 +1,7 @@
 pub mod audio_devices;
 pub mod bluetooth;
 pub mod clock;
+pub mod focus;
 pub mod keep_awake;
 pub mod now_playing;
 pub mod quick_toggles;
