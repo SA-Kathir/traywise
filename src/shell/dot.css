@@ -1002,6 +1002,66 @@
   font-size: 16px;
 }
 
+/* ---- Clock ------------------------------------------------------------------------------- */
+
+.look-dot .clock-time .num {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 32px;
+}
+.look-dot .clock-time.stacked .num {
+  font-size: 18px;
+}
+.look-dot .clock.analogue .clock-here .num {
+  font-size: 24px;
+}
+.look-dot .clock.size-2x2 .clock-here .num,
+.look-dot .clock-page .num {
+  font-size: 48px;
+}
+.look-dot .clock.size-4x2 .clock-here .num {
+  font-size: 52px;
+}
+.look-dot .clock-well .num {
+  font-size: 18px;
+}
+.look-dot .clock.size-2x2 .clock-well .num {
+  font-size: 16px;
+}
+.look-dot .clock-well.full .num {
+  font-size: 32px;
+}
+.look-dot .clock-over {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tw-text-secondary);
+}
+.look-dot .clock-over.dim {
+  color: var(--tw-text-tertiary);
+}
+.look-dot .clock-well {
+  background: var(--tw-control-track);
+}
+.look-dot .clock-shift {
+  color: var(--tw-accent-text);
+}
+.look-dot .clock-tag {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-accent-text);
+  background: var(--tw-accent-tint);
+}
+.look-dot .clock-face .tick {
+  fill: var(--tw-text-tertiary);
+}
+.look-dot .clock-face :is(.major, .hand) {
+  fill: var(--tw-text-primary);
+}
+.look-dot .clock-face .tip {
+  fill: var(--tw-accent-base);
+}
+
 /* ---- 2×2 toggle tiles, and the Connect pages ------------------------------------------------ */
 
 .look-dot .tile.size-2x2 .tile-icon,

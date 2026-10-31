@@ -2,6 +2,7 @@ import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
 import audioDevices from "./audio-devices";
 import bluetooth from "./bluetooth";
+import clock from "./clock";
 import keepAwake from "./keep-awake";
 import nowPlaying from "./now-playing";
 import quickToggles from "./quick-toggles";
@@ -49,6 +50,7 @@ export const modules: Record<ModuleId, ModuleUi> = {
   "keep-awake": keepAwake,
   "audio-devices": audioDevices,
   "quick-toggles": quickToggles,
+  clock,
   "volume-mixer": volumeMixer,
   "now-playing": nowPlaying,
   wifi,
@@ -61,7 +63,7 @@ export const tileModule = (id: string) => id.slice(0, id.indexOf("/")) as Module
 
 /** A new user's board, in order; tiles of modules that are off are left out. Packed, it's:
  *  Wi-Fi, Bluetooth and the mixer (2×2) on top, Dark mode and Microphones under the first two, then
- *  Keep awake and Output side by side, the system monitor across, and Now playing at the bottom.
+ *  Keep awake and Output side by side, the system monitor across, Now playing, then the clock.
  *  (Lock and Desktop icons are in Add tiles: with them the rows don't come out even.)
  *  Switching a module on later adds its tiles from here. */
 export const defaultBoard: [id: string, size: Size][] = [
@@ -74,4 +76,5 @@ export const defaultBoard: [id: string, size: Size][] = [
   ["audio-devices/output", "2x1"],
   ["system-monitor/monitor", "4x2"],
   ["now-playing/media", "4x2"],
+  ["clock/clock", "4x1"],
 ];

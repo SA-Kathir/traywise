@@ -1,0 +1,261 @@
+import { useEffect, useState } from "react";
+import type { ClockStyle } from "../../bindings";
+import { Num } from "../../shell/Tile";
+import { useSettings } from "../../shell/SettingsContext";
+import type { TileProps } from "..";
+import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time";
+
+// Segoe Fluent Icons glyphs.
+const GLOBE = String.fromCodePoint(0xe774);
+const MOON = String.fromCodePoint(0xe708);
+const SUN = String.fromCodePoint(0xe706);
+
+/** The current time, redrawn as each minute starts, and only while the panel is open: hidden, the
+ *  page is too (WebView2 is made invisible), so the timer stops and it catches up when shown. */
+function useMinute() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timer: number | undefined;
+    const tick = () => {
+      const date = new Date();
+      setNow(date);
+      timer = window.setTimeout(tick, toNextMinute(date.getTime()));
+    };
+    const visibility = () => {
+      clearTimeout(timer);
+      if (!document.hidden) tick();
+    };
+    visibility();
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
+  return now;
+}
+
+const DATE = {
+  medium: { weekday: "short", day: "numeric", month: "short" }, // Sat 31 Oct
+  long: { weekday: "long", day: "numeric", month: "long" }, // Saturday 31 October
+} satisfies Record<string, Intl.DateTimeFormatOptions>;
+
+/** "Sat 31" (always that order: some locales put the day first), "Sat Oct 31" or "Saturday, October 31". */
+function day(date: Date, format: keyof typeof DATE | "short", zone?: string) {
+  const part = (options: Intl.DateTimeFormatOptions) => date.toLocaleDateString([], { ...options, timeZone: zone });
+  if (format === "short") return `${part({ weekday: "short" })} ${part({ day: "numeric" })}`;
+  return format === "medium" ? part(DATE.medium).replace(",", "") : part(DATE.long);
+}
+
+/** "21:40", or "9:40" with a small "PM": the digits in dot type. `stacked`: the hours over the minutes. */
+function Time({ date, zone, stacked }: { date: Date; zone?: string; stacked?: boolean }) {
+  const { digits, period } = time(date, zone);
+  const [hours, minutes] = digits.split(":");
+  const end = period && <span className="clock-period">{period}</span>;
+  return stacked ? (
+    <span className="clock-time stacked">
+      <Num text={hours} />
+      <span>
+        <Num text={minutes} />
+        {end}
+      </span>
+    </span>
+  ) : (
+    <span className="clock-time">
+      <Num text={digits} />
+      {end}
+    </span>
+  );
+}
+
+const TICKS = 60;
+
+/** A round face of dots: 60 ticks (each fifth brighter) and the hands as rows of dots, the minute
+ *  hand's tip in the accent. */
+function Face({ date }: { date: Date }) {
+  const angle = hands(date.getHours(), date.getMinutes());
+  const at = (degrees: number, r: number) => {
+    const a = (degrees * Math.PI) / 180;
+    return { cx: 50 + r * Math.sin(a), cy: 50 - r * Math.cos(a) };
+  };
+  const hand = (degrees: number, dots: number, tip: boolean) =>
+    Array.from({ length: dots }, (_, i) => (
+      <circle key={`${dots}-${i}`} {...at(degrees, (i + 1) * 5)} r={2.2} className={tip && i === dots - 1 ? "tip" : "hand"} />
+    ));
+  return (
+    <svg className="clock-face" viewBox="0 0 100 100" aria-hidden>
+      {Array.from({ length: TICKS }, (_, i) => (
+        <circle key={i} {...at(i * 6, 45)} r={i % 5 ? 1.3 : 2} className={i % 5 ? "tick" : "tick major"} />
+      ))}
+      <circle cx={50} cy={50} r={2.2} className="hand" />
+      {hand(angle.hour, 4, false)}
+      {hand(angle.minute, 7, true)}
+    </svg>
+  );
+}
+
+/** The second zone, always in its own inset well so it never reads as this PC's time: a globe, the
+ *  city and how many days off it is, then its time. `full` (4×2): a column, with its date, the
+ *  hours between, a moon or sun, and a Tomorrow / Yesterday tag. */
+function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }) {
+  const shift = dayShift(date, zone);
+  const globe = (
+    <span className="clock-glyph" aria-hidden>
+      {GLOBE}
+    </span>
+  );
+  if (!full)
+    return (
+      <span className="clock-well">
+        {globe}
+        <span className="clock-over clock-city">{city(zone)}</span>
+        {shift !== 0 && <span className="clock-shift">{shift > 0 ? "+1" : "−1"}</span>}
+        <Time date={date} zone={zone} />
+      </span>
+    );
+  return (
+    <span className="clock-well full">
+      <span className="clock-well-head">
+        {globe}
+        <span className="clock-over clock-city">{city(zone)}</span>
+        <span className="clock-glyph" aria-label={isNight(date, zone) ? "Night" : "Day"}>
+          {isNight(date, zone) ? MOON : SUN}
+        </span>
+      </span>
+      <span className="clock-over dim">
+        {day(date, "short", zone)} · {differenceLabel(difference(date, zone))}
+      </span>
+      <span className="clock-well-foot">
+        {shift !== 0 && <span className="clock-tag">{shift > 0 ? "Tomorrow" : "Yesterday"}</span>}
+        <Time date={date} zone={zone} />
+      </span>
+    </span>
+  );
+}
+
+/** Home tile, Digital or Analogue (picked on the page). Bigger sizes add the date; with a second
+ *  zone set, 4×1 and up show it in its well. A click opens the page. */
+export function Tiles({ size, open }: TileProps) {
+  const now = useMinute();
+  const { clockZone, clockStyle } = useSettings().settings;
+  const zone = clockZone && size !== "1x1" && size !== "2x1" ? <Zone date={now} zone={clockZone} full={size === "4x2"} /> : null;
+  return (
+    <div className={`tile clock size-${size} ${clockStyle}`}>
+      <button className="clock-main" title="Clock" onClick={open}>
+        {clockStyle === "analogue" ? analogue(now, size) : digital(now, size)}
+        {zone}
+      </button>
+    </div>
+  );
+}
+
+function digital(now: Date, size: TileProps["size"]) {
+  if (size === "1x1")
+    return (
+      <span className="clock-here">
+        <Time date={now} stacked />
+        <span className="clock-over">{day(now, "short")}</span>
+      </span>
+    );
+  if (size === "2x2")
+    return (
+      <span className="clock-here">
+        <span className="clock-over">{day(now, "medium")}</span>
+        <Time date={now} />
+      </span>
+    );
+  if (size === "4x2")
+    return (
+      <span className="clock-here">
+        <span className="clock-over">Here · {day(now, "medium")}</span>
+        <Time date={now} />
+        <span className="clock-over dim">{city(Intl.DateTimeFormat().resolvedOptions().timeZone)}</span>
+      </span>
+    );
+  return (
+    <span className="clock-here">
+      <Time date={now} />
+      <span className="clock-over">{day(now, "medium")}</span>
+    </span>
+  );
+}
+
+function analogue(now: Date, size: TileProps["size"]) {
+  if (size === "1x1" || size === "4x2") return <Face date={now} />;
+  if (size === "2x2")
+    return (
+      <span className="clock-here">
+        <span className="clock-over">{day(now, "short")}</span>
+        <Face date={now} />
+      </span>
+    );
+  return (
+    <>
+      <Face date={now} />
+      <span className="clock-here">
+        <Time date={now} />
+        <span className="clock-over">{day(now, "short")}</span>
+      </span>
+    </>
+  );
+}
+
+const STYLES: { style: ClockStyle; label: string }[] = [
+  { style: "digital", label: "Digital" },
+  { style: "analogue", label: "Analogue" },
+];
+
+/** Every time zone the browser knows, by place name. (Not in TypeScript's ES2020 types.) */
+const ZONES = (Intl as unknown as { supportedValuesOf(key: string): string[] })
+  .supportedValuesOf("timeZone")
+  .filter((zone) => zone.includes("/"))
+  .sort((a, b) => city(a).localeCompare(city(b)));
+
+export default function Panel() {
+  const now = useMinute();
+  const { settings, save } = useSettings();
+  return (
+    <>
+      <div className="clock-page">
+        {settings.clockStyle === "analogue" && <Face date={now} />}
+        <span className="clock-here">
+          <Time date={now} />
+          <span className="tile-detail">{day(now, "long")}</span>
+        </span>
+      </div>
+      <div className="row">
+        <span className="grow">Style</span>
+        <div className="segmented" role="radiogroup" aria-label="Clock style">
+          {STYLES.map(({ style, label }) => (
+            <button
+              key={style}
+              role="radio"
+              aria-checked={settings.clockStyle === style}
+              className={settings.clockStyle === style ? "on" : ""}
+              onClick={() => save({ ...settings, clockStyle: style })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="row">
+        <span className="grow">Second zone</span>
+        <select value={settings.clockZone ?? ""} onChange={(e) => save({ ...settings, clockZone: e.target.value || null })}>
+          <option value="">None</option>
+          {ZONES.map((zone) => (
+            <option key={zone} value={zone}>
+              {city(zone)} ({zone.slice(0, zone.indexOf("/")).replace(/_/g, " ")})
+            </option>
+          ))}
+        </select>
+      </label>
+      {settings.clockZone && (
+        <p className="hint">
+          {city(settings.clockZone)}: {differenceLabel(difference(now, settings.clockZone))}. It shows on the 4×1, 2×2 and 4×2
+          tiles.
+        </p>
+      )}
+    </>
+  );
+}

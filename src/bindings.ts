@@ -163,6 +163,13 @@ export type BoardTile = {
 	y: number,
 };
 
+/**  How the clock tile draws the time. */
+export type ClockStyle = 
+/**  Dot-matrix digits. */
+"digital" | 
+/**  A round face of dots, with dot hands. */
+"analogue";
+
 /**  Sent to the UI whenever the state changes. */
 export type KeepAwakeChanged = KeepAwakeState;
 
@@ -253,7 +260,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "clock";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -343,6 +350,9 @@ export type Settings = {
 	edgeOpen: boolean,
 	/**  With `edge_open`, a small pill on the edge shows where. */
 	edgeHandle: boolean,
+	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
+	clockZone: string | null,
+	clockStyle: ClockStyle,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */

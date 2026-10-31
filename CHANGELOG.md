@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Clock** module: the time and date on a tile from 1×1 to 4×2, Digital (dot-matrix numbers) or Analogue (a face of dots). An optional second time zone, picked on its page, shows in its own box on the 4×1, 2×2 and 4×2 tiles, with how far ahead or behind it is. It only updates while the panel is open, once a minute.
+
 ## 0.2.0 (2026-10-31)
 
 ### Highlights
