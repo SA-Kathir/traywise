@@ -1,0 +1,10 @@
+OCR-A (ocr-a.woff2)
+
+A digital version of the OCR-A typeface (ANSI X3.17-1977), made by John Sauter in 2004 from
+Tor Lillqvist's and Richard B. Wales's work, and released by him into the public domain.
+
+Source: https://sourceforge.net/projects/ocr-a-font/ (OCRA.ttf, version 1.0)
+Licence as recorded by Debian (package fonts-ocr-a, debian/copyright):
+  "This software is released into the public domain."
+
+Traywise bundles a subset (printable ASCII), converted to WOFF2.

@@ -8,10 +8,13 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use crate::modules::audio_devices::AudioDevices;
+use crate::modules::bluetooth::Bluetooth;
 use crate::modules::keep_awake::KeepAwake;
+use crate::modules::now_playing::NowPlaying;
 use crate::modules::quick_toggles::QuickToggles;
 use crate::modules::system_monitor::SystemMonitor;
 use crate::modules::volume_mixer::VolumeMixer;
+use crate::modules::wifi::Wifi;
 use crate::settings::Settings;
 
 /// Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`.
@@ -23,6 +26,9 @@ pub enum ModuleId {
     AudioDevices,
     SystemMonitor,
     QuickToggles,
+    NowPlaying,
+    Wifi,
+    Bluetooth,
 }
 
 pub trait Module: Send {
@@ -45,6 +51,9 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(AudioDevices::new(app.clone())),
         Box::new(SystemMonitor::new(app.clone())),
         Box::new(QuickToggles::new(app.clone())),
+        Box::new(NowPlaying::new(app.clone())),
+        Box::new(Wifi::new(app.clone())),
+        Box::new(Bluetooth::new(app.clone())),
     ]
 }
 

@@ -12,6 +12,12 @@ export const commands = {
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
+	/**
+	 *  The UI closes an edge-opened panel when the mouse has left it (and it wasn't clicked into).
+	 *  Not while the pointer is beside it, between the panel and the screen's edge (still on the edge
+	 *  it was opened from, say): false then, and the UI asks again a moment later.
+	 */
+	hidePanel: () => __TAURI_INVOKE<boolean>("hide_panel"),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
@@ -45,20 +51,55 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	/**  The latest state. Empty while the module is switched off. */
+	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
+	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
+	nowPlayingControl: (key: string, action: MediaAction) => typedError<null, string>(__TAURI_INVOKE("now_playing_control", { key, action })),
+	/**  The current state, with the list as Windows last heard it (`wifi_scan` refreshes it). */
+	wifiState: () => __TAURI_INVOKE<WifiState>("wifi_state"),
+	/**  Looks for networks again (a few seconds), then sends the new list. */
+	wifiScan: () => typedError<null, string>(__TAURI_INVOKE("wifi_scan")),
+	wifiSetOn: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("wifi_set_on", { on })),
+	/**
+	 *  Joins a network. A secured network Windows hasn't saved needs `password`; Windows saves it
+	 *  (as if joined in its own Settings) and Traywise keeps nothing.
+	 */
+	wifiConnect: (ssid: string, password: string | null) => typedError<null, string>(__TAURI_INVOKE("wifi_connect", { ssid, password })),
+	wifiDisconnect: () => typedError<null, string>(__TAURI_INVOKE("wifi_disconnect")),
+	bluetoothState: () => __TAURI_INVOKE<BluetoothState>("bluetooth_state"),
+	bluetoothSetOn: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("bluetooth_set_on", { on })),
+	/**  Connects or disconnects a paired audio device (`id` from the state). */
+	bluetoothConnect: (id: string, connect: boolean) => typedError<null, string>(__TAURI_INVOKE("bluetooth_connect", { id, connect })),
+	openSettings: (page: SettingsPage) => __TAURI_INVOKE<void>("open_settings", { page }),
 };
 
 /** Events */
 export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
+	bluetoothChanged: makeEvent<BluetoothChanged>("bluetooth-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
+	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
+	wifiChanged: makeEvent<WifiChanged>("wifi-changed"),
 };
 
 /* Types */
+export type Abilities = {
+	playPause: boolean,
+	next: boolean,
+	previous: boolean,
+	seek: boolean,
+	shuffle: boolean,
+	repeat: boolean,
+};
+
+/**  Accent colour preset (Dot look). The colours are in `src/shell/dot.css`. */
+export type Accent = "red" | "amber" | "violet" | "blue" | "green";
+
 /**  One app with audio on the default output device (all of its audio sessions together). */
 export type AppAudio = {
 	pid: number,
@@ -91,6 +132,37 @@ export type Battery = {
 	secondsLeft: number | null,
 };
 
+/**  Sent when the panel opens and after each change. */
+export type BluetoothChanged = BluetoothState;
+
+export type BluetoothDeviceInfo = {
+	/**  Windows' id for the device as a whole (its container), for the commands. */
+	id: string,
+	name: string,
+	connected: boolean,
+	/**  Headphones or speakers: Traywise can connect and disconnect it. */
+	audio: boolean,
+};
+
+export type BluetoothState = {
+	/**  The radio; None when this PC has no Bluetooth. */
+	on: boolean | null,
+	/**  Paired devices, connected ones first. */
+	devices: BluetoothDeviceInfo[],
+};
+
+/**
+ *  A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
+ *  `id` is "<module id>/<kind>"; the kinds are the UI's (`tiles` in src/modules), so Rust doesn't check them.
+ */
+export type BoardTile = {
+	id: string,
+	w: number,
+	h: number,
+	x: number,
+	y: number,
+};
+
 /**  Sent to the UI whenever the state changes. */
 export type KeepAwakeChanged = KeepAwakeState;
 
@@ -121,10 +193,44 @@ export type Level = {
 
 /**  How the panel is drawn. The styles are in `src/shell/liquid.css`. */
 export type Look = 
+/**  Monochrome tiles over a dot grid, one accent colour and dot-matrix numbers (docs/design-system.md). */
+"dot" | 
 /**  Glass cards over a colour preset's background. */
 "liquid" | 
 /**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
 "windows";
+
+export type MediaAction = "playPause" | "next" | "previous" | 
+/**  Jump to this many milliseconds into the track. */
+({ seek: number }) & { repeat?: never; shuffle?: never } | ({ shuffle: boolean }) & { repeat?: never; seek?: never } | ({ repeat: Repeat }) & { seek?: never; shuffle?: never };
+
+/**  One app's media. */
+export type MediaSession = {
+	/**
+	 *  Which app this is, for the controls: its app id, plus `#2`, `#3` for a second or third
+	 *  session from the same app.
+	 */
+	key: string,
+	/**  The app's name, like "Spotify". */
+	app: string,
+	title: string,
+	artist: string,
+	album: string,
+	/**  The cover art as a data URL, if the app gives one. */
+	artwork: string | null,
+	playing: boolean,
+	/**  Which controls the app allows right now. */
+	can: Abilities,
+	/**  None when the app doesn't say. */
+	shuffle: boolean | null,
+	repeat: Repeat | null,
+	/**  Milliseconds into the track, as of `updated_at`. While playing, the UI moves it on by itself. */
+	positionMs: number,
+	/**  The track's length in milliseconds; 0 when the app doesn't say (a live stream, say). */
+	durationMs: number,
+	/**  When the app last reported its position, in milliseconds since 1970 (like `Date.now()`). */
+	updatedAt: number | null,
+};
 
 /**  Sent to the UI whenever anything in the mixer changes, here or elsewhere in Windows. */
 export type MixerChanged = MixerState;
@@ -133,6 +239,8 @@ export type MixerChanged = MixerState;
 export type MixerState = {
 	/**  None when there's no output device. */
 	master: Level | null,
+	/**  The output device's name, like "Headphones (Realtek(R) Audio)". */
+	device: string | null,
 	apps: AppAudio[],
 };
 
@@ -145,7 +253,17 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth";
+
+/**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
+export type NowPlayingChanged = NowPlayingState;
+
+/**  Everything the panel shows. */
+export type NowPlayingState = {
+	sessions: MediaSession[],
+	/**  The session Windows considers current (the one its own media card shows): what the tiles show. */
+	current: string | null,
+};
 
 export type OutputDevice = {
 	/**  Windows' id for the device. Stays the same across restarts. */
@@ -156,10 +274,20 @@ export type OutputDevice = {
 };
 
 /**  Sent to the UI each time the panel opens. */
-export type PanelShown = null;
+export type PanelShown = {
+	/**
+	 *  For a transparent look, how bright the screen behind it is (0 black to 100 white), so the
+	 *  glass can be more solid over dark things.
+	 */
+	backdrop: number | null,
+	/**  Opened from the screen's edge: the UI closes it when the mouse leaves. */
+	hover: boolean,
+};
 
 export type Point = {
 	cpu: number,
+	/**  Memory in use, percent. */
+	memory: number,
 	/**  Bytes a second. */
 	download: number,
 	upload: number,
@@ -180,14 +308,23 @@ export type QuickTogglesState = {
 	desktopIcons: boolean,
 };
 
+/**  A reading the system monitor graphs. */
+export type Reading = "cpu" | "memory" | "download" | "upload";
+
+export type Repeat = "off" | "track" | "list";
+
 export type Settings = {
 	enabledModules: ModuleId[],
 	look: Look,
-	/**  Liquid: no panel background, so the cards float over the desktop. */
+	/**  Liquid and Dot: no panel background, so the cards float over the desktop. */
 	transparent: boolean,
 	/**  Liquid: cards in one even hue, instead of lighter at the top left fading darker. */
 	singleHue: boolean,
 	preset: Preset,
+	/**  Dot: the accent colour. */
+	accent: Accent,
+	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
+	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
 	/**  Global shortcut that opens or closes the panel, like "Ctrl+Alt+T". */
@@ -196,7 +333,26 @@ export type Settings = {
 	checkUpdates: boolean,
 	/**  Whether first-run setup (pick a look, then modules) is done. */
 	onboarded: boolean,
+	/**  The home board's tiles. None until it's first changed: the UI shows its default board. */
+	board: BoardTile[] | null,
+	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
+	autoArrange: boolean,
+	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
+	monitorReadings: [Reading, Reading],
+	/**  Resting the mouse on the middle of the screen's right edge opens the panel. */
+	edgeOpen: boolean,
+	/**  With `edge_open`, a small pill on the edge shows where. */
+	edgeHandle: boolean,
 };
+
+/**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
+export type SettingsPage = 
+/**  Privacy › Location: where Wi-Fi names are allowed. */
+"location" | 
+/**  The Wi-Fi network list, for networks that need more than a password. */
+"wifi" | 
+/**  Bluetooth & devices, to pair a new device. */
+"bluetooth";
 
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */
@@ -209,6 +365,8 @@ export type ShortcutStatus = {
 export type SystemSample = {
 	/**  Percent of all cores together. None for the first second after opening. */
 	cpu: number | null,
+	/**  The processor's current clock speed in MHz, as Task Manager's "Speed". */
+	cpuMhz: number | null,
 	/**  MiB. */
 	memoryUsed: number,
 	memoryTotal: number,
@@ -234,6 +392,33 @@ export type Target = "master" |
 
 /**  Sent to the UI when a newer version is found. The payload is its version, like "0.2.0". */
 export type UpdateAvailable = string;
+
+/**  Sent when the panel opens and after each change. */
+export type WifiChanged = WifiState;
+
+export type WifiNetwork = {
+	/**  Empty when Windows hides names. */
+	ssid: string,
+	/**  Signal, 0 to 4 bars. */
+	bars: number,
+	/**  Needs a password (or more) to join. */
+	secure: boolean,
+	/**  Joined before: Windows has it saved, so no password is needed. */
+	saved: boolean,
+	/**  "2.4 GHz", "5 GHz" or "6 GHz". */
+	band: string | null,
+};
+
+export type WifiState = {
+	/**  The radio; None when this PC has no Wi-Fi. */
+	on: boolean | null,
+	/**  Windows hides network names: location is off for desktop apps. */
+	namesHidden: boolean,
+	/**  The network in use, if any. */
+	connected: WifiNetwork | null,
+	/**  Networks in range, strongest first (without the connected one). */
+	networks: WifiNetwork[],
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

@@ -28,6 +28,8 @@ const MIB: u64 = 1024 * 1024;
 pub struct SystemSample {
     /// Percent of all cores together. None for the first second after opening.
     pub cpu: Option<u8>,
+    /// The processor's current clock speed in MHz, as Task Manager's "Speed".
+    pub cpu_mhz: Option<u32>,
     /// MiB.
     pub memory_used: u32,
     pub memory_total: u32,
@@ -55,6 +57,8 @@ pub struct Battery {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, specta::Type)]
 pub struct Point {
     pub cpu: u8,
+    /// Memory in use, percent.
+    pub memory: u8,
     /// Bytes a second.
     pub download: u32,
     pub upload: u32,
@@ -167,7 +171,7 @@ mod tests {
     fn history_keeps_the_last_60() {
         let mut history = VecDeque::new();
         for cpu in 0..=70 {
-            push_history(&mut history, Point { cpu, download: 0, upload: 0 });
+            push_history(&mut history, Point { cpu, memory: 0, download: 0, upload: 0 });
         }
         assert_eq!(history.len(), 60);
         assert_eq!(history.front().unwrap().cpu, 11);

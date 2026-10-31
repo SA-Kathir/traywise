@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { commands, events, type Target } from "../../bindings";
+import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
+import type { TileProps } from "..";
 
 // Segoe Fluent Icons glyphs.
 const SPEAKER = String.fromCodePoint(0xe767);
@@ -13,30 +15,86 @@ const APP = String.fromCodePoint(0xecaa);
 /** At most one volume change per frame (~60 a second) while a slider is dragged. */
 const SEND_EVERY_MS = 16;
 
-const CHEVRON = String.fromCodePoint(0xe76c);
-
 const useMixer = () => useLive(commands.mixerState, events.mixerChanged);
 
-/** Home row: the master volume, and a way into the per-app volumes. */
-export function Summary({ open }: { open: () => void }) {
+/** "Headphones (Realtek(R) Audio)" -> "Headphones": the part in brackets is the sound card. */
+const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
+
+/** Home tile, as in the design: the master volume as a number and a bar (1×1: the whole tile
+ *  fills to it), the output device's name from 4×1 up, and at 4×2 the apps playing beside it. */
+export function Tiles({ size, open }: TileProps) {
   const state = useMixer();
   if (!state) return null;
-  const playing = state.apps.filter((a) => !a.systemSounds).length;
-  return (
-    <section className="wide">
-      {state.master ? (
-        <Row name="Volume" glyph={DEVICE} volume={state.master.volume} muted={state.master.muted} target="master" />
-      ) : (
-        <p className="hint">No output device.</p>
-      )}
-      <button className="link-row" onClick={open}>
-        <span className="grow">App volumes</span>
-        <span className="hint">{playing === 0 ? "None playing" : `${playing} playing`}</span>
-        <span className="icon" aria-hidden>
-          {CHEVRON}
+  const master = state.master;
+  if (!master)
+    return <Tile size={size} icon={MUTED} label="Volume" detail="No device" onOpen={open} />;
+  const level = master.muted ? 0 : master.volume;
+  const mute = () => commands.mixerSetMute("master", !master.muted);
+  if (size === "1x1")
+    return (
+      <button
+        className="tile vol size-1x1"
+        style={{ "--level": `${level}%` } as CSSProperties}
+        title={master.muted ? "Volume: muted (click to unmute)" : `Volume: ${master.volume} (click to mute)`}
+        onClick={mute}
+      >
+        <Num text={String(level)} />
+        <span className="vol-icon" aria-hidden>
+          {master.muted ? MUTED : SPEAKER}
         </span>
       </button>
-    </section>
+    );
+  const device = state.device && shortName(state.device);
+  const big = size === "2x2" || size === "4x2";
+  const head = (
+    <>
+      <button className="tile-title" title="Details" onClick={open}>
+        <span className="tile-label">Volume</span>
+        {size === "4x1" && device && <span className="tile-detail">{device}</span>}
+      </button>
+      {!big && <Num text={String(level)} />}
+    </>
+  );
+  const main = (
+    <div className="vol-main">
+      <div className="vol-head">{head}</div>
+      {big && (
+        <>
+          <span className="vol-big">
+            <Num text={String(level)} />
+          </span>
+          {device && <span className="tile-detail">{device}</span>}
+        </>
+      )}
+      <div className="vol-bar">
+        <VolumeSlider name="Master" value={level} onChange={(v) => commands.mixerSetVolume("master", v)} bare />
+        <button className="vol-icon" aria-label={master.muted ? "Unmute" : "Mute"} title={master.muted ? "Unmute" : "Mute"} onClick={mute}>
+          {master.muted ? MUTED : SPEAKER}
+        </button>
+      </div>
+    </div>
+  );
+  if (size !== "4x2") return <div className={`tile vol size-${size}`}>{main}</div>;
+  // Apps first, Windows' own sounds last; three fit.
+  const apps = state.apps.filter((a) => !a.systemSounds).slice(0, 3);
+  return (
+    <div className="tile vol size-4x2">
+      {main}
+      <div className="vol-apps">
+        {apps.length === 0 && <p className="hint">No apps playing.</p>}
+        {apps.map((app) => (
+          <div key={app.pid} className="vol-app">
+            <div className="vol-head">
+              <span className="tile-detail" title={app.name}>
+                {app.name}
+              </span>
+              <Num text={String(app.muted ? 0 : app.volume)} />
+            </div>
+            <VolumeSlider name={app.name} value={app.volume} onChange={(v) => commands.mixerSetVolume({ app: app.pid }, v)} bare />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -100,7 +158,8 @@ function Row({ name, icon, glyph, volume, muted, target }: RowProps) {
   );
 }
 
-function VolumeSlider({ name, value, onChange }: { name: string; value: number; onChange: (v: number) => void }) {
+/** `bare`: the slider alone, without its number. */
+function VolumeSlider({ name, value, onChange, bare }: { name: string; value: number; onChange: (v: number) => void; bare?: boolean }) {
   // While dragging, show the thumb where the pointer is, not the slightly older value Windows echoes back.
   const [dragged, setDragged] = useState<number | null>(null);
   const dragging = useRef(false);
@@ -149,7 +208,7 @@ function VolumeSlider({ name, value, onChange }: { name: string; value: number; 
           send(v);
         }}
       />
-      <span className="mixer-value">{shown}</span>
+      {!bare && <span className="mixer-value">{shown}</span>}
     </>
   );
 }

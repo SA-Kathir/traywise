@@ -3,11 +3,12 @@ import type { ModuleUi } from "..";
 
 const keepAwake: ModuleUi = {
   name: "Keep awake",
-  icon: String.fromCodePoint(0xe706), // Segoe Fluent "Brightness" (a sun)
+  icon: String.fromCodePoint(0xec32), // Segoe Fluent "Cafe" (a cup)
   category: "system",
-  description: "Stops your PC sleeping, for a while or until you say.",
-  idle: "Listens for power changes",
-  Summary: lazy(() => import("./Panel").then((m) => ({ default: m.Summary }))),
+  description: "Stop the PC sleeping",
+  idle: "waits for power",
+  tiles: { "keep-awake": { name: "Keep awake", sizes: ["1x1", "2x1", "2x2"] } },
+  Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
 };
 

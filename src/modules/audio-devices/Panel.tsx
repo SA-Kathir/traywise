@@ -1,6 +1,9 @@
 import { commands, events, type AudioDevicesState } from "../../bindings";
-import { Tile } from "../../shell/Tile";
+import { Tile, TileCard } from "../../shell/Tile";
+import { Row, ShortcutPicker } from "../../shell/Settings";
+import { useSettings } from "../../shell/SettingsContext";
 import { useLive } from "../../shell/useLive";
+import type { TileProps } from "..";
 
 // Segoe Fluent Icons glyphs.
 const MIC = String.fromCodePoint(0xe720);
@@ -16,21 +19,15 @@ const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
 /** A guess from the name: Windows doesn't say whether an output is headphones. */
 const outputIcon = (name: string) => (/headphone|headset|earbud/i.test(name) ? HEADPHONES : SPEAKERS);
 
-/** Home tiles: the output device (opens the list) and mute-all for microphones. */
-export function Summary({ open }: { open: () => void }) {
+/** Home tiles: the output device (opens the list; at 2×2, the list itself) and mute-all for microphones. */
+export function Tiles({ kind, size, open }: TileProps) {
   const state = useAudioDevices();
   if (!state) return null;
-  const output = state.outputs.find((d) => d.isDefault);
-  const muted = state.micsMuted;
-  return (
-    <>
+  if (kind === "mics") {
+    const muted = state.micsMuted;
+    return (
       <Tile
-        icon={output ? outputIcon(output.name) : SPEAKERS}
-        label="Output"
-        detail={output ? shortName(output.name) : "No device"}
-        onOpen={open}
-      />
-      <Tile
+        size={size}
         icon={muted ? MIC_OFF : MIC}
         label="Microphones"
         detail={muted === null ? "None" : muted ? "All muted" : "On"}
@@ -38,7 +35,23 @@ export function Summary({ open }: { open: () => void }) {
         onToggle={muted === null ? undefined : () => commands.audioDevicesMuteMics(!muted)}
         onOpen={open}
       />
-    </>
+    );
+  }
+  const output = state.outputs.find((d) => d.isDefault);
+  if (size === "2x2")
+    return (
+      <TileCard size={size} label="Output" onOpen={open}>
+        <Outputs state={state} />
+      </TileCard>
+    );
+  return (
+    <Tile
+      size={size}
+      icon={output ? outputIcon(output.name) : SPEAKERS}
+      label="Output"
+      detail={output ? shortName(output.name) : "No device"}
+      onOpen={open}
+    />
   );
 }
 
@@ -79,6 +92,16 @@ function Outputs({ state }: { state: AudioDevicesState }) {
   );
 }
 
+/** The keys that mute or unmute every microphone, anywhere in Windows. */
+function MicShortcut() {
+  const { settings, save } = useSettings();
+  return (
+    <Row label="Shortcut" desc="Mutes every mic">
+      <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
+    </Row>
+  );
+}
+
 function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) {
   if (micsMuted === null) return <p className="hint">No microphone.</p>;
   return (
@@ -92,14 +115,12 @@ function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) 
           {micsMuted ? "Unmute all" : "Mute all"}
         </button>
       </div>
-      {shortcut &&
-        (shortcut.error ? (
-          <p className="error" title={shortcut.error}>
-            {shortcut.keys} is already used by another app. Pick other keys in Settings › Shortcuts.
-          </p>
-        ) : (
-          <p className="hint">Shortcut: {shortcut.keys}</p>
-        ))}
+      <MicShortcut />
+      {shortcut?.error && (
+        <p className="error" title={shortcut.error}>
+          {shortcut.keys} is already used by another app: pick other keys.
+        </p>
+      )}
     </>
   );
 }

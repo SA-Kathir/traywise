@@ -1,6 +1,6 @@
 [package]
 name = "traywise"
-version = "0.1.0"
+version = "0.2.0"
 description = "Free, open-source Windows tray toolkit"
 license = "GPL-3.0-or-later"
 authors = ["Traywise contributors"]
@@ -28,6 +28,19 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 webview2-com = "0.39.1"
 windows = { version = "0.62", features = [
+    "ApplicationModel",
+    "Devices_Bluetooth",
+    "Devices_Enumeration",
+    "Devices_Radios",
+    "Devices_WiFi",
+    "Networking_Connectivity",
+    "Security_Credentials",
+    "Win32_Media_KernelStreaming",
+    "Foundation",
+    "Foundation_Collections",
+    "Media",
+    "Media_Control",
+    "Storage_Streams",
     "Win32_Devices_FunctionDiscovery",
     "Win32_Graphics_Dwm",
     "Win32_Globalization",
@@ -40,17 +53,20 @@ windows = { version = "0.62", features = [
     "Win32_System_Com_StructuredStorage",
     "Win32_System_Performance",
     "Win32_System_Power",
+    "Win32_System_LibraryLoader",
     "Win32_System_Registry",
     "Win32_System_Shutdown",
     "Win32_System_SystemInformation",
     "Win32_System_SystemServices",
     "Win32_System_Threading",
     "Win32_System_Variant",
+    "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_Shell",
     "Win32_UI_Shell_PropertiesSystem",
     "Win32_UI_WindowsAndMessaging",
 ] }
 windows-core = "0.62"
+windows-collections = "0.3"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 specta-typescript = "0.0.12"
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }

@@ -9,6 +9,10 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass
 - The owner knows TypeScript and React. Rust and the Windows APIs are a black box to them, so explain every change in plain terms: what it does on their PC, not just the code.
 - Keep diffs small and reviewable (Ponytail is enabled for this project). One module or concern per change.
 - Commit as you go, in small atomic commits (one concern each). No `Co-Authored-By` or other AI attribution in commit messages. Never push or create a GitHub repo without asking.
+- **Branches (see CONTRIBUTING.md):**
+  - Never commit to `main`; it holds released versions only, each tagged `vX.Y.Z`.
+  - New work goes on `feature/<name>` or `fix/<name>`, branched from `develop`, and is merged back into `develop` by pull request.
+  - Check `git branch --show-current` before your first commit.
 
 ## Stack
 
@@ -41,12 +45,13 @@ Module rules:
 
 Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a CPU core while hidden, about 140–150 MB of RAM (working set) once hidden for a minute or more. The spike's old "76 MB" was an early reading taken ~30 s after hiding, not the steady state. Keep open time and CPU there; the RAM target is paused for now (WebView2 browser flags cut it to ~125–130 MB, not adopted yet).
 
-- **Two looks, picked at first run and in Settings** (`look-liquid` / `look-windows` on `.panel`, styles in `src/shell/liquid.css`):
+- **Three looks, picked at first run and in Settings** (`look-dot` / `look-liquid` / `look-windows` on `.panel`, styles in `src/shell/liquid.css`, Dot's overrides in `src/shell/dot.css`):
+  - **Dot** (default): built from `docs/design-system.md`'s tokens (`--tw-*`). Monochrome, one accent preset, bundled Doto (OFL) for numbers and the wordmark only, bundled OCR-A (public domain, one weight) for every word, dot-grid or plain background, follows Windows light/dark. Blur only on floating layers (the Add tiles tray).
   - **Liquid:** cards tinted in a colour preset (Ocean, Graphite, Forest, Plum, Ember, Rose; one muted hue each, never bright; the owner rejected the multicolour Dusk preset) with a thin edge of the same hue; the tab bar, icon buttons and titles use the preset too. Two Settings choices the owner hasn't settled yet: **Background** Tinted (a deep shade of the preset) or Transparent (`.clear`: cards float over the desktop; the title row gets its own card), and **Tiles** Shaded (lighter top left, fading darker) or Single hue (`.flat`). No blobs, no white specular highlight, no `backdrop-filter`: the owner found blobs-behind-glass random and "vibe-coded". The look's classes are on `.panel` and on `html` (so the scrollbar's strip matches).
   - **Windows:** flat like Windows 11's flyouts, follows Windows light/dark mode, Windows' default blue. Text and light fills use `rgb(var(--ink) / a)`, so light mode only flips `--ink`.
 - **The panel has a fixed height (640 logical px)**; pages that don't fit scroll. The owner found a window that resized to each page's content jarring.
 - **Native Mica/Acrylic doesn't work** on the owner's PC, even with fixes. Don't go back to it.
-- **Never read the desktop or wallpaper.** The owner rejected this for privacy.
+- **Never read the desktop or wallpaper**, with one exception the owner allowed (2026-10-30): for a transparent look, `backdrop_brightness` in `shell/panel.rs` shrinks the area behind the panel to an 8 × 8 sample as it opens, averages it to one brightness number for the glass's strength, and deletes it. Nothing is stored, sent or used for anything else; keep it that way.
 - **The background doesn't move.** It used to drift for ~10 s after each open (continuous motion costs about 35% of a core), but blurred behind the glass the motion wasn't noticeable, so the owner agreed to drop it. The SVG refraction filter (`url(#liquid-refract)` in `backdrop-filter`) was dropped too: it was barely visible and is the likely cause of stale blue blocks seen in WebView2.
 - **When the panel hides, call `controller.SetIsVisible(false)` on WebView2.** Hiding the window alone keeps WebView2 rendering, which cost about 39% of a core while hidden.
 - **Set WebView2 `MemoryUsageTargetLevel` to Low while hidden and Normal before showing** (through `ICoreWebView2_19`). It trims RAM right after hiding (dips to ~65–75 MB), but most of it comes back within a minute or two.
@@ -56,6 +61,7 @@ Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a C
   - Losing focus hides it.
   - Ignore a tray click within 250 ms of a focus-loss hide; it's the same click.
   - Alt+F4 hides instead of quitting.
+  - Optional (Settings › Opening): resting the mouse on the middle of the right screen edge opens it (`shell/edge.rs`, a 1 px native strip; Windows' hover message, no polling). It opens at the right, centred, without focus, slides in and out (`slide` in `shell/panel.rs`), and closes when the pointer leaves unless clicked into. It's shown with ShowWindow, so hide with ShowWindow too and ask Windows (not Tauri) whether it's open. Never `minimizable(false)`: it gives the panel a title bar.
 - **Position:** bottom-right of the primary monitor's work area with a 12 px margin. Physical pixels; convert when using logical builder APIs. The display is scaled 125%.
 - **Bundle identifier:** letters, numbers, hyphens and dots only. An underscore broke the build.
 - **Measure in release builds** (`pnpm tauri build --no-bundle`). Debug builds give misleading speed and memory numbers. The spike's `scripts/measure-memory.ps1` sums the app plus its WebView2 child processes.
@@ -67,6 +73,7 @@ Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a C
 - Measure: `pnpm tauri build --no-bundle --features autotest`, run `traywise.exe > log.txt` (it opens/closes itself 10 times, printing `panel opened in N ms`), then `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/measure-memory.ps1`. Wait 2+ minutes: RAM dips right after hiding, then settles higher.
 - Bindings: `src/bindings.ts` (tauri-specta) is rewritten whenever a debug build starts (`pnpm tauri dev`), and `cargo test` fails if it's stale. New commands/events go in `bindings()` in `src-tauri/src/lib.rs`.
 - CI: `.github/workflows/ci.yml` (Windows runner) runs `pnpm build`, clippy with `-D warnings`, `cargo test` and the release build.
+- UI logic tests: `pnpm test` (plain scripts Node runs as TypeScript, no test framework).
 - Type-check: `pnpm exec tsc --noEmit`. Rust: `cargo build`, `cargo clippy`, `cargo test` in `src-tauri`.
 - Rust may not be on PATH in a fresh shell: `export PATH="$HOME/.cargo/bin:$PATH"`.
 
