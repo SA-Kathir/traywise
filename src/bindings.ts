@@ -338,6 +338,8 @@ export type PowerState = {
 	battery: Battery | null,
 	/**  Windows' Energy saver (battery saver before Windows 11 24H2). */
 	energySaver: boolean,
+	/**  The battery level it turns on at by itself: 0 never, 100 always. None if unknown. */
+	energySaverAt: number | null,
 };
 
 /**

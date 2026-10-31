@@ -12,14 +12,17 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 use windows::Win32::Foundation::{HANDLE, HLOCAL, LocalFree};
+use windows::Win32::System::Registry::{HKEY_LOCAL_MACHINE, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::System::Power::{
-    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, EFFECTIVE_POWER_MODE, EFFECTIVE_POWER_MODE_V2, GetSystemPowerStatus, HPOWERNOTIFY,
-    PowerGetActiveScheme, PowerRegisterForEffectivePowerModeNotifications, PowerSettingRegisterNotification,
-    PowerSettingUnregisterNotification, PowerUnregisterFromEffectivePowerModeNotifications, SYSTEM_POWER_STATUS,
+    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, EFFECTIVE_POWER_MODE, EFFECTIVE_POWER_MODE_V2, HPOWERNOTIFY,
+    PowerGetActiveScheme, PowerReadDCValueIndex, PowerRegisterForEffectivePowerModeNotifications, PowerSettingRegisterNotification,
+    PowerSettingUnregisterNotification, PowerUnregisterFromEffectivePowerModeNotifications,
 };
-use windows::Win32::System::SystemServices::{GUID_ACDC_POWER_SOURCE, GUID_BATTERY_PERCENTAGE_REMAINING};
+use windows::Win32::System::SystemServices::{
+    GUID_ACDC_POWER_SOURCE, GUID_BATTERY_PERCENTAGE_REMAINING, GUID_ENERGY_SAVER_BATTERY_THRESHOLD, GUID_ENERGY_SAVER_SUBGROUP,
+};
 use windows::Win32::UI::WindowsAndMessaging::DEVICE_NOTIFY_CALLBACK;
-use windows::core::GUID;
+use windows::core::{GUID, w};
 
 use crate::module::{Module, ModuleId};
 use crate::modules::system_monitor::{Battery, battery};
@@ -42,6 +45,8 @@ pub struct PowerState {
     pub battery: Option<Battery>,
     /// Windows' Energy saver (battery saver before Windows 11 24H2).
     pub energy_saver: bool,
+    /// The battery level it turns on at by itself: 0 never, 100 always. None if unknown.
+    pub energy_saver_at: Option<u8>,
 }
 
 /// Sent whenever Windows reports a change while the module is on.
@@ -76,22 +81,52 @@ fn overlay_of(mode: PowerMode) -> GUID {
 }
 
 fn read() -> PowerState {
-    let mut status = SYSTEM_POWER_STATUS::default();
-    let saver = unsafe { GetSystemPowerStatus(&mut status) }.is_ok() && status.SystemStatusFlag == 1;
-    PowerState { mode: mode(), battery: battery(), energy_saver: saver }
+    let plan = active_plan();
+    PowerState {
+        mode: plan.and_then(mode),
+        battery: battery(),
+        energy_saver: energy_saver(),
+        energy_saver_at: plan.and_then(|plan| {
+            let mut percent = 0;
+            let read = unsafe {
+                PowerReadDCValueIndex(None, Some(&plan), Some(&GUID_ENERGY_SAVER_SUBGROUP), Some(&GUID_ENERGY_SAVER_BATTERY_THRESHOLD), &mut percent)
+            };
+            (read == 0).then_some(percent.min(100) as u8)
+        }),
+    }
 }
 
-fn mode() -> Option<PowerMode> {
+fn active_plan() -> Option<GUID> {
+    let mut plan: *mut GUID = ptr::null_mut();
+    unsafe { PowerGetActiveScheme(None, &mut plan) }.ok().ok()?;
+    let guid = unsafe { *plan };
+    unsafe { LocalFree(Some(HLOCAL(plan.cast()))) };
+    Some(guid)
+}
+
+fn mode(plan: GUID) -> Option<PowerMode> {
     // shortcut: OEM plans based on Balanced count as "no power modes", as Windows' slider hides
     // there too; revisit if someone reports the tile missing on such a plan.
-    let mut plan: *mut GUID = ptr::null_mut();
-    if unsafe { PowerGetActiveScheme(None, &mut plan) }.is_err() {
-        return None;
-    }
-    let balanced = unsafe { *plan } == BALANCED_PLAN;
-    unsafe { LocalFree(Some(HLOCAL(plan.cast()))) };
     let mut overlay = GUID::zeroed();
-    (balanced && unsafe { PowerGetEffectiveOverlayScheme(&mut overlay) } == 0).then(|| mode_of(overlay))
+    (plan == BALANCED_PLAN && unsafe { PowerGetEffectiveOverlayScheme(&mut overlay) } == 0).then(|| mode_of(overlay))
+}
+
+/// Windows 11's Energy saver. Neither GetSystemPowerStatus nor WinRT's EnergySaverStatus sees it
+/// (both stayed "off" with it on, on build 26200); Windows' own state in the registry does: 1 on, 2 off.
+fn energy_saver() -> bool {
+    let (mut value, mut size) = (0u32, 4u32);
+    let status = unsafe {
+        RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            w!(r"SYSTEM\CurrentControlSet\Control\Power"),
+            w!("EnergySaverState"),
+            RRF_RT_REG_DWORD,
+            None,
+            Some(&mut value as *mut u32 as *mut _),
+            Some(&mut size),
+        )
+    };
+    status.is_ok() && value == 1
 }
 
 fn publish(app: &AppHandle) {

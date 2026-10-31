@@ -92,7 +92,9 @@ export default function Panel() {
         </>
       )}
       <div className="row">
-        <span className="grow">Energy saver: {state.energySaver ? "on" : "off"}</span>
+        <span className="grow">
+          Energy saver: {state.energySaver ? "On" : state.energySaverAt && state.energySaverAt < 100 ? `Off · turns on at ${state.energySaverAt}%` : "Off"}
+        </span>
         <button onClick={() => commands.openSettings("energySaver")}>Open in Settings</button>
       </div>
       <p className="hint">Windows doesn't let apps switch Energy saver, so it's changed in Settings.</p>
