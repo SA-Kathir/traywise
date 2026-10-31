@@ -663,6 +663,14 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
+/* Displays' Project choices: two by two, icon beside the name. */
+.segmented.project-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.segmented.project-grid .icon {
+  margin-right: 6px;
+}
 
 .swatch {
   width: 16px;

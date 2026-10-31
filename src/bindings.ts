@@ -48,6 +48,11 @@ export const commands = {
 	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
 	powerState: () => __TAURI_INVOKE<PowerState>("power_state"),
 	powerSetMode: (mode: PowerMode) => typedError<null, string>(__TAURI_INVOKE("power_set_mode", { mode })),
+	/**  The screens as last read. Empty while the module is off. */
+	displaysState: () => __TAURI_INVOKE<DisplaysState>("displays_state"),
+	/**  Percent. Sent as the slider moves; the worker keeps up by skipping to the latest value. */
+	displaysSetBrightness: (id: string, percent: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_brightness", { id, percent })),
+	displaysSetProject: (project: Project) => typedError<null, string>(__TAURI_INVOKE("displays_set_project", { project })),
 	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
 	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
@@ -79,6 +84,7 @@ export const commands = {
 export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
 	bluetoothChanged: makeEvent<BluetoothChanged>("bluetooth-changed"),
+	displaysChanged: makeEvent<DisplaysChanged>("displays-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
@@ -164,6 +170,29 @@ export type BoardTile = {
 	h: number,
 	x: number,
 	y: number,
+};
+
+export type Display = {
+	/**  Stable while the screen stays connected. */
+	id: string,
+	name: string,
+	/**  The laptop's own screen. */
+	internal: boolean,
+	/**  Percent. None when it can't be changed from here (a monitor without DDC/CI, or with it off). */
+	brightness: number | null,
+};
+
+/**  Sent when the panel opens (once the screens have been read) and after the Project choice changes. */
+export type DisplaysChanged = DisplaysState;
+
+export type DisplaysState = {
+	/**
+	 *  The laptop's screen first. Screens that are off (like the laptop's in "Second screen only")
+	 *  aren't listed.
+	 */
+	displays: Display[],
+	/**  None while only one screen is connected: there's nothing to choose. */
+	project: Project | null,
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -256,7 +285,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -316,6 +345,9 @@ export type PowerState = {
  *  (An old file's `motion` field, from when the background moved, is ignored.)
  */
 export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
+
+/**  The four choices of Win+P. */
+export type Project = "pcOnly" | "duplicate" | "extend" | "secondOnly";
 
 /**  Sent after a toggle, and each time the panel opens. */
 export type QuickTogglesChanged = QuickTogglesState;
