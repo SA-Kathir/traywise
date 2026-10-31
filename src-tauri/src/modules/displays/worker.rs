@@ -75,12 +75,14 @@ fn refresh(app: &AppHandle) -> Screens {
     screens
 }
 
-/// The UI's slider already shows a new value, so it's only stored, not sent back.
+/// Stores a new level and tells every tile showing that screen (the slider being dragged shows
+/// its own position meanwhile, so the echo doesn't fight it).
 fn remember(app: &AppHandle, id: &str, percent: u8) {
     let shared = app.state::<Shared>();
     let mut state = shared.state.lock().unwrap();
     if let Some(d) = state.displays.iter_mut().find(|d| d.id == id) {
         d.brightness = Some(percent);
+        let _ = DisplaysChanged(state.clone()).emit(app);
     }
 }
 
