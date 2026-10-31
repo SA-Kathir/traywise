@@ -20,7 +20,9 @@ use windows::Win32::Devices::Display::{
 };
 use windows::Win32::Foundation::{HANDLE, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR, MONITORINFO, MONITORINFOEXW};
-use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance};
+use windows::Win32::System::Com::{
+    CLSCTX_INPROC_SERVER, CoCreateInstance, CoSetProxyBlanket, EOAC_NONE, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE,
+};
 use windows::Win32::System::Variant::VARIANT;
 use windows::Win32::System::Wmi::{
     IWbemClassObject, IWbemLocator, IWbemServices, WBEM_FLAG_FORWARD_ONLY, WBEM_FLAG_RETURN_IMMEDIATELY,
@@ -128,10 +130,11 @@ impl Screens {
                         to_percent(value, max)
                     })
                 };
-                let name = match (t.name.is_empty(), t.internal) {
-                    (false, _) => t.name,
-                    (true, true) => "Built-in display".into(),
-                    (true, false) => format!("Display {}", displays.len() + 1),
+                // The built-in screen's own name is a model code, like "B160UAN07.K".
+                let name = match (t.internal, t.name.is_empty()) {
+                    (true, _) => "Built-in display".into(),
+                    (false, false) => t.name,
+                    (false, true) => format!("Display {}", displays.len() + 1),
                 };
                 displays.push(Display { id: t.id, name, internal: t.internal, brightness });
             }
@@ -220,7 +223,7 @@ fn active_targets() -> Vec<Target> {
             Target {
                 id: format!("{:x}-{:x}-{}", p.targetInfo.adapterId.HighPart, p.targetInfo.adapterId.LowPart, p.targetInfo.id),
                 source: text(&source.viewGdiDeviceName),
-                name: text(&target.monitorFriendlyDeviceName),
+                name: text(&target.monitorFriendlyDeviceName).trim().to_string(),
                 internal: [
                     DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL,
                     DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED,
@@ -319,6 +322,11 @@ impl Wmi {
         let locator: IWbemLocator = unsafe { CoCreateInstance(&WbemLocator, None, CLSCTX_INPROC_SERVER)? };
         let empty = BSTR::new();
         let services = unsafe { locator.ConnectServer(&BSTR::from(r"ROOT\WMI"), &empty, &empty, &empty, 0, &empty, None)? };
+        // Without impersonation (an app's default is only "identify") WMI refuses with access denied.
+        // 10 and 0: RPC_C_AUTHN_WINNT and RPC_C_AUTHZ_NONE.
+        unsafe {
+            CoSetProxyBlanket(&services, 10, 0, PCWSTR::null(), RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, None, EOAC_NONE)?;
+        }
         let methods = first(&services, "SELECT __PATH FROM WmiMonitorBrightnessMethods WHERE Active=TRUE")?;
         let path = BSTR::try_from(&get(&methods, w!("__PATH"))?)?;
         let mut class = None;
@@ -365,4 +373,23 @@ fn get(object: &IWbemClassObject, name: PCWSTR) -> Result<VARIANT> {
 /// No laptop screen in WMI: a desktop, or a screen whose brightness Windows can't set.
 fn missing() -> windows::core::Error {
     windows::core::Error::from_hresult(windows::Win32::Foundation::E_NOTIMPL)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Reads (and sets back) this PC's screens: `cargo test displays_live -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn displays_live() {
+        with_com("displays test", || {
+            let (screens, state) = Screens::read();
+            println!("{state:#?}");
+            if let Some(d) = state.displays.iter().find(|d| d.brightness.is_some()) {
+                screens.set(&d.id, d.brightness.unwrap()); // the same value: nothing visibly changes
+            }
+            Ok(())
+        });
+    }
 }
