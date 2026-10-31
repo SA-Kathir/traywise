@@ -1338,6 +1338,12 @@ button.clock-main:hover {
   flex: 1;
   min-width: 0;
 }
+.clock.analogue.size-4x2 .clock-here {
+  justify-content: center;
+}
+.clock.size-2x2 .clock-time.stacked .num {
+  font-size: 44px;
+}
 .clock.analogue.size-2x2 .clock-here {
   flex-direction: row;
   align-items: flex-start;
@@ -1445,8 +1451,34 @@ button.clock-main:hover {
 .clock-page .clock-here {
   flex: 1;
 }
-.setting select {
+/* The second zone: the current one, which opens a short scrolling list. */
+.zone-current {
+  display: flex;
+  align-items: center;
   width: 100%;
+  text-align: left;
+}
+.zone-current .icon {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 10px;
+}
+.zone-list {
+  max-height: 240px;
+  margin-top: 6px;
+  overflow-y: auto;
+}
+.zone-list button {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 8px;
+}
+.zone-cities {
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 /* Focus 2×2 (it shares Keep awake's layout): the bell before its status line. */

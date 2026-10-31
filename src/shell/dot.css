@@ -1024,6 +1024,16 @@
 .look-dot .clock.size-4x2 .clock-here .num {
   font-size: 40px;
 }
+.look-dot .clock.size-2x2 .clock-time.stacked .num {
+  font-size: 48px;
+}
+.look-dot .clock.analogue.size-4x2 .clock-here .num {
+  font-size: 36px;
+}
+/* 4×2 on its own: the time has the tile to itself (beside the face, if analogue). */
+.look-dot .clock.digital.size-4x2:not(.zoned) .clock-here .num {
+  font-size: 64px;
+}
 /* 4×1 shares its row with the zone's box: a little smaller, so "11:17 PM" leaves the city room. */
 .look-dot .clock.size-4x1 .clock-here .num {
   font-size: 28px;

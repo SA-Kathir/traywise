@@ -1,4 +1,5 @@
 // Run with `pnpm test`. Fixed zones and dates, so it passes whatever zone this PC is in.
+import { ZONES, place } from "./zones.ts";
 import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time.ts";
 
 function check(name: string, got: unknown, expected: unknown) {
@@ -32,5 +33,10 @@ check("label same", differenceLabel(0), "Same time");
 
 check("city", city("America/Argentina/Buenos_Aires"), "Buenos Aires");
 check("city plain", city("UTC"), "UTC");
+
+for (const [zone] of ZONES) new Intl.DateTimeFormat("en", { timeZone: zone }); // throws if unknown
+check("zones unique", new Set(ZONES.map(([z]) => z)).size, ZONES.length);
+check("place", place("Asia/Kolkata"), "Delhi");
+check("place, unlisted", place("America/Argentina/Cordoba"), "Cordoba");
 
 console.log("clock: all checks passed");

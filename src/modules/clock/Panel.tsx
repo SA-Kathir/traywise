@@ -5,11 +5,14 @@ import { Num } from "../../shell/Tile";
 import { useSettings } from "../../shell/SettingsContext";
 import type { TileProps } from "..";
 import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time";
+import { ZONES, place } from "./zones";
 
 // Segoe Fluent Icons glyphs.
 const GLOBE = String.fromCodePoint(0xe774);
 const MOON = String.fromCodePoint(0xe708);
 const SUN = String.fromCodePoint(0xe706);
+const CHEVRON_DOWN = String.fromCodePoint(0xe70d);
+const CHEVRON_UP = String.fromCodePoint(0xe70e);
 
 /** The current time, redrawn as each minute starts, and only while the panel is open: hidden, the
  *  page is too (WebView2 is made invisible), so the timer stops and it catches up when shown. */
@@ -109,7 +112,7 @@ function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }
     return (
       <span className="clock-well">
         {globe}
-        <span className="clock-over clock-city">{city(zone)}</span>
+        <span className="clock-over clock-city">{place(zone)}</span>
         {shift !== 0 && <span className="clock-shift">{shift > 0 ? "+1" : "−1"}</span>}
         <Time date={date} zone={zone} />
       </span>
@@ -118,7 +121,7 @@ function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }
     <span className="clock-well full">
       <span className="clock-well-head">
         {globe}
-        <span className="clock-over clock-city">{city(zone)}</span>
+        <span className="clock-over clock-city">{place(zone)}</span>
         <span className="clock-glyph" aria-label={isNight(date, zone) ? "Night" : "Day"}>
           {isNight(date, zone) ? MOON : SUN}
         </span>
@@ -139,18 +142,19 @@ function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }
 export function Tiles({ size, open }: TileProps) {
   const now = useMinute();
   const { clockZone, clockStyle } = useSettings().settings;
-  const zone = clockZone && size !== "1x1" && size !== "2x1" ? <Zone date={now} zone={clockZone} full={size === "4x2"} /> : null;
+  const zoned = !!clockZone && size !== "1x1" && size !== "2x1";
   return (
-    <div className={`tile clock size-${size} ${clockStyle}`}>
+    <div className={`tile clock size-${size} ${clockStyle}${zoned ? " zoned" : ""}`}>
       <button className="clock-main" title="Clock" onClick={open}>
-        {clockStyle === "analogue" ? analogue(now, size) : digital(now, size)}
-        {zone}
+        {clockStyle === "analogue" ? analogue(now, size, zoned) : digital(now, size, zoned)}
+        {zoned && <Zone date={now} zone={clockZone} full={size === "4x2"} />}
       </button>
     </div>
   );
 }
 
-function digital(now: Date, size: TileProps["size"]) {
+/** `zoned`: the second zone's box shares the tile, so this PC's time takes less room. */
+function digital(now: Date, size: TileProps["size"], zoned: boolean) {
   if (size === "1x1")
     return (
       <span className="clock-here">
@@ -158,17 +162,18 @@ function digital(now: Date, size: TileProps["size"]) {
         <span className="clock-over">{day(now, "short")}</span>
       </span>
     );
+  // 2×2 on its own: the hours over the minutes, large.
   if (size === "2x2")
     return (
       <span className="clock-here">
         <span className="clock-over">{day(now, "medium")}</span>
-        <Time date={now} />
+        <Time date={now} stacked={!zoned} />
       </span>
     );
   if (size === "4x2")
     return (
       <span className="clock-here">
-        <span className="clock-over">Here · {day(now, "medium")}</span>
+        <span className="clock-over">{zoned ? `Here · ${day(now, "medium")}` : day(now, "long")}</span>
         <Time date={now} />
         <span className="clock-over dim">{city(Intl.DateTimeFormat().resolvedOptions().timeZone)}</span>
       </span>
@@ -181,8 +186,19 @@ function digital(now: Date, size: TileProps["size"]) {
   );
 }
 
-function analogue(now: Date, size: TileProps["size"]) {
-  if (size === "1x1" || size === "4x2") return <Face date={now} />;
+function analogue(now: Date, size: TileProps["size"], zoned: boolean) {
+  if (size === "1x1" || (size === "4x2" && zoned)) return <Face date={now} />;
+  // 4×2 on its own: the face with the time and date beside it, as on the page.
+  if (size === "4x2")
+    return (
+      <>
+        <Face date={now} />
+        <span className="clock-here">
+          <Time date={now} />
+          <span className="clock-over">{day(now, "long")}</span>
+        </span>
+      </>
+    );
   if (size === "2x2")
     return (
       <span className="clock-here">
@@ -190,13 +206,13 @@ function analogue(now: Date, size: TileProps["size"]) {
         <Face date={now} />
       </span>
     );
-  // 4×1 shares its row with the zone's box: the face tells the time, so just the day beside it.
+  // 4×1 with the zone's box: the face tells the time, so just the day beside it.
   return (
     <>
       <Face date={now} />
       <span className="clock-here">
-        {size === "2x1" && <Time date={now} />}
-        <span className="clock-over">{day(now, "short")}</span>
+        {!zoned && <Time date={now} />}
+        <span className="clock-over">{day(now, size === "4x1" && !zoned ? "medium" : "short")}</span>
       </span>
     </>
   );
@@ -206,12 +222,6 @@ const STYLES: { style: ClockStyle; label: string }[] = [
   { style: "digital", label: "Digital" },
   { style: "analogue", label: "Analogue" },
 ];
-
-/** Every time zone the browser knows, by place name. (Not in TypeScript's ES2020 types.) */
-const ZONES = (Intl as unknown as { supportedValuesOf(key: string): string[] })
-  .supportedValuesOf("timeZone")
-  .filter((zone) => zone.includes("/"))
-  .sort((a, b) => city(a).localeCompare(city(b)));
 
 export default function Panel() {
   const now = useMinute();
@@ -243,18 +253,44 @@ export default function Panel() {
       </Row>
       <Row
         label="Second time zone"
-        desc={zone ? `${city(zone)}: ${differenceLabel(difference(now, zone))}. On the 4×1, 2×2 and 4×2 tiles.` : "On the 4×1, 2×2 and 4×2 tiles."}
+        desc={zone ? `${place(zone)}: ${differenceLabel(difference(now, zone))}. On the 4×1, 2×2 and 4×2 tiles.` : "Shown on the 4×1, 2×2 and 4×2 tiles."}
         stacked
       >
-        <select aria-label="Second time zone" value={zone ?? ""} onChange={(e) => save({ ...settings, clockZone: e.target.value || null })}>
-          <option value="">None</option>
-          {ZONES.map((z) => (
-            <option key={z} value={z}>
-              {city(z)} ({z.slice(0, z.indexOf("/")).replace(/_/g, " ")})
-            </option>
-          ))}
-        </select>
+        <ZonePicker zone={zone} onPick={(clockZone) => save({ ...settings, clockZone })} />
       </Row>
     </>
+  );
+}
+
+/** The second zone: a button showing the one picked, which opens a short list of places. */
+function ZonePicker({ zone, onPick }: { zone: string | null; onPick: (zone: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const known = ZONES.find(([z]) => z === zone);
+  const pick = (z: string | null) => {
+    onPick(z);
+    setOpen(false);
+  };
+  return (
+    <div className="zone-picker">
+      <button className="zone-current" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="grow">{zone ? (known ? `${known[1]} · ${place(zone)}` : place(zone)) : "None"}</span>
+        <span className="icon" aria-hidden>
+          {open ? CHEVRON_UP : CHEVRON_DOWN}
+        </span>
+      </button>
+      {open && (
+        <div className="segmented vertical zone-list" role="listbox" aria-label="Second time zone">
+          <button role="option" aria-selected={!zone} className={!zone ? "on" : ""} onClick={() => pick(null)}>
+            None
+          </button>
+          {ZONES.map(([z, country, cities]) => (
+            <button key={z} role="option" aria-selected={zone === z} className={zone === z ? "on" : ""} onClick={() => pick(z)}>
+              <span className="grow">{country}</span>
+              <span className="zone-cities">{cities}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
