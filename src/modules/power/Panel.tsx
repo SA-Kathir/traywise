@@ -136,7 +136,7 @@ export default function Panel() {
       <div className="row">
         <span className="grow">
           Energy saver
-          <span className="tile-detail block">{state.energySaver ? "On" : at && at < 100 ? `Off · on at ${at}%` : "Off"}</span>
+          <span className="tile-detail block">{state.energySaver ? "On" : at === 100 ? "Off · on with battery" : at ? `Off · on at ${at}%` : "Off"}</span>
         </span>
         <button onClick={() => commands.openSettings("energySaver")}>Settings</button>
       </div>

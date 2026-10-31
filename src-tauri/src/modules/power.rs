@@ -82,18 +82,22 @@ fn overlay_of(mode: PowerMode) -> GUID {
 
 fn read() -> PowerState {
     let plan = active_plan();
-    PowerState {
-        mode: plan.and_then(mode),
-        battery: battery(),
-        energy_saver: energy_saver(),
-        energy_saver_at: plan.and_then(|plan| {
-            let mut percent = 0;
-            let read = unsafe {
-                PowerReadDCValueIndex(None, Some(&plan), Some(&GUID_ENERGY_SAVER_SUBGROUP), Some(&GUID_ENERGY_SAVER_BATTERY_THRESHOLD), &mut percent)
-            };
-            (read == 0).then_some(percent.min(100) as u8)
-        }),
-    }
+    let battery = battery();
+    let at = plan.and_then(|plan| {
+        let mut percent = 0;
+        let read = unsafe {
+            PowerReadDCValueIndex(None, Some(&plan), Some(&GUID_ENERGY_SAVER_SUBGROUP), Some(&GUID_ENERGY_SAVER_BATTERY_THRESHOLD), &mut percent)
+        };
+        (read == 0).then_some(percent.min(100) as u8)
+    });
+    PowerState { mode: plan.and_then(mode), energy_saver: saver_on(switched_on(), battery.as_ref(), at), battery, energy_saver_at: at }
+}
+
+/// Whether Energy saver is on: switched on by hand, or on battery at or below the level it turns
+/// on at (0 never; 100 is Settings' "Always use energy saver" on battery, which doesn't touch the
+/// switch). `charging` is Windows' "on mains", so a full battery that's plugged in counts too.
+fn saver_on(switched_on: bool, battery: Option<&Battery>, at: Option<u8>) -> bool {
+    switched_on || matches!((battery, at), (Some(b), Some(at)) if at > 0 && !b.charging && b.percent <= at)
 }
 
 fn active_plan() -> Option<GUID> {
@@ -111,9 +115,10 @@ fn mode(plan: GUID) -> Option<PowerMode> {
     (plan == BALANCED_PLAN && unsafe { PowerGetEffectiveOverlayScheme(&mut overlay) } == 0).then(|| mode_of(overlay))
 }
 
-/// Windows 11's Energy saver. Neither GetSystemPowerStatus nor WinRT's EnergySaverStatus sees it
-/// (both stayed "off" with it on, on build 26200); Windows' own state in the registry does: 1 on, 2 off.
-fn energy_saver() -> bool {
+/// Energy saver's switch in Settings. Neither GetSystemPowerStatus nor WinRT's EnergySaverStatus
+/// sees it (both stayed "off" with it on, on build 26200); Windows' own state in the registry
+/// does: 1 on, 2 off.
+fn switched_on() -> bool {
     let (mut value, mut size) = (0u32, 4u32);
     let status = unsafe {
         RegGetValueW(
@@ -184,7 +189,7 @@ impl Events {
             mode: ptr::null_mut(),
         };
         let recipient = HANDLE(&mut *events.params as *mut DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS as *mut c_void);
-        for setting in [GUID_ACDC_POWER_SOURCE, GUID_BATTERY_PERCENTAGE_REMAINING] {
+        for setting in [GUID_ACDC_POWER_SOURCE, GUID_BATTERY_PERCENTAGE_REMAINING, GUID_ENERGY_SAVER_BATTERY_THRESHOLD] {
             let mut handle = ptr::null_mut();
             match unsafe { PowerSettingRegisterNotification(&setting, DEVICE_NOTIFY_CALLBACK, recipient, &mut handle) }.ok() {
                 Ok(()) => events.settings.push(HPOWERNOTIFY(handle as isize)),
@@ -242,6 +247,19 @@ pub fn power_set_mode(app: AppHandle, mode: PowerMode) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn energy_saver() {
+        let on_battery = |percent| Some(Battery { percent, charging: false, seconds_left: None });
+        let plugged_in = Some(Battery { percent: 10, charging: true, seconds_left: None });
+        assert!(saver_on(true, None, None), "switched on by hand");
+        assert!(saver_on(false, on_battery(80).as_ref(), Some(100)), "always on battery");
+        assert!(!saver_on(false, plugged_in.as_ref(), Some(100)), "plugged in");
+        assert!(saver_on(false, on_battery(30).as_ref(), Some(30)), "at the level");
+        assert!(!saver_on(false, on_battery(31).as_ref(), Some(30)), "above it");
+        assert!(!saver_on(false, on_battery(0).as_ref(), Some(0)), "never");
+        assert!(!saver_on(false, None, Some(100)), "no battery");
+    }
 
     #[test]
     fn modes_round_trip() {
