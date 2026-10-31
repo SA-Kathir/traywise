@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ClockStyle } from "../../bindings";
+import { Row } from "../../shell/Settings";
 import { Num } from "../../shell/Tile";
 import { useSettings } from "../../shell/SettingsContext";
 import type { TileProps } from "..";
@@ -215,17 +216,17 @@ const ZONES = (Intl as unknown as { supportedValuesOf(key: string): string[] })
 export default function Panel() {
   const now = useMinute();
   const { settings, save } = useSettings();
+  const zone = settings.clockZone;
   return (
     <>
       <div className="clock-page">
         {settings.clockStyle === "analogue" && <Face date={now} />}
         <span className="clock-here">
           <Time date={now} />
-          <span className="tile-detail">{day(now, "long")}</span>
+          <span className="clock-over">{day(now, "long")}</span>
         </span>
       </div>
-      <div className="row">
-        <span className="grow">Style</span>
+      <Row label="Style">
         <div className="segmented" role="radiogroup" aria-label="Clock style">
           {STYLES.map(({ style, label }) => (
             <button
@@ -239,24 +240,21 @@ export default function Panel() {
             </button>
           ))}
         </div>
-      </div>
-      <label className="row">
-        <span className="grow">Second zone</span>
-        <select value={settings.clockZone ?? ""} onChange={(e) => save({ ...settings, clockZone: e.target.value || null })}>
+      </Row>
+      <Row
+        label="Second time zone"
+        desc={zone ? `${city(zone)}: ${differenceLabel(difference(now, zone))}. On the 4×1, 2×2 and 4×2 tiles.` : "On the 4×1, 2×2 and 4×2 tiles."}
+        stacked
+      >
+        <select aria-label="Second time zone" value={zone ?? ""} onChange={(e) => save({ ...settings, clockZone: e.target.value || null })}>
           <option value="">None</option>
-          {ZONES.map((zone) => (
-            <option key={zone} value={zone}>
-              {city(zone)} ({zone.slice(0, zone.indexOf("/")).replace(/_/g, " ")})
+          {ZONES.map((z) => (
+            <option key={z} value={z}>
+              {city(z)} ({z.slice(0, z.indexOf("/")).replace(/_/g, " ")})
             </option>
           ))}
         </select>
-      </label>
-      {settings.clockZone && (
-        <p className="hint">
-          {city(settings.clockZone)}: {differenceLabel(difference(now, settings.clockZone))}. It shows on the 4×1, 2×2 and 4×2
-          tiles.
-        </p>
-      )}
+      </Row>
     </>
   );
 }

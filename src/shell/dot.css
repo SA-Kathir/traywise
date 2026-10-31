@@ -1013,9 +1013,11 @@
   font-size: 18px;
 }
 .look-dot .clock.analogue .clock-here .num {
-  font-size: 24px;
+  font-size: 18px;
 }
-.look-dot .clock.size-2x2 .clock-here .num,
+.look-dot .clock.size-2x2 .clock-here .num {
+  font-size: 34px;
+}
 .look-dot .clock-page .num {
   font-size: 48px;
 }

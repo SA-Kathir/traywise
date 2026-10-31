@@ -1245,6 +1245,13 @@ button.clock-main:hover {
 .clock.size-2x2 .clock-main {
   flex-direction: column;
 }
+.clock.analogue.size-2x1 .clock-main {
+  gap: 8px;
+}
+.clock.analogue.size-2x1 .clock-face {
+  height: 44px;
+  align-self: center;
+}
 .clock-here {
   display: flex;
   flex: none;
@@ -1301,10 +1308,15 @@ button.clock-main:hover {
   margin-left: 2px;
   font-size: 9px;
 }
-.clock.size-2x2 .clock-here .num,
+.clock.size-2x2 .clock-here .num {
+  font-size: 40px;
+}
 .clock.size-4x2 .clock-here .num,
 .clock-page .num {
   font-size: 48px;
+}
+.clock.analogue.size-2x1 .clock-here .num {
+  font-size: 22px;
 }
 .clock-period {
   margin-left: 3px;
@@ -1318,6 +1330,8 @@ button.clock-main:hover {
   aspect-ratio: 1;
 }
 .clock.size-1x1 .clock-face {
+  width: 100%;
+  height: auto;
   margin: auto;
 }
 .clock.size-2x2 .clock-face {
@@ -1370,6 +1384,9 @@ button.clock-main:hover {
 .clock.size-2x2 .clock-well .clock-time {
   flex-basis: 100%;
 }
+.clock.size-2x2 .clock-well .clock-city {
+  flex: none;
+}
 .clock-well .clock-city {
   flex: 1;
   min-width: 0;
@@ -1415,16 +1432,21 @@ button.clock-main:hover {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-/* The page: the time (and face) large. */
+/* The page: the time (and face) large, then its settings. */
 .clock-page {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 96px;
-  padding: 8px 0;
+  padding: 4px 0 8px;
+}
+.clock-page .clock-face {
+  height: 88px;
 }
 .clock-page .clock-here {
-  flex: none;
+  flex: 1;
+}
+.setting select {
+  width: 100%;
 }
 
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
