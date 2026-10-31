@@ -46,6 +46,8 @@ export const commands = {
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
 	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
+	powerState: () => __TAURI_INVOKE<PowerState>("power_state"),
+	powerSetMode: (mode: PowerMode) => typedError<null, string>(__TAURI_INVOKE("power_set_mode", { mode })),
 	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
 	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
@@ -81,6 +83,7 @@ export const events = {
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
+	powerChanged: makeEvent<PowerChanged>("power-changed"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
@@ -253,7 +256,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -291,6 +294,21 @@ export type Point = {
 	/**  Bytes a second. */
 	download: number,
 	upload: number,
+};
+
+/**  Sent whenever Windows reports a change while the module is on. */
+export type PowerChanged = PowerState;
+
+/**  The three choices in Settings › Power & battery › Power mode. */
+export type PowerMode = "efficiency" | "balanced" | "performance";
+
+export type PowerState = {
+	/**  None when Windows doesn't offer power modes: the active power plan isn't Balanced. */
+	mode: PowerMode | null,
+	/**  None on a PC without a battery. */
+	battery: Battery | null,
+	/**  Windows' Energy saver (battery saver before Windows 11 24H2). */
+	energySaver: boolean,
 };
 
 /**
@@ -352,7 +370,9 @@ export type SettingsPage =
 /**  The Wi-Fi network list, for networks that need more than a password. */
 "wifi" | 
 /**  Bluetooth & devices, to pair a new device. */
-"bluetooth";
+"bluetooth" | 
+/**  Power & battery › Energy saver, which apps can read but not switch. */
+"energySaver";
 
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */

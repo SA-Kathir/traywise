@@ -59,6 +59,8 @@ pub enum SettingsPage {
     Wifi,
     /// Bluetooth & devices, to pair a new device.
     Bluetooth,
+    /// Power & battery › Energy saver, which apps can read but not switch.
+    EnergySaver,
 }
 
 #[tauri::command]
@@ -68,6 +70,7 @@ pub fn open_settings(page: SettingsPage) {
         SettingsPage::Location => w!("ms-settings:privacy-location"),
         SettingsPage::Wifi => w!("ms-availablenetworks:"),
         SettingsPage::Bluetooth => w!("ms-settings:bluetooth"),
+        SettingsPage::EnergySaver => w!("ms-settings:batterysaver"),
     };
     unsafe { ShellExecuteW(None, &HSTRING::from("open"), uri, PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
 }

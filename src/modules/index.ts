@@ -4,6 +4,7 @@ import audioDevices from "./audio-devices";
 import bluetooth from "./bluetooth";
 import keepAwake from "./keep-awake";
 import nowPlaying from "./now-playing";
+import power from "./power";
 import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
@@ -54,6 +55,7 @@ export const modules: Record<ModuleId, ModuleUi> = {
   wifi,
   bluetooth,
   "system-monitor": systemMonitor,
+  power,
 };
 
 /** A tile on the board is "<module id>/<kind>", like "quick-toggles/dark": this is its module. */
