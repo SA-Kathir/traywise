@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Displays** module: a brightness slider for each screen (the laptop's own, and external monitors that have DDC/CI switched on in their menu), and a **Project** switch like Win+P: PC screen only, Duplicate, Extend or Second screen only. Tiles from 1×1 to 4×2; the page is in the System tab.
+- **Power** module: Windows' power mode (Efficiency, Balanced or Performance), the battery with time left, and whether Energy saver is on, with a shortcut to its settings (Windows doesn't let apps switch it). Tiles at 1×1 and 2×1.
+
 ## 0.2.0 (2026-10-31)
 
 ### Highlights
