@@ -11,8 +11,12 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass
 - Commit as you go, in small atomic commits (one concern each). No `Co-Authored-By` or other AI attribution in commit messages. Never push or create a GitHub repo without asking.
 - **Branches (see CONTRIBUTING.md):**
   - Never commit to `main`; it holds released versions only, each tagged `vX.Y.Z`.
-  - New work goes on `feature/<name>` or `fix/<name>`, branched from `develop`, and is merged back into `develop` by pull request.
+  - New work goes on `feature/<name>` or `fix/<name>`, branched from `dev`, and is merged back into `dev` by pull request.
   - Check `git branch --show-current` before your first commit.
+- **Commit messages and PR titles use Conventional Commits** (see CONTRIBUTING.md):
+  - Format: `<type>(<scope>): <imperative summary>`, e.g. `feat(board): swipeable board pages`, `fix(mixer): …`, `docs: …`.
+  - Types: feat, fix, perf, refactor, style, docs, test, build, ci, chore.
+  - Scope is the module or area.
 
 ## Stack
 

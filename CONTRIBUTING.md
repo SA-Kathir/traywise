@@ -44,18 +44,52 @@ Rules:
 
 | Branch | Holds | Who writes to it |
 |---|---|---|
-| `main` | Released versions only. Every commit on it is a release, tagged `vX.Y.Z`. | Release merges from `develop` only |
-| `develop` | The next release, as it comes together | Merged pull requests only |
-| `feature/<name>` | One feature or module | You, branched from `develop` |
-| `fix/<name>` | One bug fix | You, branched from `develop` |
+| `main` | Released versions only. Every commit on it is a release, tagged `vX.Y.Z`. | Release merges from `dev` only |
+| `dev` | The next release, as it comes together | Merged pull requests only |
+| `feature/<name>` | One feature or module | You, branched from `dev` |
+| `fix/<name>` | One bug fix | You, branched from `dev` |
 
-- Branch from `develop`, and open your pull request against `develop`.
-- **To release:** give `CHANGELOG.md` a `## X.Y.Z (date)` section, merge `develop` into `main`, then tag the merge `vX.Y.Z`. The tag triggers the release build, which puts that section on the GitHub release as its notes (`scripts/release-notes.mjs`; the build stops if the section is missing).
-- **Urgent fix for a released version:** branch `fix/<name>` from `main`, release it from `main` as a patch, then merge `main` back into `develop`.
+- Branch from `dev`, and open your pull request against `dev`. Branches for docs, CI or chores follow the same pattern: `docs/<name>`, `ci/<name>`, `chore/<name>`.
+- **To release:** give `CHANGELOG.md` a `## X.Y.Z (date)` section, merge `dev` into `main`, then tag the merge `vX.Y.Z`. The tag triggers the release build, which puts that section on the GitHub release as its notes (`scripts/release-notes.mjs`; the build stops if the section is missing).
+- **Urgent fix for a released version:** branch `fix/<name>` from `main`, release it from `main` as a patch, then merge `main` back into `dev`.
+
+## Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <what changed, in the imperative>
+```
+
+- **type** is one of:
+
+  | Type | For |
+  |---|---|
+  | `feat` | a new feature |
+  | `fix` | a bug fix |
+  | `perf` | faster or leaner |
+  | `refactor` | the same behaviour, better code |
+  | `style` | looks only (CSS) |
+  | `docs` | documentation |
+  | `test` | tests |
+  | `build` | dependencies, Tauri config |
+  | `ci` | workflows |
+  | `chore` | anything else |
+
+- **scope** (optional) is the area: a module (`mixer`, `keep-awake`, `wifi`, `now-playing`…), or `board`, `shell`, `settings`, `dot-look`, `release`.
+- Keep the summary line under 72 characters, in lowercase after the colon, and with no full stop. Explain the why in the body if it isn't obvious.
+- For a breaking change, put `!` after the type or scope (`feat(settings)!: …`) and add a `BREAKING CHANGE:` line to the body.
+
+Examples:
+- `feat(board): swipeable board pages`
+- `fix(mixer): keep an app's volume after it restarts`
+- `docs: explain the branching model`
+
+Pull request titles follow the same format.
 
 ## Pull requests
 
-- Target `develop`, never `main`.
+- Target `dev`, never `main`.
 - Keep them small: one module or one concern per PR.
 - Explain what changes for the user, and how you tested it on Windows 11.
 - By contributing, you agree your work is licensed under GPL-3.0-or-later.
