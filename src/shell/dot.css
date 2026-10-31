@@ -434,9 +434,15 @@
   align-content: space-between;
   text-align: left;
 }
+/* OCR-A is wide (0.7 em a letter): at 12 px only six letters fit a 1×1, so names like
+   "Headphones" lost all but three. 10 px fits seven, and a second line takes a second word. */
 .look-dot .size-1x1 .tile-detail {
-  font-size: 12px;
-  line-height: 16px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  font-size: 10px;
+  line-height: 13px;
   font-weight: 600;
   color: inherit;
 }
@@ -1113,6 +1119,9 @@
 }
 .look-dot .battery-big .num {
   font-size: 32px;
+}
+.look-dot .battery.size-1x1 .num {
+  font-size: 20px;
 }
 
 /* ---- Displays: Project choices ---------------------------------------------------------------- */
