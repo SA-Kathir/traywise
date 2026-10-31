@@ -13,7 +13,7 @@ const MONITOR = String.fromCodePoint(0xe7f4);
 const PROJECTS: { project: Project; label: string; short: string; icon: string }[] = [
   { project: "pcOnly", label: "PC screen only", short: "PC only", icon: LAPTOP },
   { project: "duplicate", label: "Duplicate", short: "Duplicate", icon: String.fromCodePoint(0xe8c8) }, // "Copy"
-  { project: "extend", label: "Extend", short: "Extend", icon: String.fromCodePoint(0xe740) }, // "Full Screen"
+  { project: "extend", label: "Extend", short: "Extend", icon: String.fromCodePoint(0xee4c) }, // two panes side by side
   { project: "secondOnly", label: "Second screen only", short: "2nd only", icon: MONITOR },
 ];
 
@@ -21,8 +21,8 @@ const useDisplays = () => useLive(commands.displaysState, events.displaysChanged
 
 const setBrightness = (d: Display) => (v: number) => commands.displaysSetBrightness(d.id, v);
 
-/** Home tiles: brightness (1×1 the whole tile fills to it; 2×1 and 4×1 a slider for the first screen
- *  that can change; 4×2 every screen) and Project, like Win+P. */
+/** Home tiles, as in the design: brightness like the volume tile (1×1 the whole tile fills to it;
+ *  2×1, 4×1 and 2×2 the first screen that can change; 4×2 every screen) and Project, like Win+P. */
 export function Tiles({ kind, size, open }: TileProps) {
   const state = useDisplays();
   if (!state) return null;
@@ -39,32 +39,68 @@ export function Tiles({ kind, size, open }: TileProps) {
         </span>
       </button>
     );
-  const rows = size === "4x2" ? state.displays.filter((d) => d.brightness !== null).slice(0, 3) : [main];
-  return (
-    <div className={`tile vol size-${size}`}>
-      <div className="vol-main">
-        {rows.map((d, i) => (
-          <div key={d.id} className="vol-app">
-            <div className="vol-head">
-              {i === 0 ? (
-                <button className="tile-title" title="Details" onClick={open}>
-                  <span className="tile-label">Brightness</span>
-                  {size !== "2x1" && <span className="tile-detail">{d.name}</span>}
-                </button>
-              ) : (
-                <span className="tile-detail">{d.name}</span>
-              )}
-              <Num text={String(d.brightness)} />
-            </div>
-            <div className="vol-bar">
-              <Slider name={d.name} what="brightness" value={d.brightness!} onChange={setBrightness(d)} bare />
-              <span className="vol-icon" aria-hidden>
-                {SUN}
-              </span>
-            </div>
+  if (size !== "4x2")
+    return (
+      <div className={`tile vol size-${size}`}>
+        <div className="vol-main">
+          <div className="vol-head">
+            <button className="tile-title" title="Details" onClick={open}>
+              <span className="tile-label">Brightness</span>
+              {size === "4x1" && <span className="tile-detail">{main.name}</span>}
+            </button>
+            {size !== "2x2" && <Num text={String(level)} />}
           </div>
-        ))}
+          {size === "2x2" && (
+            <>
+              <span className="vol-big">
+                <Num text={String(level)} />
+              </span>
+              <span className="tile-detail">{main.name}</span>
+            </>
+          )}
+          <Bar display={main} />
+        </div>
       </div>
+    );
+  // 4×2: a row per screen (three fit).
+  return (
+    <div className="tile vol size-4x2">
+      <div className="vol-main">
+        <div className="vol-head">
+          <button className="tile-title" title="Details" onClick={open}>
+            <span className="tile-label">Brightness</span>
+          </button>
+        </div>
+        {state.displays
+          .filter((d) => d.brightness !== null)
+          .slice(0, 3)
+          .map((d) => (
+            <div key={d.id} className="vol-app">
+              <div className="vol-head">
+                <span className="tile-detail" title={d.name}>
+                  <span className="icon" aria-hidden>
+                    {d.internal ? LAPTOP : MONITOR}
+                  </span>{" "}
+                  {d.name}
+                </span>
+                <Num text={String(d.brightness)} />
+              </div>
+              <Bar display={d} />
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+/** The volume tile's bar: the fill is the thumb, with the sun inside it. */
+function Bar({ display }: { display: Display }) {
+  return (
+    <div className="vol-bar">
+      <Slider name={display.name} what="brightness" value={display.brightness!} onChange={setBrightness(display)} bare />
+      <span className="vol-icon" aria-hidden>
+        {SUN}
+      </span>
     </div>
   );
 }
