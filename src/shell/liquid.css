@@ -568,7 +568,9 @@ label.row + .hint,
 }
 /* The app's output device, under its name. */
 .mixer-name .mixer-output {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 3px;
   max-width: 100%;
   padding: 0;
   border: none;
@@ -577,6 +579,21 @@ label.row + .hint,
   color: rgb(var(--ink) / 0.6);
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.mixer-output .glyph {
+  flex: none;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 8px;
+}
+.mixer-name .mixer-output.moved {
+  color: var(--accent);
+}
+.mixer-outputs .check {
+  float: right;
+  margin-left: 6px;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 10px;
+  line-height: inherit;
 }
 .mixer-name .mixer-output:hover {
   background: transparent;

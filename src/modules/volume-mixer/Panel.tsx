@@ -11,6 +11,8 @@ const MUTED = String.fromCodePoint(0xe74f);
 const DEVICE = String.fromCodePoint(0xe7f5);
 const BELL = String.fromCodePoint(0xea8f);
 const APP = String.fromCodePoint(0xecaa);
+const CHEVRON = String.fromCodePoint(0xe70d);
+const CHECK = String.fromCodePoint(0xe73e);
 
 /** At most one volume change per frame (~60 a second) while a slider is dragged. */
 const SEND_EVERY_MS = 16;
@@ -121,6 +123,7 @@ export default function Panel() {
             muted={app.muted}
             target={{ app: app.pid }}
             output={canRoute && !app.systemSounds ? outputName(app, state.outputs) : undefined}
+            moved={app.output !== null}
             onOutput={() => setPicking(picking === app.pid ? null : app.pid)}
           />
           {canRoute && picking === app.pid && <OutputPicker app={app} outputs={state.outputs} onPicked={() => setPicking(null)} />}
@@ -161,6 +164,11 @@ function OutputPicker({ app, outputs, onPicked }: { app: AppAudio; outputs: Outp
           title={d.name}
           onClick={() => pick(d.id)}
         >
+          {d.id === app.output && (
+            <span className="check" aria-hidden>
+              {CHECK}
+            </span>
+          )}
           {d.name}
         </button>
       ))}
@@ -178,10 +186,12 @@ type RowProps = {
   target: Target;
   /** The app's output device, shown under its name; clicking it calls `onOutput`. */
   output?: string;
+  /** Set to a device rather than following the default: the output shows in the accent colour. */
+  moved?: boolean;
   onOutput?: () => void;
 };
 
-function Row({ name, icon, glyph, volume, muted, target, output, onOutput }: RowProps) {
+function Row({ name, icon, glyph, volume, muted, target, output, moved, onOutput }: RowProps) {
   return (
     <div className="mixer-row">
       <button
@@ -202,8 +212,14 @@ function Row({ name, icon, glyph, volume, muted, target, output, onOutput }: Row
       <span className="mixer-name" title={name}>
         {name}
         {output && (
-          <button className="mixer-output" title="Output device" onClick={onOutput}>
+          <button className={moved ? "mixer-output moved" : "mixer-output"} title="Output device" onClick={onOutput}>
+            <span className="glyph" aria-hidden>
+              {SPEAKER}
+            </span>
             {output}
+            <span className="glyph" aria-hidden>
+              {CHEVRON}
+            </span>
           </button>
         )}
       </span>

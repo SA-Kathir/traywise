@@ -576,6 +576,13 @@
 .look-dot .vol-apps .tile-detail {
   color: var(--tw-text-secondary);
 }
+.look-dot .mixer-name .mixer-output {
+  font-size: 10px;
+  color: var(--tw-text-tertiary);
+}
+.look-dot .mixer-name .mixer-output.moved {
+  color: var(--tw-accent-text);
+}
 .look-dot .mixer-value {
   margin-left: 4px;
   font-family: var(--tw-font-display);
