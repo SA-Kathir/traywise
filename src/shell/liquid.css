@@ -1408,3 +1408,40 @@ section > .setting:last-child {
   border-radius: 50%;
   background: rgb(var(--ink) / 0.08);
 }
+
+/* ---- Board pages ------------------------------------------------------------------------- */
+
+/* Under the board, at the panel's bottom when the board is short, stuck there when it scrolls. */
+.page-dots {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+}
+/* A 16px target around each 6px dot. */
+.panel .page-dots button {
+  width: 16px;
+  height: 16px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+.page-dots button::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: auto;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.3);
+  transition: background 0.15s;
+}
+.page-dots button:hover::before {
+  background: rgb(var(--ink) / 0.6);
+}
+.page-dots button[aria-current]::before {
+  background: rgb(var(--ink));
+}

@@ -5,6 +5,7 @@ import { AddTiles } from "./shell/AddTiles";
 import { add, pack, type Placed } from "./shell/board";
 import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
+import { Pages } from "./shell/Pages";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { SettingsContext } from "./shell/SettingsContext";
 import { Setup } from "./shell/Setup";
@@ -33,6 +34,8 @@ function App() {
   const [adding, setAdding] = useState(false);
   // Reset asks once more before it throws the layout away.
   const [confirmReset, setConfirmReset] = useState(false);
+  // The home board's page on screen.
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
@@ -71,6 +74,7 @@ function App() {
         close(NEVER_ENTERED_MS);
       }
       setView("home"); // every open starts on the main view, like Windows' own flyouts
+      setPage(0);
       setEditing(false);
       setAdding(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
@@ -113,7 +117,8 @@ function App() {
   );
   const auto = settings.autoArrange;
   const pages = pagesToShow(settings.pages, enabled, auto);
-  const current = 0; // the page on screen
+  // A page removed (or a settings file with fewer) leaves the last one on screen.
+  const current = Math.min(page, pages.length - 1);
   const tiles = pages[current];
   // Every change to the board is saved straight away.
   const setBoard = (board: Placed[]) => save({ ...settings, pages: pages.map((p, i) => (i === current ? board : p)) });
@@ -245,20 +250,24 @@ function App() {
           <p className="hint">Pick the modules you want, and they'll show up here.</p>
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
-      ) : tiles.length === 0 && !editing ? (
-        <div className="welcome">
-          <p className="hint">Your home is empty.</p>
-          <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
-        </div>
       ) : (
-        <Board
-          tiles={tiles}
-          open={(id) => setView(modules[id].category)}
-          editing={editing}
-          auto={auto}
-          onChange={setBoard}
-          onLongPress={() => setEditing(true)}
-        />
+        <Pages count={pages.length} page={current} onPage={setPage} swipe={!editing}>
+          {tiles.length === 0 && !editing ? (
+            <div className="welcome">
+              <p className="hint">{pages.length > 1 ? "This page is empty." : "Your home is empty."}</p>
+              <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
+            </div>
+          ) : (
+            <Board
+              tiles={tiles}
+              open={(id) => setView(modules[id].category)}
+              editing={editing}
+              auto={auto}
+              onChange={setBoard}
+              onLongPress={() => setEditing(true)}
+            />
+          )}
+        </Pages>
       )}
       {editHome && adding && (
         <AddTiles

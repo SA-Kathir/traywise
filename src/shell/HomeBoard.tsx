@@ -282,7 +282,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
   }
 
   function keyDown(e: KeyboardEvent, t: Placed) {
-    if (e.target !== e.currentTarget) return; // a badge's own keys
+    if (e.target !== e.currentTarget || e.ctrlKey) return; // a badge's own keys; Ctrl+←/→ turns the page
     const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
     if (step) {
       e.preventDefault();
