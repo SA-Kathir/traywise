@@ -28,6 +28,16 @@ jobs:
         with:
           workspaces: src-tauri
 
+      # The release's notes: its section of CHANGELOG.md (fails, stopping the release, if there's none).
+      - id: notes
+        shell: bash
+        run: |
+          {
+            echo "body<<RELEASE_NOTES_END"
+            node scripts/release-notes.mjs "${{ github.ref_name }}"
+            echo "RELEASE_NOTES_END"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,7 +49,7 @@ jobs:
           args: --config src-tauri/tauri.release.conf.json
           tagName: ${{ github.ref_name }}
           releaseName: Traywise ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md for what's new. Windows may warn that the installer is unrecognised; click "More info", then "Run anyway".
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           # latest.json is what installed copies check; it goes live only when the draft is published.
           includeUpdaterJson: true
