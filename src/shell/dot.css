@@ -577,6 +577,7 @@
   color: var(--tw-text-secondary);
 }
 .look-dot .mixer-name .mixer-output {
+  background-color: var(--tw-glass-tile);
   font-size: 10px;
   color: var(--tw-text-tertiary);
 }

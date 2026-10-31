@@ -216,7 +216,7 @@ function Row({ name, icon, glyph, volume, muted, target, output, moved, onOutput
             <span className="glyph" aria-hidden>
               {SPEAKER}
             </span>
-            {output}
+            <span className="mixer-output-name">{output}</span>
             <span className="glyph" aria-hidden>
               {CHEVRON}
             </span>
