@@ -4,7 +4,7 @@ The source of truth is the Figma file, which has three pages:
 
 - **Design System**: foundations and components. https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=11-359
 - **v0.2 · Shipped**: what 0.2.0 looks like (home, tabs, Connect, Settings, Modules, edge opening). https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=62-359
-- **v0.3 · Next release**: clock, focus, board pages, displays, power, project, per-app output, and the other looks. https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=51-359
+- **v0.3 · Next release**: clock, focus, board pages (as built), displays, power, project, per-app output, and the other looks. https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=51-359
 
 This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Liquid and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
 
@@ -20,11 +20,11 @@ Decisions with the owner:
 | Numbers | **Doto** (OFL, bundled, Black only) for numbers, times and the TRAYWISE wordmark. Nothing else. |
 | Words | **OCR-A** (public domain, bundled, one weight, no faux bold), a size smaller than the Segoe ramp because it's wide. |
 | Modes | **Dark and light**, following Windows' app mode. |
-| Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. Menus and bars that sit over tiles use the more opaque `glass-menu`. |
+| Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. |
 | Background | **Dots** (default), **Plain** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
 | On tiles | **Inverted plate** (white in dark, black in light) with a 6 px accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
-| Board pages (0.3) | Dots in a **floating frosted pill** at the bottom. Pages are edited **in place**, with a "Move to" bar for moving tiles. |
+| Board pages (0.3) | As built: **plain dots** at the panel bottom, a **page bar** in edit mode, and tiles move by **dropping them on a page's dot**. (The owner kept their own picks over the Figma pill and Move to bar.) |
 | Clock (0.3) | **Digital or Analogue** (a setting). The second time zone always sits in its own labelled well. |
 
 ## Tokens
@@ -40,7 +40,6 @@ gray/800 #262627 gray/850 #1C1C1E  gray/900 #141416  gray/950 #0B0B0C  gray/1000
 white/N and black/N for N in 4 6 8 10 12 14 20 24 40 60 72 88 (alpha %)
 glass/float-dark #1C1C1E/72        glass/float-light #FAFAF8/74
 glass/float-hover-dark #303032/76  glass/float-hover-light #FFFFFF/90
-glass/menu-dark #1C1C1E/94         glass/menu-light #FAFAF8/96
 red    300 #FF7A72  500 #D92B24  700 #B81F19
 orange 500 #FF7A1A  700 #B84A08
 amber  300 #FFC774  500 #F2A33A  700 #A8620A
@@ -74,7 +73,6 @@ Accent rows show the Red preset.
 | `--tw-glass-tile-pressed` | #FFFFFF/4 | #FFFFFF/60 | |
 | `--tw-glass-float` | #1C1C1E/72 | #FAFAF8/74 | **Every tile and card** (with blur), toast, tray |
 | `--tw-glass-float-hover` | #303032/76 | #FFFFFF/90 | Hovered tile or card |
-| `--tw-glass-menu` | #1C1C1E/94 | #FAFAF8/96 | Menus, the Move to bar: anything floating over tiles that must stay readable (0.3) |
 | `--tw-glass-edge` | #FFFFFF/8 | #000000/6 | Hairlines: row dividers, wells |
 | `--tw-glass-edge-strong` | #FFFFFF/14 | #000000/12 | The 1 px edge of tiles and cards, edit-mode dashes |
 | `--tw-text-primary` | #F4F4F2 | #0B0B0C | |
@@ -94,7 +92,7 @@ Accent rows show the Red preset.
 | `--tw-tile-on-text` | text-inverse (#0B0B0C) | text-inverse (#FFFFFF) | Text and icons on "on" tiles |
 | `--tw-status-success` | #34C77B | #137F4B | |
 | `--tw-status-warning` | #F2A33A | #A8620A | Battery below 20 % |
-| `--tw-status-danger` | #FF7A1A | #B84A08 | Errors, Remove page, battery below 10 % |
+| `--tw-status-danger` | #FF7A1A | #B84A08 | Errors, battery below 10 % |
 | `--tw-effect-shadow` | #000000/40 | #000000/14 | Shadow colour |
 | `--tw-effect-scrim` | #000000/40 | #000000/20 | Behind the Add tiles tray |
 
@@ -107,10 +105,10 @@ Accent rows show the Red preset.
 | `--tw-space-0 … 12` | 0, 4, 8, 12, 16, 20, 24, 32 (`space-8`), 40 (`space-10`), 48 (`space-12`) | 4 px base. Name = multiple of 4. |
 | `--tw-radius-xs` | 4 | |
 | `--tw-radius-sm` | 8 | Panel corners are Windows' own 8 px; menu items. |
-| `--tw-radius-md` | 12 | List rows, text fields, wells, artwork, menus |
+| `--tw-radius-md` | 12 | List rows, text fields, wells, artwork |
 | `--tw-radius-lg` | 16 | Toast |
-| `--tw-radius-tile` | 20 | Every tile, card, the tray and the Move to bar |
-| `--tw-radius-full` | 999 | Buttons, switches, segmented, chips, the page dots pill |
+| `--tw-radius-tile` | 20 | Every tile, card and the tray |
+| `--tw-radius-full` | 999 | Buttons, switches, segmented, chips |
 | `--tw-blur-float` | 12px | CSS `blur(12px) saturate(1.2)` (24 in Figma) |
 | `--tw-board-columns` | 4 | |
 | `--tw-board-cell` | 76 | Square cells |
@@ -140,7 +138,7 @@ Under `prefers-reduced-motion`, all durations are 0.
 
 | Style | Value |
 |---|---|
-| Elevation/1 Lift | 0 2 8 `effect-shadow`. A tile being dragged or selected. |
+| Elevation/1 Lift | 0 2 8 `effect-shadow`. A tile being dragged. |
 | Elevation/2 Float | 0 8 24 `effect-shadow`. On-tiles (they have no blur). |
 | Glass/Level 2 Frost | background blur 12 px (CSS) + Elevation/2. Every tile, card and floating layer. |
 
@@ -179,8 +177,6 @@ The look sets 11 px as its base size, because OCR-A is wide (about 0.7 em per le
 /* Switched on: the inverted plate (no blur) and a live dot */
 .tile.on       { background: var(--tw-tile-on-fill); color: var(--tw-tile-on-text); }
 .tile.on::after { /* 6 px accent dot, 12 px from the top right */ }
-/* Menus and bars over tiles (0.3) */
-.menu          { background: var(--tw-glass-menu); /* + the same blur, edge and shadow */ }
 /* App-drawn backgrounds */
 .bg-dots  { background: radial-gradient(var(--tw-bg-dot) 0.9px, transparent 1.1px) 0 0 / 12px 12px,
                         linear-gradient(var(--tw-bg-base), var(--tw-bg-deep)); }
@@ -193,15 +189,15 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 
 - 24 px grid with a 20 px live area (2 px padding). Keylines: a 20 px circle and an 18 px square with 2.5 px corner radius.
 - 1.5 px stroke, round caps and joins. Strokes sit on half-pixels so they stay crisp at 100, 125 and 150% scaling.
-- **Signature:** small details become solid dots (the Wi-Fi origin, coffee steam, the CPU core, the battery cells, the drag grip, the ⋯). A screen that is off (Project) is drawn as four corner dots.
+- **Signature:** small details become solid dots (the Wi-Fi origin, coffee steam, the CPU core, the battery cells, the drag grip). A screen that is off (Project) is drawn as four corner dots.
 - One colour per icon (`icon-primary` or `icon-secondary`). Accent only for an active state (the selected tab, a connected network or device).
-- The app draws icons with Segoe Fluent glyphs. The Figma set (`Icon/…`) shows the intended style and is what new glyphs should match: volume, volume-off, wifi, bluetooth, cpu, memory, coffee, headphones, play, pause, next, previous, shuffle, repeat, moon, night, dark-mode, sliders, settings, power, home, laptop, tools, back, edit, plus, minus, check, grip, resize, chevron, mic, music, speaker, sun, display, battery, charging, gauge, leaf, bolt, focus, bell-off, globe, clock, pages, more, arrow-right, lock, download, upload, eye-off, project-pc, project-duplicate, project-extend, project-second.
+- The app draws icons with Segoe Fluent glyphs. The Figma set (`Icon/…`) shows the intended style and is what new glyphs should match: volume, volume-off, wifi, bluetooth, cpu, memory, coffee, headphones, play, pause, next, previous, shuffle, repeat, moon, night, dark-mode, sliders, settings, power, home, laptop, tools, back, edit, plus, minus, check, grip, resize, chevron, mic, music, speaker, sun, display, battery, charging, gauge, leaf, bolt, focus, bell-off, globe, clock, pages, more, arrow-right, trash, lock, download, upload, eye-off, project-pc, project-duplicate, project-extend, project-second.
 
 ## Panel layout
 
 - Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: "Edit board" + hint + Done; Page: Back + title).
 - Icon tab bar, 36 px, at y 58: Home, Sound, System, Connect, Tools (only categories with a module on). The selected icon is in the accent colour; there's no track.
-- The board starts at y 100. In edit mode, the edit bar (Auto-arrange, Reset, Add tiles) replaces the tabs, and from 0.3 the page strip sits under it.
+- The board starts at y 100. In edit mode, the edit bar (Auto-arrange, Reset, Add tiles) replaces the tabs, and from 0.3 the page bar sits under it.
 - Board grid (matches `.board`): 4 columns, 76 px square cells, 8 px gaps, 328 px wide. Sizes 1×1 76×76, 2×1 160×76, 4×1 328×76, 2×2 160×160, 4×2 328×160. Dot pads tiles 12 px all round.
 
 ## Components (Figma, Design System and v0.2 pages)
@@ -224,11 +220,8 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 | Text input | State = Rest/Focus | `control-track` fill, radius 12, no border; focus = 1.5 px accent ring. |
 | Toast | Tone = Neutral/Success/Danger | Frosted, 328×44, 8 px status dot, optional quiet action. |
 | Edit chrome, Edit overlay, Drop slot, Size picker, Edit tray | as before | Remove badge top left, grip top centre, resize corner bottom right; dashed idle edge, 2 px accent when selected. The size picker has five sizes. |
-| **Menu** (0.3) | none | `glass-menu`, radius 12, 4 px inset, 8 px item radius, hover wash; destructive items in `status-danger`. |
-| **Page dots** (0.3) | Count × Active | Frosted pill centred 12 px above the panel bottom. Active page = 16×6 bar in text-primary, others 6 px dots at 30 %. Hidden with one page. |
-| **Page strip** (0.3) | State = Rest/Menu open | Under the edit bar: "+ Page", "PAGE 1 OF 3" (numbers in Doto), ⋯ opening the page menu. |
-| **Move to bar** (0.3) | none | `glass-menu`, radius 20, bottom of the panel while a tile is selected: MOVE TO + a chip per other page + "+ New" + deselect. |
-| **Page edge hint** (0.3) | Side = Right/Left | Accent glow (0 → 50 %) with a chevron and the target page number while dragging a tile near a side. |
+| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
+| **Page bar** (0.3) | State = Rest/Confirm remove | Under the edit bar: ‹ (move page left), "Page 1 of 3" (numbers in Doto), › (move page right), trash, +. |
 
 ### Tiles
 
@@ -252,12 +245,12 @@ Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is th
 
 ### Board pages
 
-https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=55-445
+As built on `feature/board-pages` (the owner kept their own picks over the earlier Figma direction). https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=55-445
 
-- Several boards side by side. Switch by swiping, scrolling sideways (or Shift + wheel), PageUp/PageDown, or clicking a dot. Slides take `duration-base` with `ease-standard`.
-- Page dots float in a frosted pill over the end of the board. The board gets about 24 px extra bottom padding so its last row can scroll clear of it.
-- Edit mode, in place: the page strip ("+ Page" adds an empty page after this one and goes there; ⋯ → Move page left / right, Remove page). Removing a page with tiles asks first; its tiles go back to the Add tiles tray.
-- Moving a tile: click it once to select it (2 px accent edge, Elevation/1). The Move to bar replaces the dots: pick a page and the board slides there, with the tile in the first free spot. Escape or − deselects. Dragging a tile to a side edge shows the edge hint; hold 500 ms and the next page slides in.
+- Up to 5 boards side by side. Turn pages with Ctrl+←/→, PageUp/PageDown, a sideways wheel or Shift+wheel, a drag, or a dot.
+- Page dots: plain 6 px dots (16 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
+- Edit mode: a page bar under the edit bar, ‹ "Page N of M" › trash +. ‹ and › move this page left or right; + adds a page after this one; trash removes it. Removing a page with tiles asks first, and its tiles go back to Add tiles. Suggested confirm pattern: the trash turns into "Remove page?" on the inverted pill, like "Reset board?".
+- Moving a tile to another page: drag it onto that page's dot. The dot grows to 12 px in the accent while the tile is over it; drop it there.
 - A new page shows empty drop slots, "This page is empty" and a primary "Add tiles".
 
 ### Clock and focus
@@ -296,7 +289,7 @@ The same layouts and sizes in Liquid and Windows. What changes:
 - **Cards:** Liquid uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
 - **Type:** numbers are in Segoe UI Variable Display Semibold, not Doto.
 - **Accent:** "on" tiles and selections fill with the look's accent (the Liquid preset's, or Windows blue #4CC2FF).
-- **Page dots:** in Windows they're plain pips with no pill.
+- **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
 - **Analogue clock:** line ticks and solid hands instead of dots.
 
 ## Open questions
