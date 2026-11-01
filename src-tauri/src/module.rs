@@ -10,6 +10,8 @@ use tauri::AppHandle;
 use crate::modules::audio_devices::AudioDevices;
 use crate::modules::bluetooth::Bluetooth;
 use crate::modules::displays::Displays;
+use crate::modules::clock::Clock;
+use crate::modules::focus::Focus;
 use crate::modules::keep_awake::KeepAwake;
 use crate::modules::now_playing::NowPlaying;
 use crate::modules::power::Power;
@@ -33,6 +35,8 @@ pub enum ModuleId {
     Bluetooth,
     Power,
     Displays,
+    Clock,
+    Focus,
 }
 
 pub trait Module: Send {
@@ -60,6 +64,8 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(Bluetooth::new(app.clone())),
         Box::new(Power::new(app.clone())),
         Box::new(Displays::new(app.clone())),
+        Box::new(Clock::new(app.clone())),
+        Box::new(Focus::new(app.clone())),
     ]
 }
 

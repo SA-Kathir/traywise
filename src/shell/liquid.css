@@ -1290,6 +1290,357 @@ button.awake-main:hover {
   font-size: 12px;
 }
 
+/* ---- Clock ------------------------------------------------------------------------------ */
+
+/* This PC's time (digits, or the face), and at 4×1 and up the second zone in its own inset well:
+   beside it at 4×1 and 4×2, under it at 2×2. */
+.clock-main {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: var(--tile-pad);
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.clock-main:hover {
+  background: none;
+}
+.clock.size-2x2 .clock-main {
+  flex-direction: column;
+}
+.clock.analogue.size-2x1 .clock-main {
+  gap: 8px;
+}
+.clock.analogue.size-2x1 .clock-face {
+  height: 44px;
+  align-self: center;
+}
+.clock-here {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+/* The time sets the width; the date fits under it, shortened if it must be. */
+.clock-here .clock-over {
+  width: 0;
+  min-width: 100%;
+}
+:is(.size-1x1, .size-2x2, .size-4x2) .clock-here {
+  flex: 1;
+  min-height: 0;
+}
+.clock.size-2x2 .clock-here,
+.clock.size-4x2 .clock-here {
+  justify-content: space-between;
+}
+.clock.digital.size-1x1 .clock-here {
+  justify-content: space-between;
+}
+.clock-over {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgb(var(--ink) / 0.6);
+}
+.clock-over.dim {
+  color: rgb(var(--ink) / 0.45);
+}
+.clock-time {
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.clock-time.stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.clock-time .num {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.clock-time.stacked .num {
+  font-size: 18px;
+}
+.clock-time.stacked .clock-period {
+  margin-left: 2px;
+  font-size: 9px;
+}
+.clock.size-2x2 .clock-here .num {
+  font-size: 40px;
+}
+.clock.size-4x2 .clock-here .num,
+.clock-page .num {
+  font-size: 48px;
+}
+.clock.analogue.size-2x1 .clock-here .num {
+  font-size: 22px;
+}
+.clock-period {
+  margin-left: 3px;
+  font-size: 11px;
+}
+
+/* The face: dots on a circle, the hands as dots. It fills the tile's height. */
+.clock-face {
+  flex: none;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.clock.size-1x1 .clock-face {
+  width: 100%;
+  height: auto;
+  margin: auto;
+}
+.clock.size-2x2 .clock-face {
+  flex: 1;
+  min-width: 0;
+}
+/* 2×2 on its own. Digital: an hour of the day per dot along the bottom. */
+.clock-hours {
+  width: 100%;
+  fill: rgb(var(--ink) / 0.2);
+}
+.clock-hours .lit {
+  fill: rgb(var(--ink) / 0.75);
+}
+.clock-hours .now {
+  fill: var(--accent);
+}
+/* Analogue: the day and the time above the face, which fills the rest. */
+.clock.analogue.size-2x2 .clock-here.clock-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.clock-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.clock-head .clock-over {
+  width: auto;
+  min-width: 0;
+}
+.clock-stack .clock-face {
+  flex: 1 1 0;
+  width: auto;
+  height: 0;
+  min-height: 0;
+  align-self: center;
+}
+.clock.analogue.size-4x2 .clock-here {
+  justify-content: center;
+}
+.clock.size-2x2 .clock-time.stacked .num {
+  font-size: 44px;
+}
+.clock.analogue.size-2x2 .clock-here {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.clock.analogue .clock-here .clock-over {
+  width: auto;
+  min-width: 0;
+}
+.clock.size-1x1 .clock-over {
+  letter-spacing: 0;
+}
+.clock-face .tick {
+  fill: rgb(var(--ink) / 0.35);
+}
+.clock-face .major,
+.clock-face .hand {
+  fill: rgb(var(--ink) / 0.9);
+}
+.clock-face .tip {
+  fill: var(--accent);
+}
+
+/* A time's place: its city, above or beside it. */
+.clock-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.clock-here .clock-label {
+  width: 0;
+  min-width: 100%;
+}
+.clock-label .clock-over {
+  width: auto;
+  min-width: 0;
+}
+
+/* Analogue with a second zone: two matching faces, each named beside (4×1) or under it. */
+.clock-twins {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+.clock-place {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.clock-place-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+:is(.size-2x2, .size-4x2) .clock-place {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+:is(.size-2x2, .size-4x2) .clock-place-text {
+  align-items: center;
+  max-width: 100%;
+}
+.clock.size-2x2 .clock-place .clock-face,
+.clock.size-4x2 .clock-place .clock-face {
+  flex: 1 1 0;
+  width: auto;
+  max-width: 100%;
+  height: 0;
+  min-height: 0;
+}
+
+/* The second zone's well. */
+.clock-well {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+  min-width: 0;
+  margin-left: auto;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgb(var(--ink) / 0.08);
+}
+.clock.size-2x2 .clock-well {
+  flex-wrap: wrap;
+  align-self: stretch;
+  gap: 2px 4px;
+  margin: 0;
+  padding: 6px 8px;
+}
+/* 2×2: too narrow for the city and the time on one line, so the time goes under it. */
+.clock.size-2x2 .clock-well .clock-time {
+  flex-basis: 100%;
+}
+.clock.size-2x2 .clock-well .clock-city {
+  flex: none;
+}
+.clock-well .clock-city {
+  flex: 1;
+  min-width: 0;
+}
+.clock-well .num {
+  font-size: 18px;
+}
+.clock-glyph {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 11px;
+}
+.clock-well.full {
+  flex: none;
+  min-width: 40%;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: stretch;
+  justify-content: space-between;
+  padding: 10px;
+}
+.clock-well-head,
+.clock-well-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.clock-well-foot {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.clock-well.full .num {
+  font-size: 28px;
+}
+.clock-tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* The page: the time (and face) large, then its settings. */
+.clock-page {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+.clock-page .clock-face {
+  height: 88px;
+}
+.clock-page .clock-here {
+  flex: 1;
+}
+/* The second zone: the current one, which opens a short scrolling list. */
+.zone-current {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+.zone-current .icon {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 10px;
+}
+.zone-list {
+  max-height: 240px;
+  margin-top: 6px;
+  overflow-y: auto;
+}
+.zone-list button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+.zone-search {
+  width: 100%;
+  margin-top: 6px;
+}
+.zone-cities {
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Focus 2×2 (it shares Keep awake's layout): the bell before its status line. */
+.focus-bell {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 11px;
+}
+
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
 
 /* 2×2: the icon top left, a switch top right, the name and state at the bottom. */

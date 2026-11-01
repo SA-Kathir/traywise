@@ -43,6 +43,9 @@ pub struct Settings {
     pub edge_open: bool,
     /// With `edge_open`, a small pill on the edge shows where.
     pub edge_handle: bool,
+    /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
+    pub clock_zone: Option<String>,
+    pub clock_style: ClockStyle,
 }
 
 /// A reading the system monitor graphs.
@@ -53,6 +56,16 @@ pub enum Reading {
     Memory,
     Download,
     Upload,
+}
+
+/// How the clock tile draws the time.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ClockStyle {
+    /// Dot-matrix digits.
+    Digital,
+    /// A round face of dots, with dot hands.
+    Analogue,
 }
 
 /// A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
@@ -85,6 +98,8 @@ impl Default for Settings {
             monitor_readings: [Reading::Cpu, Reading::Memory],
             edge_open: false,
             edge_handle: false,
+            clock_zone: None,
+            clock_style: ClockStyle::Digital,
         }
     }
 }
@@ -248,6 +263,8 @@ mod tests {
             monitor_readings: [Reading::Upload, Reading::Cpu],
             edge_open: true,
             edge_handle: true,
+            clock_zone: Some("Asia/Tokyo".into()),
+            clock_style: ClockStyle::Analogue,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

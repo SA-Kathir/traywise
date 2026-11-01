@@ -42,6 +42,10 @@ export const commands = {
 	/**  Picking a timed mode (again) restarts its timer. */
 	keepAwakeSetMode: (mode: Mode) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_mode", { mode })),
 	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
+	/**  The latest state. Default (off, unavailable) while the module is switched off. */
+	focusState: () => __TAURI_INVOKE<FocusState>("focus_state"),
+	/**  Picking a timed mode (again) restarts its timer. */
+	focusSet: (mode: FocusMode) => typedError<null, string>(__TAURI_INVOKE("focus_set", { mode })),
 	/**  The latest snapshot. Empty while the module is off. */
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
@@ -89,6 +93,7 @@ export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
 	bluetoothChanged: makeEvent<BluetoothChanged>("bluetooth-changed"),
 	displaysChanged: makeEvent<DisplaysChanged>("displays-changed"),
+	focusChanged: makeEvent<FocusChanged>("focus-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
@@ -178,6 +183,13 @@ export type BoardTile = {
 	y: number,
 };
 
+/**  How the clock tile draws the time. */
+export type ClockStyle = 
+/**  Dot-matrix digits. */
+"digital" | 
+/**  A round face of dots, with dot hands. */
+"analogue";
+
 export type Display = {
 	/**  Stable while the screen stays connected. */
 	id: string,
@@ -199,6 +211,27 @@ export type DisplaysState = {
 	displays: Display[],
 	/**  None while only one screen is connected: there's nothing to choose. */
 	project: Project | null,
+};
+
+/**  Sent to the UI whenever the state changes. */
+export type FocusChanged = FocusState;
+
+export type FocusMode = "off" | 
+/**  Until turned off. */
+"on" | 
+/**  For this many minutes, then off. */
+{ minutes: number };
+
+/**  Everything the tiles show. */
+export type FocusState = {
+	/**  Do not disturb is on, however it was switched on. */
+	on: boolean,
+	/**  Switched on here for a while: when it turns off, in milliseconds since 1970 (like `Date.now()`). */
+	endsAt: number | null,
+	/**  How long that while is, in minutes, for the tile's ring. */
+	minutes: number | null,
+	/**  False if this Windows doesn't have what it needs; the tiles say so. */
+	available: boolean,
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -293,7 +326,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -403,6 +436,9 @@ export type Settings = {
 	edgeOpen: boolean,
 	/**  With `edge_open`, a small pill on the edge shows where. */
 	edgeHandle: boolean,
+	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
+	clockZone: string | null,
+	clockStyle: ClockStyle,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
