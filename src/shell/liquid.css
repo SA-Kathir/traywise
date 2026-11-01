@@ -136,6 +136,10 @@ body {
   border: 1px solid var(--tint-edge);
 }
 
+/* No drop shadows: they pile up between tiles and the page row clips them into a faint box. */
+.look-liquid.clear :is(section, .tile, .stats) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent);
+}
 .look-liquid.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
 }
