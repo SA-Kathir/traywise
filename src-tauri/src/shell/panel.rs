@@ -80,14 +80,12 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
         WindowEvent::Focused(false) if is_open(&handle) => {
-            dbg_log(&format!("focus lost; just_reframed={}", just_reframed(&handle)));
             if !just_reframed(&handle) {
                 hide(&handle);
             }
         }
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
-            dbg_log("close requested");
             api.prevent_close();
             hide(&handle);
         }
@@ -97,7 +95,6 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
 }
 
 pub fn toggle(app: &AppHandle) {
-    dbg_log("toggle (tray click or shortcut)");
     let Some(win) = app.get_webview_window(LABEL) else { return };
     let just_hidden = app
         .state::<PanelState>()
@@ -131,7 +128,6 @@ pub fn hover_open(app: &AppHandle) {
 pub fn hide_panel(app: AppHandle) -> bool {
     let Some(win) = app.get_webview_window(LABEL) else { return true };
     if just_reframed(&win) {
-        dbg_log("hide_panel refused: just reframed");
         return false;
     }
     let mut pointer = POINT::default();
@@ -142,7 +138,6 @@ pub fn hide_panel(app: AppHandle) -> bool {
     {
         return false;
     }
-    dbg_log("hide_panel (pointer left the panel)");
     hide(&win);
     true
 }
@@ -190,7 +185,6 @@ fn is_open(win: &WebviewWindow) -> bool {
 }
 
 fn show(win: &WebviewWindow) {
-    dbg_log(&format!("show hover={}", win.state::<PanelState>().hover.load(Ordering::Relaxed)));
     win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
@@ -283,7 +277,6 @@ fn brightness(bgra: &[u8]) -> u8 {
 }
 
 fn hide(win: &WebviewWindow) {
-    dbg_log("hide requested");
     let state = win.state::<PanelState>();
     // The panel shrinks back into its tiny bar first.
     if is_open(win) && animations_on() {
@@ -412,14 +405,6 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
     });
 }
 
-/// TEMP: where the panel's closing comes from (appended to traywise-debug.log in the temp folder).
-fn dbg_log(msg: &str) {
-    use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(std::env::temp_dir().join("traywise-debug.log")) {
-        let _ = writeln!(f, "{:?} {msg}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default());
-    }
-}
-
 /// Windows' "Animation effects" setting (Accessibility › Visual effects): off means no slide.
 fn animations_on() -> bool {
     let mut on = BOOL(1);
@@ -495,7 +480,6 @@ fn place(win: &WebviewWindow, edge: bool) {
 
 /// Called after Settings are saved: the look or background may have changed.
 pub fn refresh_frame(app: &AppHandle) {
-    dbg_log("refresh_frame start");
     if let Some(win) = app.get_webview_window(LABEL) {
         let state = app.state::<PanelState>();
         // Changing the frame makes Windows drop the focus, which would hide the panel: the focus-loss
@@ -514,7 +498,6 @@ pub fn refresh_frame(app: &AppHandle) {
             let _ = win.set_focus();
         }
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
-        dbg_log("refresh_frame end");
     }
 }
 
