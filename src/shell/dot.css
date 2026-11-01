@@ -824,31 +824,27 @@
 .look-dot .board-slot.dragging::after {
   display: none;
 }
-/* Add tiles floats at the bottom as the accent pill. */
-.look-dot .edit-bar .add-tiles {
-  position: fixed;
-  z-index: 2;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--tw-accent-base);
-  color: var(--tw-accent-on);
-  box-shadow: 0 8px 24px var(--tw-effect-shadow);
-  font-weight: 600;
+/* Add tiles, in the top bar: a glass pill with a plus. */
+.look-dot .add-tiles {
+  white-space: nowrap;
 }
-.look-dot .edit-bar .add-tiles::before {
+.look-dot .add-tiles::before {
   content: "\e710"; /* Segoe Fluent "Add" */
-  margin-right: 8px;
+  margin-right: 5px;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-weight: normal;
   font-size: 12px;
 }
-/* Room under the board for it, and the page dots sit above it. */
-.look-dot .board.editing {
-  margin-bottom: 48px;
+/* Tighter pills in edit mode, so the title, Add tiles and Done share one row. The edit bar's are
+   slimmer than the 32 px pills too, and its page number is small. */
+.look-dot.editing header button:not(.icon-button) {
+  padding: 0 12px;
 }
-.look-dot:has(.board.editing) .page-dots {
-  margin-bottom: 40px;
+.look-dot .edit-bar button {
+  min-height: 28px;
+  padding: 0 12px;
+}
+.look-dot .edit-bar .num {
+  font-size: 14px;
 }
 
 /* ---- Settings and first run --------------------------------------------------------------- */
@@ -904,7 +900,8 @@
   box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
 }
 .look-dot.clear :is(header, .tabs, .edit-bar, .welcome, .setup-intro) {
-  padding: 6px 8px 6px 16px;
+  /* No taller than the plain rows (32 px), so the home board fits as it does there. */
+  padding: 0 8px 0 16px;
   border-radius: var(--tw-radius-tile);
   background: var(--tw-glass-float);
   box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);

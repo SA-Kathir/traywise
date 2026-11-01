@@ -174,18 +174,21 @@ function App() {
             {BACK}
           </button>
         )}
-        {editHome ? (
-          <div className="grow">
-            <h1>{title}</h1>
-            <p className="hint">{pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize"}</p>
-          </div>
-        ) : (
-          <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
-        )}
+        <h1
+          className={view === "home" && enabled.length > 0 && !editHome ? "grow wordmark" : "grow"}
+          title={editHome ? (pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize") : undefined}
+        >
+          {title}
+        </h1>
         {editHome && (
-          <button className="primary" onClick={() => setEditing(false)}>
-            Done
-          </button>
+          <>
+            <button className="add-tiles" onClick={() => setAdding(true)}>
+              Add tiles
+            </button>
+            <button className="primary" onClick={() => setEditing(false)}>
+              Done
+            </button>
+          </>
         )}
         {tabbed && (
           <>
@@ -243,17 +246,9 @@ function App() {
           >
             {confirmReset ? "Reset board?" : "Reset"}
           </button>
-          <button className="add-tiles" onClick={() => setAdding(true)}>
-            Add tiles
+          <button title="All pages" onClick={() => setOverview(true)}>
+            Pages <Num text={String(current + 1)} />/<Num text={String(pages.length)} />
           </button>
-        </div>
-      )}
-      {editHome && (
-        <div className="row page-bar">
-          <span className="grow">
-            Page <Num text={String(current + 1)} /> of <Num text={String(pages.length)} />
-          </span>
-          <button onClick={() => setOverview(true)}>Pages</button>
         </div>
       )}
 
