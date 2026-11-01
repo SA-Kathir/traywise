@@ -35,7 +35,7 @@ const REFRAME_GUARD: Duration = Duration::from_millis(1500);
 /// Panel size in logical pixels. The height is fixed, so nothing moves when switching pages; what
 /// doesn't fit scrolls.
 const WIDTH: f64 = 360.0;
-const HEIGHT: f64 = 640.0;
+const HEIGHT: f64 = 648.0;
 
 #[derive(Default)]
 pub struct PanelState {

@@ -5,7 +5,7 @@ import { AddTiles } from "./shell/AddTiles";
 import { add, moveToPage, pack, type Placed } from "./shell/board";
 import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
-import { Pages } from "./shell/Pages";
+import { PageDots, Pages } from "./shell/Pages";
 import { PagesOverview } from "./shell/PagesOverview";
 import { Num } from "./shell/Tile";
 import { SettingsPage, useSave } from "./shell/Settings";
@@ -106,7 +106,7 @@ function App() {
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent && !(view === "home" && editing) ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
@@ -310,6 +310,7 @@ function App() {
         />
       )}
       </div>
+      {view === "home" && enabled.length > 0 && pages.length > 1 && <PageDots count={pages.length} page={current} onPage={setPage} />}
       {editHome && adding && (
         <AddTiles
           enabled={enabled}

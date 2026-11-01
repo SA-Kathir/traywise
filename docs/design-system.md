@@ -10,7 +10,7 @@ This document lists every token with its value. The app's **Dot** look (`src/she
 
 ## Direction
 
-The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel, under frosted glass. It's built for Windows 11 and the fixed 360 × 640 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
+The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel, under frosted glass. It's built for Windows 11 and the fixed 360 × 648 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
 
 Decisions with the owner:
 
@@ -114,7 +114,7 @@ Accent rows show the Red preset.
 | `--tw-board-cell` | 76 | Square cells |
 | `--tw-board-gutter` | 8 | |
 | `--tw-board-inset` | 16 | Panel side padding (the code uses padding + scrollbar gutter to reach 328) |
-| `--tw-panel-width` × `--tw-panel-height` | 360 × 640 | Fixed |
+| `--tw-panel-width` × `--tw-panel-height` | 360 × 648 | Fixed |
 | `--tw-stroke-hairline` | 1 | All glass edges, inside |
 | `--tw-icon-size` | 20 | On a 24 px grid |
 | `--tw-icon-stroke` | 1.5 | |
@@ -204,7 +204,7 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 
 | Component | Variants | Spec |
 |---|---|---|
-| Background | Pattern = Dots / Plain | 360×640. Dots: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
+| Background | Pattern = Dots / Plain | 360×648. Dots: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
 | Switch | Checked × State | 40×20 pill. Off: track + hairline, grey 12 px knob. On: accent track, `accent-on` knob. 14 px knob on hover. |
 | Slider | Style (Inline/Tile) × State | Inline: 4 px track, neutral fill, 16 px white thumb. Tile: a 28–36 px bar whose fill is the thumb. Never accent. |
 | Button | Style (Primary/Secondary/Quiet) × State | Pill, 32 px tall, 16 px side padding. One Primary per view. |
