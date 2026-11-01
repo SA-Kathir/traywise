@@ -1338,6 +1338,39 @@ button.clock-main:hover {
   flex: 1;
   min-width: 0;
 }
+/* 2×2 on its own. Digital: an hour of the day per dot along the bottom. */
+.clock-hours {
+  width: 100%;
+  fill: rgb(var(--ink) / 0.2);
+}
+.clock-hours .lit {
+  fill: rgb(var(--ink) / 0.75);
+}
+.clock-hours .now {
+  fill: var(--accent);
+}
+/* Analogue: the day and the time above the face, which fills the rest. */
+.clock.analogue.size-2x2 .clock-here.clock-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.clock-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.clock-head .clock-over {
+  width: auto;
+  min-width: 0;
+}
+.clock-stack .clock-face {
+  flex: 1 1 0;
+  width: auto;
+  height: 0;
+  min-height: 0;
+  align-self: center;
+}
 .clock.analogue.size-4x2 .clock-here {
   justify-content: center;
 }

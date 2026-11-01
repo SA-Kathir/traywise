@@ -1077,6 +1077,15 @@
 .look-dot .clock-face .tip {
   fill: var(--tw-accent-base);
 }
+.look-dot .clock-hours {
+  fill: var(--tw-control-track);
+}
+.look-dot .clock-hours .lit {
+  fill: var(--tw-text-secondary);
+}
+.look-dot .clock-hours .now {
+  fill: var(--tw-accent-base);
+}
 
 /* ---- 2×2 toggle tiles, and the Connect pages ------------------------------------------------ */
 

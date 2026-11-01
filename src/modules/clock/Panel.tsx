@@ -58,7 +58,8 @@ function Time({ date, zone, stacked }: { date: Date; zone?: string; stacked?: bo
   const end = period && <span className="clock-period">{period}</span>;
   return stacked ? (
     <span className="clock-time stacked">
-      <Num text={hours} />
+      {/* "01" over "46": two digits on each line, so they line up. */}
+      <Num text={hours.padStart(2, "0")} />
       <span>
         <Num text={minutes} />
         {end}
@@ -69,6 +70,17 @@ function Time({ date, zone, stacked }: { date: Date; zone?: string; stacked?: bo
       <Num text={digits} />
       {end}
     </span>
+  );
+}
+
+/** 24 dots, one per hour of the day; those gone by are lit, this hour in the accent. */
+function HourDots({ hour }: { hour: number }) {
+  return (
+    <svg className="clock-hours" viewBox="0 0 120 4" aria-hidden>
+      {Array.from({ length: 24 }, (_, i) => (
+        <circle key={i} cx={2.5 + i * 5} cy={2} r={1.6} className={i < hour ? "lit" : i === hour ? "now" : undefined} />
+      ))}
+    </svg>
   );
 }
 
@@ -162,12 +174,20 @@ function digital(now: Date, size: TileProps["size"], zoned: boolean) {
         <span className="clock-over">{day(now, "short")}</span>
       </span>
     );
-  // 2×2 on its own: the hours over the minutes, large.
+  if (size === "2x2" && zoned)
+    return (
+      <span className="clock-here">
+        <span className="clock-over">{day(now, "medium")}</span>
+        <Time date={now} />
+      </span>
+    );
+  // 2×2 on its own: the hours over the minutes, large, over a dot for each hour of the day.
   if (size === "2x2")
     return (
       <span className="clock-here">
         <span className="clock-over">{day(now, "medium")}</span>
-        <Time date={now} stacked={!zoned} />
+        <Time date={now} stacked />
+        <HourDots hour={now.getHours()} />
       </span>
     );
   if (size === "4x2")
@@ -187,6 +207,17 @@ function digital(now: Date, size: TileProps["size"], zoned: boolean) {
 }
 
 function analogue(now: Date, size: TileProps["size"], zoned: boolean) {
+  // 2×2 on its own: the day and the time in small digits above a large face.
+  if (size === "2x2" && !zoned)
+    return (
+      <span className="clock-here clock-stack">
+        <span className="clock-head">
+          <span className="clock-over">{day(now, "short")}</span>
+          <span className="clock-over">{[time(now).digits, time(now).period].join(" ").trim()}</span>
+        </span>
+        <Face date={now} />
+      </span>
+    );
   if (size === "1x1" || (size === "4x2" && zoned)) return <Face date={now} />;
   // 4×2 on its own: the face with the time and date beside it, as on the page.
   if (size === "4x2")
