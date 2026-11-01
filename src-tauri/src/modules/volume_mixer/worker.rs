@@ -15,7 +15,7 @@ use windows::Win32::Media::Audio::Endpoints::{
 };
 use windows::Win32::Media::Audio::{
     AUDIO_VOLUME_NOTIFICATION_DATA, AudioSessionDisconnectReason, AudioSessionState, AudioSessionStateExpired,
-    DEVICE_STATE, EDataFlow, ERole, IAudioSessionControl, IAudioSessionControl2, IAudioSessionEvents,
+    DEVICE_STATE, DEVICE_STATE_ACTIVE, EDataFlow, ERole, IAudioSessionControl, IAudioSessionControl2, IAudioSessionEvents,
     IAudioSessionEvents_Impl, IAudioSessionManager2, IAudioSessionNotification, IAudioSessionNotification_Impl,
     IMMDeviceEnumerator, IMMNotificationClient, IMMNotificationClient_Impl, ISimpleAudioVolume, eMultimedia, eRender,
 };
@@ -23,7 +23,9 @@ use windows::Win32::System::Com::CLSCTX_ALL;
 use windows::core::{BOOL, GUID, Interface, PCWSTR, Ref, Result, implement};
 
 use super::app_info::{self, AppInfo};
+use super::app_output::Router;
 use crate::audio;
+use crate::modules::audio_devices::OutputDevice;
 use super::{AppAudio, Level, MixerChanged, MixerState, Msg, Shared, Target};
 
 pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
@@ -35,9 +37,10 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
     let device_events: IMMNotificationClient = DeviceEvents(tx.clone()).into();
     unsafe { enumerator.RegisterEndpointNotificationCallback(&device_events)? };
 
+    let router = Router::new();
     let mut names = HashMap::new();
     let mut device = Device::open(&enumerator, tx);
-    publish(app, &mut device, &mut names);
+    publish(app, &mut device, &mut names, router.as_ref());
 
     // Sleeps until a message arrives. Bursts (a slider drag, many callbacks) are handled together.
     'serve: while let Ok(first) = rx.recv() {
@@ -49,15 +52,29 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
                 (Msg::DeviceChanged, _) => new_device = true,
                 (Msg::SetVolume(target, volume), Some(d)) => report(d.set_volume(target, volume)),
                 (Msg::SetMute(target, muted), Some(d)) => report(d.set_mute(target, muted)),
+                (Msg::SetOutput(pid, output), Some(d)) => {
+                    if let Some(r) = &router {
+                        report(r.set(pid, output.as_deref()));
+                        d.routes.remove(&pid);
+                        refresh = true;
+                    }
+                }
+                (Msg::ResetOutputs, Some(d)) => {
+                    if let Some(r) = &router {
+                        report(r.reset_all());
+                        d.routes.clear();
+                        refresh = true;
+                    }
+                }
                 (_, None) => {} // no output device: nothing to change
             }
         }
         if new_device {
-            drop(device.take()); // unregisters from the old device first
+            drop(device.take()); // unregisters from the old devices first
             device = Device::open(&enumerator, tx);
         }
         if refresh || new_device {
-            publish(app, &mut device, &mut names);
+            publish(app, &mut device, &mut names, router.as_ref());
         }
     }
 
@@ -78,8 +95,8 @@ fn percent(scalar: f32) -> u8 {
 }
 
 /// Re-reads everything and tells the UI, if anything changed.
-fn publish(app: &AppHandle, device: &mut Option<Device>, names: &mut HashMap<u32, AppInfo>) {
-    let state = match device.as_mut().map(|d| d.snapshot(names)) {
+fn publish(app: &AppHandle, device: &mut Option<Device>, names: &mut HashMap<u32, AppInfo>, router: Option<&Router>) {
+    let state = match device.as_mut().map(|d| d.snapshot(names, router)) {
         Some(Ok(state)) => state,
         Some(Err(e)) => {
             eprintln!("volume-mixer: couldn't read the mixer: {e}");
@@ -95,15 +112,19 @@ fn publish(app: &AppHandle, device: &mut Option<Device>, names: &mut HashMap<u32
     }
 }
 
-/// The default output device, with our callbacks registered on it.
+/// The default output device's volume, and every output's sessions (an app set to another device
+/// plays there), with our callbacks registered on them.
 struct Device {
     name: Option<String>,
     endpoint: IAudioEndpointVolume,
     endpoint_events: IAudioEndpointVolumeCallback,
-    manager: IAudioSessionManager2,
-    session_created: IAudioSessionNotification,
-    /// Every session we're listening to, by its instance id.
+    /// One per plugged-in output, with its new-session callback.
+    managers: Vec<(IAudioSessionManager2, IAudioSessionNotification)>,
+    outputs: Vec<OutputDevice>,
+    /// Every session we're listening to, by its instance id (unique across devices).
     sessions: HashMap<String, Session>,
+    /// The device each app is set to, by process id. Re-read when its sessions change.
+    routes: HashMap<u32, Option<String>>,
     tx: Sender<Msg>,
 }
 
@@ -121,31 +142,57 @@ impl Device {
             unsafe {
                 let device = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia)?;
                 let endpoint: IAudioEndpointVolume = device.Activate(CLSCTX_ALL, None)?;
-                let manager: IAudioSessionManager2 = device.Activate(CLSCTX_ALL, None)?;
                 let endpoint_events: IAudioEndpointVolumeCallback = Notify(tx.clone()).into();
                 endpoint.RegisterControlChangeNotify(&endpoint_events)?;
-                let session_created: IAudioSessionNotification = Notify(tx.clone()).into();
-                manager.RegisterSessionNotification(&session_created)?;
+                let default = audio::device_id(&device)?;
                 let name = audio::friendly_name(&device).ok();
-                Ok(Self { name, endpoint, endpoint_events, manager, session_created, sessions: HashMap::new(), tx: tx.clone() })
+                let mut this = Self {
+                    name,
+                    endpoint,
+                    endpoint_events,
+                    managers: Vec::new(),
+                    outputs: Vec::new(),
+                    sessions: HashMap::new(),
+                    routes: HashMap::new(),
+                    tx: tx.clone(),
+                };
+                // Filled in place, so an error part-way still unregisters what was registered.
+                let list = enumerator.EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE)?;
+                for i in 0..list.GetCount()? {
+                    let output = list.Item(i)?;
+                    let manager: IAudioSessionManager2 = output.Activate(CLSCTX_ALL, None)?;
+                    let session_created: IAudioSessionNotification = Notify(tx.clone()).into();
+                    manager.RegisterSessionNotification(&session_created)?;
+                    this.managers.push((manager, session_created));
+                    let id = audio::device_id(&output)?;
+                    let name = audio::friendly_name(&output).unwrap_or_else(|_| "Unknown device".into());
+                    this.outputs.push(OutputDevice { is_default: id == default, id, name });
+                }
+                this.outputs.sort_by(|a, b| a.name.cmp(&b.name));
+                Ok(this)
             }
         };
         open().map_err(|e| eprintln!("volume-mixer: no output device ({e})")).ok()
     }
 
-    fn snapshot(&mut self, names: &mut HashMap<u32, AppInfo>) -> Result<MixerState> {
+    fn snapshot(&mut self, names: &mut HashMap<u32, AppInfo>, router: Option<&Router>) -> Result<MixerState> {
         let master = unsafe {
             Level {
                 volume: percent(self.endpoint.GetMasterVolumeLevelScalar()?),
                 muted: self.endpoint.GetMute()?.as_bool(),
             }
         };
+        let mut controls = Vec::new();
+        for (manager, _) in &self.managers {
+            // Also required before Windows sends new-session notifications at all.
+            let list = unsafe { manager.GetSessionEnumerator()? };
+            for i in 0..unsafe { list.GetCount()? } {
+                controls.push(unsafe { list.GetSession(i)? });
+            }
+        }
         let mut apps: Vec<AppAudio> = Vec::new();
         let mut seen = Vec::new();
-        // Also required before Windows sends new-session notifications at all.
-        let list = unsafe { self.manager.GetSessionEnumerator()? };
-        for i in 0..unsafe { list.GetCount()? } {
-            let control = unsafe { list.GetSession(i)? };
+        for control in controls {
             let control2: IAudioSessionControl2 = control.cast()?;
             let id = audio::take_string(unsafe { control2.GetSessionInstanceIdentifier()? });
             seen.push(id.clone());
@@ -155,16 +202,23 @@ impl Device {
                 let pid = unsafe { control2.GetProcessId()? };
                 let volume = control.cast()?;
                 self.sessions.insert(id.clone(), Session { control: control.clone(), events, pid, volume });
+                // A new session can mean the app was sent to another device.
+                self.routes.remove(&pid);
             }
             if unsafe { control.GetState()? } == AudioSessionStateExpired {
                 continue;
             }
-            let session = &self.sessions[&id];
+            let pid = self.sessions[&id].pid;
             // An app can have several sessions; the first one stands for the app.
-            if apps.iter().any(|a| a.pid == session.pid) {
+            if apps.iter().any(|a| a.pid == pid) {
                 continue;
             }
             let system_sounds = unsafe { control2.IsSystemSoundsSession() } == S_OK;
+            let output = match router {
+                Some(r) if !system_sounds => self.route(r, pid),
+                _ => None,
+            };
+            let session = &self.sessions[&id];
             let info = names.entry(session.pid).or_insert_with(|| {
                 if system_sounds {
                     AppInfo { name: "System sounds".into(), icon: None }
@@ -179,6 +233,7 @@ impl Device {
                 icon: info.icon.clone(),
                 volume: percent(unsafe { session.volume.GetMasterVolume()? }),
                 muted: unsafe { session.volume.GetMute()?.as_bool() },
+                output,
             });
         }
         // Stop listening to sessions that are gone.
@@ -189,7 +244,23 @@ impl Device {
             }
             keep
         });
-        Ok(MixerState { master: Some(master), device: self.name.clone(), apps })
+        let outputs = if router.is_some() { self.outputs.clone() } else { Vec::new() };
+        Ok(MixerState { master: Some(master), device: self.name.clone(), apps, outputs })
+    }
+
+    /// The device an app is set to. One that's unplugged or disabled is cleared, so the app
+    /// follows the default from then on rather than jumping back when it returns.
+    fn route(&mut self, router: &Router, pid: u32) -> Option<String> {
+        if let Some(route) = self.routes.get(&pid) {
+            return route.clone();
+        }
+        let mut route = router.get(pid);
+        if route.as_ref().is_some_and(|id| !self.outputs.iter().any(|o| &o.id == id)) {
+            report(router.set(pid, None));
+            route = None;
+        }
+        self.routes.insert(pid, route.clone());
+        route
     }
 
     fn set_volume(&mut self, target: Target, percent: u8) -> Result<()> {
@@ -218,7 +289,9 @@ impl Drop for Device {
             for session in self.sessions.values() {
                 let _ = session.control.UnregisterAudioSessionNotification(&session.events);
             }
-            let _ = self.manager.UnregisterSessionNotification(&self.session_created);
+            for (manager, session_created) in &self.managers {
+                let _ = manager.UnregisterSessionNotification(session_created);
+            }
             let _ = self.endpoint.UnregisterControlChangeNotify(&self.endpoint_events);
         }
     }
@@ -273,7 +346,7 @@ impl IAudioSessionEvents_Impl for Notify_Impl {
     }
 }
 
-/// Default output device changes (headphones plugged in, a different device picked in Windows).
+/// Output devices plugged in, removed, enabled or disabled, or a different default picked.
 #[implement(IMMNotificationClient)]
 struct DeviceEvents(Sender<Msg>);
 
@@ -285,12 +358,15 @@ impl IMMNotificationClient_Impl for DeviceEvents_Impl {
         Ok(())
     }
     fn OnDeviceStateChanged(&self, _: &PCWSTR, _: DEVICE_STATE) -> Result<()> {
+        let _ = self.0.send(Msg::DeviceChanged);
         Ok(())
     }
     fn OnDeviceAdded(&self, _: &PCWSTR) -> Result<()> {
+        let _ = self.0.send(Msg::DeviceChanged);
         Ok(())
     }
     fn OnDeviceRemoved(&self, _: &PCWSTR) -> Result<()> {
+        let _ = self.0.send(Msg::DeviceChanged);
         Ok(())
     }
     fn OnPropertyValueChanged(&self, _: &PCWSTR, _: &PROPERTYKEY) -> Result<()> {

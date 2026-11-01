@@ -539,6 +539,7 @@ label.row + .hint,
   gap: 8px;
 }
 .mixer-row + .mixer-row,
+.mixer-outputs + .mixer-row,
 .mixer-row + .hint {
   margin-top: 8px;
 }
@@ -559,11 +560,57 @@ label.row + .hint,
   min-width: 0;
 }
 .mixer-name {
-  width: 84px;
+  width: 96px;
   flex: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* The app's output device, under its name. */
+/* A small pill sized to its text; a long device name is cut off with "…". */
+.mixer-name .mixer-output {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 18px;
+  margin-top: 2px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(var(--ink) / 0.08);
+  font-size: 11px;
+  line-height: 1;
+  color: rgb(var(--ink) / 0.6);
+}
+.mixer-output-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mixer-output .glyph {
+  flex: none;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 8px;
+}
+.mixer-name .mixer-output.moved {
+  color: var(--accent);
+}
+.mixer-outputs .check {
+  float: right;
+  margin-left: 6px;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 10px;
+  line-height: inherit;
+}
+.mixer-name .mixer-output:hover {
+  color: var(--accent);
+}
+.mixer-outputs,
+.mixer-reset {
+  margin-top: 6px;
 }
 .mixer-value {
   width: 3ch;
