@@ -74,10 +74,12 @@ body {
   /* Fills the window on short pages too, so the background reaches the bottom. */
   min-height: 100%;
   /* The right side is 10px + the 6px scrollbar's space. */
-  padding: 16px 10px 16px 16px;
+  padding: 12px 10px 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  /* 12px above, below and between: title, tabs, 6 rows of tiles and the dots fit the 648 px window
+     in every look. */
+  gap: 12px;
   position: relative;
   isolation: isolate;
   color: rgb(var(--ink) / 0.95);
@@ -115,13 +117,6 @@ body {
 /* A deep shade of the preset behind the cards, unless transparent (.clear). */
 .look-liquid:not(.clear) {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
-}
-/* Less above and below than the Windows look: transparent's title card is taller, and the home
-   view with every module on still has to fit the 648 px window. */
-.panel.look-liquid {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  gap: 12px;
 }
 /* Transparent: the cards float over the desktop (shown through the window, never read). Anything
    not already in a card gets one, so it reads over any wallpaper. The title's pill hugs the name;
