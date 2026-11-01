@@ -204,6 +204,7 @@ fn show(win: &WebviewWindow) {
     // The tiny bar first, so the window never flashes at full size before it grows.
     if animate && let Some(hwnd) = hwnd {
         set_region(hwnd, bar(win_size(hwnd), hover), 8);
+        set_border(win, false);
     }
     if hover {
         // Shown without taking the keyboard, so typing elsewhere carries on; a click gives it focus.
@@ -290,6 +291,7 @@ fn hide(win: &WebviewWindow) {
             return; // already closing
         }
         *state.last_hidden.lock().unwrap() = Some(Instant::now());
+        set_border(win, false);
         let w = win.clone();
         reveal(win, false, state.hover.load(Ordering::Relaxed), move || {
             let w2 = w.clone();
@@ -311,6 +313,7 @@ fn hide_now(win: &WebviewWindow) {
         let _ = unsafe { SetWindowRgn(hwnd, None, false) };
     }
     page_island(win, None);
+    set_border(win, true);
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
@@ -375,6 +378,7 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
     let id = app.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
     let hwnd = hwnd.0 as isize;
     page_island(win, Some((opening, edge)));
+    let win = win.clone();
     std::thread::spawn(move || {
         let hwnd = HWND(hwnd as _);
         let (w, h) = win_size(hwnd);
@@ -402,6 +406,7 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
         }
         if opening {
             let _ = unsafe { SetWindowRgn(hwnd, None, true) };
+            set_border(&win, true);
         }
         done();
     });
@@ -521,6 +526,17 @@ fn just_reframed(win: &WebviewWindow) -> bool {
 /// float over the desktop, where a frame would outline empty space.
 fn framed(settings: &Settings) -> bool {
     settings.look == Look::Windows || !settings.transparent
+}
+
+/// Hides or restores the frame's 1 px border while the panel grows out of (or shrinks into) its bar:
+/// Windows draws it around the whole window, which would show as an empty frame before the panel does.
+fn set_border(win: &WebviewWindow, visible: bool) {
+    if !framed(&win.state::<SettingsState>().get()) {
+        return;
+    }
+    let Ok(hwnd) = win.hwnd() else { return };
+    let color = if visible { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
+    let _ = unsafe { DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color as *const _ as *const c_void, size_of_val(&color) as u32) };
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none
