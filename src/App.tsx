@@ -95,7 +95,7 @@ function App() {
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
