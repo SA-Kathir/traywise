@@ -1417,7 +1417,8 @@ section > .setting:last-child {
 .pages {
   flex: 1;
   display: flex;
-  margin: 0 -10px 0 -16px;
+  /* 8px more above and below than it takes up, so edit mode's badges and outlines aren't cut off. */
+  margin: -8px -10px -8px -16px;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -1427,7 +1428,7 @@ section > .setting:last-child {
 .page {
   flex: 0 0 100%;
   box-sizing: border-box;
-  padding: 0 10px 0 16px;
+  padding: 8px 10px 8px 16px;
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
