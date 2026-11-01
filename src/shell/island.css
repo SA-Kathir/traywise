@@ -1,0 +1,60 @@
+/* The page's half of the open/close animation (the window's clip is Rust's, in shell/panel.rs).
+   Rust sets html[data-island] = in-tray | in-edge | out-tray | out-edge and --island-ms, together
+   with starting the clip, so both run on one clock. Only transform and opacity. */
+@media not (prefers-reduced-motion: reduce) {
+  html[data-island] #root {
+    transform-origin: 50% 100%;
+    animation-duration: var(--island-ms);
+    animation-fill-mode: both;
+  }
+  html[data-island$="edge"] #root {
+    transform-origin: 100% 50%;
+  }
+  html[data-island^="in"] #root {
+    animation-name: island-grow, island-fade-in;
+    /* A spring: overshoots a touch, settles. The fade finishes in the first 40%. */
+    animation-timing-function:
+      linear(0, 0.4 7%, 0.78 14%, 1.02 24%, 1.07 32%, 1.04 42%, 0.99 56%, 1 72%, 1),
+      ease-out;
+    animation-duration: var(--island-ms), calc(var(--island-ms) * 0.4);
+    animation-delay: 0s, 0.02s;
+  }
+  html[data-island^="out"] #root {
+    animation-name: island-shrink, island-fade-out;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5), ease-in;
+    animation-duration: var(--island-ms), calc(var(--island-ms) * 0.7);
+    animation-delay: 0s, calc(var(--island-ms) * 0.3);
+  }
+  html[data-island$="tray"] {
+    --island-dx: 0px;
+    --island-dy: 20px;
+  }
+  html[data-island$="edge"] {
+    --island-dx: 20px;
+    --island-dy: 0px;
+  }
+}
+
+@keyframes island-grow {
+  from {
+    transform: translate(var(--island-dx), var(--island-dy)) scale(0.78);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes island-shrink {
+  to {
+    transform: translate(var(--island-dx), var(--island-dy)) scale(0.78);
+  }
+}
+@keyframes island-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes island-fade-out {
+  to {
+    opacity: 0;
+  }
+}

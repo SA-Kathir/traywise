@@ -14,6 +14,7 @@ import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
+import "./shell/island.css";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
