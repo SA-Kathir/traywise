@@ -2,10 +2,12 @@ import type { ComponentType, LazyExoticComponent } from "react";
 import type { ModuleId } from "../bindings";
 import audioDevices from "./audio-devices";
 import bluetooth from "./bluetooth";
+import displays from "./displays";
 import clock from "./clock";
 import focus from "./focus";
 import keepAwake from "./keep-awake";
 import nowPlaying from "./now-playing";
+import power from "./power";
 import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
@@ -58,6 +60,8 @@ export const modules: Record<ModuleId, ModuleUi> = {
   wifi,
   bluetooth,
   "system-monitor": systemMonitor,
+  displays,
+  power,
 };
 
 /** A tile on the board is "<module id>/<kind>", like "quick-toggles/dark": this is its module. */

@@ -1,6 +1,7 @@
-import { commands, events, type Battery, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
+import { commands, events, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
 import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
+import { battery } from "./battery";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
@@ -224,12 +225,4 @@ function rate(bytesPerSecond: number) {
   if (bytesPerSecond < 1024) return `${bytesPerSecond} B/s`;
   if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(0)} KB/s`;
   return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
-}
-
-function battery({ percent, charging, secondsLeft }: Battery) {
-  if (charging) return `${percent}%, charging`;
-  if (secondsLeft === null) return `${percent}%`;
-  const minutes = Math.round(secondsLeft / 60);
-  const h = Math.floor(minutes / 60);
-  return `${percent}%, ${h > 0 ? `${h} h ${minutes % 60} min` : `${minutes} min`} left`;
 }

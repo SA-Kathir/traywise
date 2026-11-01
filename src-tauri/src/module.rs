@@ -9,10 +9,12 @@ use tauri::AppHandle;
 
 use crate::modules::audio_devices::AudioDevices;
 use crate::modules::bluetooth::Bluetooth;
+use crate::modules::displays::Displays;
 use crate::modules::clock::Clock;
 use crate::modules::focus::Focus;
 use crate::modules::keep_awake::KeepAwake;
 use crate::modules::now_playing::NowPlaying;
+use crate::modules::power::Power;
 use crate::modules::quick_toggles::QuickToggles;
 use crate::modules::system_monitor::SystemMonitor;
 use crate::modules::volume_mixer::VolumeMixer;
@@ -31,6 +33,8 @@ pub enum ModuleId {
     NowPlaying,
     Wifi,
     Bluetooth,
+    Power,
+    Displays,
     Clock,
     Focus,
 }
@@ -58,6 +62,8 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(NowPlaying::new(app.clone())),
         Box::new(Wifi::new(app.clone())),
         Box::new(Bluetooth::new(app.clone())),
+        Box::new(Power::new(app.clone())),
+        Box::new(Displays::new(app.clone())),
         Box::new(Clock::new(app.clone())),
         Box::new(Focus::new(app.clone())),
     ]
