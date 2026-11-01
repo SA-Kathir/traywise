@@ -1962,7 +1962,8 @@ section > .setting:last-child {
   z-index: 3;
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  /* Above the page dots' strip. */
+  bottom: 30px;
   /* One slim row (MOVE_BAR_PX in HomeBoard.tsx is its height and margin): the title, then the pages. */
   display: flex;
   align-items: center;

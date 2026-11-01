@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
 import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
@@ -419,8 +420,10 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
         );
       })}
     </div>
-    {drag?.moved && (
-      // While a tile is dragged: a big target for each other page, and one for a new page.
+    {drag?.moved &&
+      // While a tile is dragged: a target for each other page, and one for a new page. In the page
+      // itself the row of pages' edge fade would clip it, so it's drawn on the document.
+      createPortal(
       <section className="move-bar" aria-hidden>
         <h2>Move to</h2>
         <div className="row">
@@ -437,8 +440,9 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
             </span>
           )}
         </div>
-      </section>
-    )}
+      </section>,
+      document.body,
+      )}
     </>
   );
 }
