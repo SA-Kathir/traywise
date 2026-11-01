@@ -195,9 +195,9 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 
 ## Panel layout
 
-- Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: "Edit board" + hint + Done; Page: Back + title).
+- Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: small "Edit home" title, Add tiles, Done; Page: Back + title).
 - Icon tab bar, 36 px, at y 58: Home, Sound, System, Connect, Tools (only categories with a module on). The selected icon is in the accent colour; there's no track.
-- The board starts at y 100. In edit mode, the edit bar (Auto-arrange, Reset, Add tiles) replaces the tabs, and from 0.3 the page bar sits under it.
+- The board starts at y 100. In edit mode, one slim edit bar (Auto-arrange, Reset, a "Pages 1/2" chip that opens the pages overview) replaces the tabs; Add tiles sits in the header beside Done.
 - Board grid (matches `.board`): 4 columns, 76 px square cells, 8 px gaps, 328 px wide. Sizes 1×1 76×76, 2×1 160×76, 4×1 328×76, 2×2 160×160, 4×2 328×160. Dot pads tiles 12 px all round.
 
 ## Components (Figma, Design System and v0.2 pages)
@@ -212,7 +212,7 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 | Segmented control | Selected | Track pill, 3 px inset; the selected segment is the inverted pill. |
 | Tab bar | Selected = Home/Sound/System/Connect/Tools | Icon-only; selected icon in accent. |
 | Panel header | Mode = Normal/Edit/Page | See [Panel layout](#panel-layout). |
-| Edit bar | Reset = Rest/Confirm reset | Auto-arrange switch, Reset (second click: "Reset board?" on the inverted pill), Add tiles. |
+| Edit bar | Reset = Rest/Confirm reset | Auto-arrange switch, Reset (second click: "Reset board?" on the inverted pill), Pages chip. |
 | Setting row | Type = Switch, Switch + desc, Value, Link, Stacked choice, Colour | Uniform rows inside a card, 1 px `glass-edge` divider between rows. Colour: 22 px swatches, the picked one ringed in text-primary. |
 | Module row | On = Yes/No | 36 px icon well, name, what it does, "Idle: …" in text-tertiary, switch. |
 | Network row | State = Connected/Saved/Open/Joining | Wi-Fi icon (accent when connected), name, state, lock if secured. Joining expands in place: password field + Cancel / Join. |
@@ -220,7 +220,7 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 | Text input | State = Rest/Focus | `control-track` fill, radius 12, no border; focus = 1.5 px accent ring. |
 | Toast | Tone = Neutral/Success/Danger | Frosted, 328×44, 8 px status dot, optional quiet action. |
 | Edit chrome, Edit overlay, Drop slot, Size picker, Edit tray | as before | Remove badge top left, grip top centre, resize corner bottom right; dashed idle edge, 2 px accent when selected. The size picker has five sizes. |
-| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
+| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 × 12 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
 | **Page bar** (0.3) | State = Rest/Confirm remove | Under the edit bar: ‹ (move page left), "Page 1 of 3" (numbers in Doto), › (move page right), trash, +. |
 
 ### Tiles
@@ -248,7 +248,7 @@ Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is th
 As built on `feature/board-pages` (the owner kept their own picks over the earlier Figma direction). Figma: v0.3 › Board pages.
 
 - Up to 5 boards side by side. Turn pages with Ctrl+←/→, PageUp/PageDown, a sideways wheel or Shift+wheel, a drag, or a dot.
-- Page dots: plain 6 px dots (16 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
+- Page dots: plain 6 px dots (16 × 12 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
 - Edit mode: a page bar under the edit bar, ‹ "Page N of M" › trash +. ‹ and › move this page left or right; + adds a page after this one; trash removes it. Removing a page with tiles asks first, and its tiles go back to Add tiles. Suggested confirm pattern: the trash turns into "Remove page?" on the inverted pill, like "Reset board?".
 - Moving a tile to another page: drag it onto that page's dot. The dot grows to 12 px in the accent while the tile is over it; drop it there.
 - A new page shows empty drop slots, "This page is empty" and a primary "Add tiles".
