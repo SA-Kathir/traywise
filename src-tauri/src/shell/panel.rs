@@ -10,7 +10,7 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowB
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
     DWMNCRP_DISABLED, DWMNCRP_USEWINDOWSTYLE, DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_NCRENDERING_POLICY,
-    DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
+    DWMWA_TRANSITIONS_FORCEDISABLED, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
     DWMWCP_ROUND, DwmFlush, DwmSetWindowAttribute,
 };
 use windows::Win32::Foundation::{HWND, POINT, RECT};
@@ -75,6 +75,13 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .shadow(false)
         .build()?;
     frame(&win, framed(&app.state::<SettingsState>().get()));
+    // Windows fades a window in and out when it's shown or hidden: that fade would play on the empty
+    // frame around the tiny bar (it lingered for about half a second after closing). The panel
+    // animates itself.
+    if let Ok(hwnd) = win.hwnd() {
+        let off = BOOL(1);
+        let _ = unsafe { DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &off as *const _ as *const c_void, size_of_val(&off) as u32) };
+    }
     webview::set_active(&win, false);
 
     let handle = win.clone();
