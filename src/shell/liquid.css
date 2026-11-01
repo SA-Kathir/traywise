@@ -1495,11 +1495,78 @@ section > .setting:last-child {
   background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .page-bar {
-  gap: 4px;
-  font-size: 13px;
+  gap: 8px;
 }
-.page-bar .grow {
-  text-align: center;
+
+/* The pages overview: each page an outline of where its tiles are, three to a row. */
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 6px 2px 2px;
+  touch-action: none;
+}
+.thumb {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1.5px solid rgb(var(--ink) / 0.15);
+  cursor: grab;
+  outline: none;
+}
+.thumb.on {
+  border-color: var(--accent);
+}
+.thumb:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.thumb.held {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+.thumb-grid {
+  width: 100%;
+  height: 118px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 18px;
+  gap: 2px;
+  overflow: hidden;
+}
+.thumb-grid span {
+  border-radius: 4px;
+  background: rgb(var(--ink) / 0.3);
+}
+.panel .thumb-add {
+  justify-content: center;
+  min-height: 150px;
+  border-style: dashed;
+  background: none;
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 16px;
+}
+.panel .page-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 11px;
+  font-size: 11px;
+  line-height: 22px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.panel .page-remove:not(.on) {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 8px;
 }
 /* Transparent looks: the dots get a small card of their own, so they show over any wallpaper. */
 .clear .page-dots {
