@@ -255,7 +255,7 @@ function App() {
       <div className="scroll">
       <UpdateNotice />
       {view === "settings" ? (
-        <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
+        <SettingsPage settings={settings} onChange={setSettings} />
       ) : view === "modules" ? (
         <ModulesPage settings={settings} onChange={setSettings} />
       ) : view !== "home" ? (

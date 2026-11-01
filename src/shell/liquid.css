@@ -2165,3 +2165,11 @@ section > .setting:last-child {
 .display-row + .hint {
   margin-top: 8px;
 }
+
+/* A Settings section's chevron turns down when it's open. */
+.chevron {
+  transition: transform 0.15s;
+}
+.chevron.open {
+  transform: rotate(90deg);
+}

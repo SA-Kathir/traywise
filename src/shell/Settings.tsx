@@ -1,6 +1,7 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState, type ReactNode } from "react";
 import { commands, type Accent, type Look, type Preset, type Settings } from "../bindings";
+import { ModulesPage } from "./ModulesPage";
 import { modules } from "../modules";
 
 const LOOKS: { id: Look; label: string }[] = [
@@ -47,8 +48,11 @@ export function useSave({ settings, onChange }: Props) {
   return { save, error, setError };
 }
 
-export function SettingsPage({ openModules, ...props }: Props & { openModules: () => void }) {
+export function SettingsPage(props: Props) {
   const { settings } = props;
+  // One section open at a time; each shows what it holds when closed.
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (id: string) => () => setOpen(open === id ? null : id);
   const { save, error, setError } = useSave(props);
   // null until Windows has answered.
   const [autostart, setAutostart] = useState<boolean | null>(null);
@@ -69,22 +73,21 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
 
   return (
     <>
-      <section>
-        <button className="setting link" onClick={openModules}>
-          <span className="setting-text">
-            <span className="setting-label">Modules</span>
-            <span className="setting-desc">
-              {settings.enabledModules.length} of {Object.keys(modules).length} on
-            </span>
-          </span>
-          <span className="icon" aria-hidden>
-            {CHEVRON}
-          </span>
-        </button>
-      </section>
+      <Collapsible
+        title="Modules"
+        summary={`${settings.enabledModules.length} of ${Object.keys(modules).length} on`}
+        open={open === "modules"}
+        onToggle={toggle("modules")}
+      >
+        <ModulesPage inline settings={settings} onChange={props.onChange} />
+      </Collapsible>
 
-      <section>
-        <h2>Appearance</h2>
+      <Collapsible
+        title="Appearance"
+        summary={LOOKS.find((l) => l.id === settings.look)?.label ?? ""}
+        open={open === "appearance"}
+        onToggle={toggle("appearance")}
+      >
         <Row label="Look" stacked>
           <Pick label="Look" options={LOOKS} value={settings.look} onChange={(look) => save({ ...settings, look })} />
         </Row>
@@ -158,10 +161,9 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
           </>
         )}
         {settings.look === "windows" && <p className="setting-desc">Follows Windows' light or dark mode and its colours.</p>}
-      </section>
+      </Collapsible>
 
-      <section>
-        <h2>Opening</h2>
+      <Collapsible title="Opening" summary={settings.panelShortcut} open={open === "opening"} onToggle={toggle("opening")}>
         <Row label="Shortcut" desc="Opens or closes Traywise">
           <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
         </Row>
@@ -179,10 +181,9 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
             onChange={(edgeHandle) => save({ ...settings, edgeHandle })}
           />
         )}
-      </section>
+      </Collapsible>
 
-      <section>
-        <h2>System</h2>
+      <Collapsible title="System" summary={version && `Version ${version}`} open={open === "system"} onToggle={toggle("system")}>
         <SwitchRow label="Start with Windows" checked={autostart ?? false} disabled={autostart === null} onChange={toggleAutostart} />
         <SwitchRow
           label="Check for updates"
@@ -193,10 +194,28 @@ export function SettingsPage({ openModules, ...props }: Props & { openModules: (
         <Row label="Traywise" desc="Free and open source, under the GPL">
           <span className="setting-value">{version}</span>
         </Row>
-      </section>
+      </Collapsible>
 
       {error && <p className="error">{error}</p>}
     </>
+  );
+}
+
+/** A settings section that opens and closes: its name and a summary of it, then what's inside. */
+function Collapsible(props: { title: string; summary: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  return (
+    <section>
+      <button className="setting link" aria-expanded={props.open} onClick={props.onToggle}>
+        <span className="setting-text">
+          <span className="setting-label">{props.title}</span>
+          <span className="setting-desc">{props.summary}</span>
+        </span>
+        <span className={props.open ? "icon chevron open" : "icon chevron"} aria-hidden>
+          {CHEVRON}
+        </span>
+      </button>
+      {props.open && props.children}
+    </section>
   );
 }
 
