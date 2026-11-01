@@ -9,7 +9,8 @@ use tauri_specta::Event;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
-    DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
+    DWMNCRP_DISABLED, DWMNCRP_USEWINDOWSTYLE, DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_NCRENDERING_POLICY,
+    DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
     DWMWCP_ROUND, DwmFlush, DwmSetWindowAttribute,
 };
 use windows::Win32::Foundation::{HWND, POINT, RECT};
@@ -521,7 +522,13 @@ fn set_border(win: &WebviewWindow, visible: bool) {
     }
     let Ok(hwnd) = win.hwnd() else { return };
     let color = if visible { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
-    let _ = unsafe { DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color as *const _ as *const c_void, size_of_val(&color) as u32) };
+    // Without non-client rendering Windows draws no border or shadow at all (the border colour alone
+    // left an empty outline).
+    let policy = if visible { DWMNCRP_USEWINDOWSTYLE } else { DWMNCRP_DISABLED };
+    unsafe {
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color as *const _ as *const c_void, size_of_val(&color) as u32);
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, &policy as *const _ as *const c_void, size_of_val(&policy) as u32);
+    }
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none
