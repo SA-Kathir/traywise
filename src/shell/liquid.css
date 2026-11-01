@@ -1963,17 +1963,23 @@ section > .setting:last-child {
   left: 8px;
   right: 8px;
   bottom: 8px;
+  /* One slim row (MOVE_BAR_PX in HomeBoard.tsx is its height and margin): the title, then the pages. */
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+}
+.move-bar h2 {
+  flex: none;
+  margin: 0;
 }
 .move-bar .row {
-  flex-wrap: wrap;
+  flex: 1;
   gap: 8px;
 }
 .move-target {
-  flex: 1 0 auto;
-  padding: 14px 12px;
+  flex: 1 1 0;
+  padding: 7px 10px;
   border-radius: 12px;
   border: 1.5px dashed rgb(var(--ink) / 0.35);
   text-align: center;
