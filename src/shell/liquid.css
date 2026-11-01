@@ -663,6 +663,28 @@ button.on {
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
+/* Displays' Project choices: four buttons two by two (not a track), icon beside the name. */
+.segmented.project-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.segmented.project-grid button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgb(var(--ink) / 0.12);
+  text-align: left;
+}
+.hint + h2 {
+  margin-top: 12px;
+}
 
 .swatch {
   width: 16px;
@@ -1407,4 +1429,93 @@ section > .setting:last-child {
   flex: none;
   border-radius: 50%;
   background: rgb(var(--ink) / 0.08);
+}
+
+/* ---- Power: battery gauge -------------------------------------------------------------------- */
+
+.gauge {
+  width: 44px;
+  height: 18px;
+  flex: none;
+  color: rgb(var(--ink) / 0.7);
+  fill: rgb(var(--ink) / 0.18);
+}
+.gauge .lit {
+  fill: rgb(var(--ink));
+}
+.battery.size-1x1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--tile-pad, 10px 12px);
+}
+.battery.size-1x1 .gauge {
+  width: 34px;
+  height: 14px;
+}
+.battery.size-1x1 .icon {
+  font-size: 12px;
+}
+/* Displays page: a screen's name and level on one line, its slider under them. */
+.display-row + .display-row {
+  margin-top: 8px;
+}
+.display-row .row {
+  gap: 8px;
+}
+.display-row .vol-bar {
+  margin-top: 4px;
+}
+.tile-detail.block {
+  display: block;
+}
+.battery-level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.battery-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.battery-big .num {
+  font-size: 28px;
+}
+.battery-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+:is(.low, .critical) :is(.num, .gauge) {
+  color: #e0902c;
+}
+:is(.low, .critical) .gauge .lit {
+  fill: currentColor;
+}
+.critical :is(.num, .gauge) {
+  color: #e8622a;
+}
+
+/* Displays' Project icons (drawn, not glyphs): sized like a glyph. */
+.project-icon {
+  width: 22px;
+  height: 14px;
+  vertical-align: middle;
+}
+.segmented.unavailable {
+  opacity: 0.4;
+}
+/* Icon-only choices in a 2×1 tile (Power mode, Project): narrow enough for four. */
+.segmented.icons button {
+  min-width: 0;
+  padding: 0 4px;
+}
+/* A card's title stays on one line; its detail gives way (ellipsis) instead. */
+.tile-card .tile-title .tile-label {
+  white-space: nowrap;
+}
+.display-row + .hint {
+  margin-top: 8px;
 }
