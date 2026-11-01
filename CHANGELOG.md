@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Clock** module: the time and date on a tile from 1×1 to 4×2, Digital (dot-matrix numbers) or Analogue (a face of dots). An optional second time zone, picked on its page, shows in its own box on the 4×1, 2×2 and 4×2 tiles, with how far ahead or behind it is. It only updates while the panel is open, once a minute.
+- **Clock** module: the time and date on a tile from 1×1 to 4×2, Digital (dot-matrix numbers) or Analogue (a face of dots). An optional second time zone (picked from a short, searchable list of places) shows on the 4×1, 2×2 and 4×2 tiles, each time labelled with its city: in its own box beside the digital time, or as a second face beside the analogue one. Without one, the bigger tiles give your own time the whole tile. It only updates while the panel is open, once a minute.
 - **Focus** module: switches Windows' Do not disturb. The Focus tile turns it on for 25 minutes with a click (or 25 min, 50 min or 1 hour from the 2×2), with a countdown and a ring of dots that empties; it turns itself off when time's up. A plain Do not disturb tile switches it on or off. Both show changes made in Windows too. Windows has no official way to do this, so it uses the same hidden setting Windows' own switch does, and says "Not available" if a Windows update ever removes it.
 
 ## 0.2.0 (2026-10-31)

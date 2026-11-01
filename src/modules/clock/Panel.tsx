@@ -4,13 +4,14 @@ import { Row } from "../../shell/Settings";
 import { Num } from "../../shell/Tile";
 import { useSettings } from "../../shell/SettingsContext";
 import type { TileProps } from "..";
-import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time";
+import { city, clockAt, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time";
 import { ZONES, matches, place } from "./zones";
 
 // Segoe Fluent Icons glyphs.
 const GLOBE = String.fromCodePoint(0xe774);
 const MOON = String.fromCodePoint(0xe708);
 const SUN = String.fromCodePoint(0xe706);
+const HOME = String.fromCodePoint(0xe80f);
 const CHEVRON_DOWN = String.fromCodePoint(0xe70d);
 const CHEVRON_UP = String.fromCodePoint(0xe70e);
 
@@ -88,8 +89,9 @@ const TICKS = 60;
 
 /** A round face of dots: 60 ticks (each fifth brighter) and the hands as rows of dots, the minute
  *  hand's tip in the accent. */
-function Face({ date }: { date: Date }) {
-  const angle = hands(date.getHours(), date.getMinutes());
+function Face({ date, zone }: { date: Date; zone?: string }) {
+  const { hours, minutes } = clockAt(date, zone);
+  const angle = hands(hours, minutes);
   const at = (degrees: number, r: number) => {
     const a = (degrees * Math.PI) / 180;
     return { cx: 50 + r * Math.sin(a), cy: 50 - r * Math.cos(a) };
@@ -149,6 +151,51 @@ function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }
   );
 }
 
+/** This PC's place, named like the second zone's (a house instead of the globe), so two times on one
+ *  tile never read as one. */
+const HERE = city(Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+function Label({ zone, extra }: { zone?: string; extra?: string }) {
+  return (
+    <span className="clock-label">
+      <span className="clock-glyph" aria-hidden>
+        {zone ? GLOBE : HOME}
+      </span>
+      <span className="clock-over">
+        {zone ? place(zone) : HERE}
+        {extra && ` · ${extra}`}
+      </span>
+    </span>
+  );
+}
+
+/** Analogue with a second zone: two matching faces side by side, each named under it. */
+function Twins({ date, zone, size }: { date: Date; zone: string; size: TileProps["size"] }) {
+  const shift = dayShift(date, zone);
+  return (
+    <span className="clock-twins">
+      <span className="clock-place">
+        <Face date={date} />
+        <span className="clock-place-text">
+          <Label />
+          <span className="clock-over dim">{day(date, "short")}</span>
+        </span>
+      </span>
+      <span className="clock-place">
+        <Face date={date} zone={zone} />
+        <span className="clock-place-text">
+          <Label zone={zone} />
+          <span className="clock-over dim">
+            {day(date, "short", zone)}
+            {size === "4x2" && ` · ${differenceLabel(difference(date, zone))}`}
+            {shift !== 0 && <span className="clock-shift"> {shift > 0 ? "+1" : "−1"}</span>}
+          </span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 /** Home tile, Digital or Analogue (picked on the page). Bigger sizes add the date; with a second
  *  zone set, 4×1 and up show it in its well. A click opens the page. */
 export function Tiles({ size, open }: TileProps) {
@@ -158,8 +205,14 @@ export function Tiles({ size, open }: TileProps) {
   return (
     <div className={`tile clock size-${size} ${clockStyle}${zoned ? " zoned" : ""}`}>
       <button className="clock-main" title="Clock" onClick={open}>
-        {clockStyle === "analogue" ? analogue(now, size, zoned) : digital(now, size, zoned)}
-        {zoned && <Zone date={now} zone={clockZone} full={size === "4x2"} />}
+        {clockStyle === "analogue" && zoned ? (
+          <Twins date={now} zone={clockZone} size={size} />
+        ) : (
+          <>
+            {clockStyle === "analogue" ? analogue(now, size) : digital(now, size, zoned)}
+            {zoned && <Zone date={now} zone={clockZone} full={size === "4x2"} />}
+          </>
+        )}
       </button>
     </div>
   );
@@ -177,7 +230,7 @@ function digital(now: Date, size: TileProps["size"], zoned: boolean) {
   if (size === "2x2" && zoned)
     return (
       <span className="clock-here">
-        <span className="clock-over">{day(now, "medium")}</span>
+        <Label extra={day(now, "short")} />
         <Time date={now} />
       </span>
     );
@@ -190,12 +243,29 @@ function digital(now: Date, size: TileProps["size"], zoned: boolean) {
         <HourDots hour={now.getHours()} />
       </span>
     );
+  // 4×2 with a zone: laid out like the zone's column beside it (place, date, then the time).
+  if (size === "4x2" && zoned)
+    return (
+      <span className="clock-here">
+        <Label />
+        <span className="clock-over dim">{day(now, "medium")}</span>
+        <Time date={now} />
+      </span>
+    );
   if (size === "4x2")
     return (
       <span className="clock-here">
-        <span className="clock-over">{zoned ? `Here · ${day(now, "medium")}` : day(now, "long")}</span>
+        <span className="clock-over">{day(now, "long")}</span>
         <Time date={now} />
-        <span className="clock-over dim">{city(Intl.DateTimeFormat().resolvedOptions().timeZone)}</span>
+        <span className="clock-over dim">{HERE}</span>
+      </span>
+    );
+  // 4×1 with a zone: room for the place only.
+  if (zoned)
+    return (
+      <span className="clock-here">
+        <Label />
+        <Time date={now} />
       </span>
     );
   return (
@@ -206,9 +276,10 @@ function digital(now: Date, size: TileProps["size"], zoned: boolean) {
   );
 }
 
-function analogue(now: Date, size: TileProps["size"], zoned: boolean) {
-  // 2×2 on its own: the day and the time in small digits above a large face.
-  if (size === "2x2" && !zoned)
+/** Analogue without a second zone (with one, it's `Twins`). */
+function analogue(now: Date, size: TileProps["size"]) {
+  // 2×2: the day and the time in small digits above a large face.
+  if (size === "2x2")
     return (
       <span className="clock-here clock-stack">
         <span className="clock-head">
@@ -218,8 +289,8 @@ function analogue(now: Date, size: TileProps["size"], zoned: boolean) {
         <Face date={now} />
       </span>
     );
-  if (size === "1x1" || (size === "4x2" && zoned)) return <Face date={now} />;
-  // 4×2 on its own: the face with the time and date beside it, as on the page.
+  if (size === "1x1") return <Face date={now} />;
+  // 4×2: the face with the time and date beside it, as on the page.
   if (size === "4x2")
     return (
       <>
@@ -230,20 +301,12 @@ function analogue(now: Date, size: TileProps["size"], zoned: boolean) {
         </span>
       </>
     );
-  if (size === "2x2")
-    return (
-      <span className="clock-here">
-        <span className="clock-over">{day(now, "short")}</span>
-        <Face date={now} />
-      </span>
-    );
-  // 4×1 with the zone's box: the face tells the time, so just the day beside it.
   return (
     <>
       <Face date={now} />
       <span className="clock-here">
-        {!zoned && <Time date={now} />}
-        <span className="clock-over">{day(now, size === "4x1" && !zoned ? "medium" : "short")}</span>
+        <Time date={now} />
+        <span className="clock-over">{day(now, size === "4x1" ? "medium" : "short")}</span>
       </span>
     </>
   );

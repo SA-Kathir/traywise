@@ -1,6 +1,6 @@
 // Run with `pnpm test`. Fixed zones and dates, so it passes whatever zone this PC is in.
 import { ZONES, matches, place } from "./zones.ts";
-import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time.ts";
+import { city, clockAt, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time.ts";
 
 function check(name: string, got: unknown, expected: unknown) {
   if (JSON.stringify(got) !== JSON.stringify(expected)) throw new Error(`${name}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(got)}`);
@@ -26,6 +26,8 @@ check("night", isNight(at, "Asia/Tokyo"), true); // 22:05 there
 check("day", isNight(at, "Europe/London"), false); // 13:05
 check("hands at 21:40", hands(21, 40), { hour: 290, minute: 240 });
 check("hands at noon", hands(12, 0), { hour: 0, minute: 0 });
+
+check("clock in a zone", clockAt(at, "Asia/Kolkata"), { hours: 18, minutes: 35 });
 
 check("label ahead", differenceLabel(330), "+5:30 h");
 check("label behind", differenceLabel(-420), "−7 h");

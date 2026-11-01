@@ -46,6 +46,12 @@ export const isNight = (date: Date, zone: string) => {
   return hour < 6 || hour >= 18;
 };
 
+/** The hours (0–23) and minutes on `zone`'s clocks. */
+export function clockAt(date: Date, zone?: string) {
+  const at = new Date(wall(date, zone));
+  return { hours: at.getUTCHours(), minutes: at.getUTCMinutes() };
+}
+
 /** Where an analogue clock's hands point, in degrees clockwise from 12. */
 export const hands = (hours: number, minutes: number) => ({ hour: ((hours % 12) + minutes / 60) * 30, minute: minutes * 6 });
 
