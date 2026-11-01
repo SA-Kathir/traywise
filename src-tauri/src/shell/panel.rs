@@ -484,9 +484,11 @@ pub fn refresh_frame(app: &AppHandle) {
         let state = app.state::<PanelState>();
         // Changing the frame makes Windows drop the focus, which would hide the panel: the focus-loss
         // handler ignores it for a moment (`just_reframed`), then we take the focus back (an
-        // edge-opened panel never had it).
+        // edge-opened panel only had it if the user had clicked in; without it, clicking elsewhere
+        // wouldn't close the panel any more).
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
         let was_open = is_open(&win);
+        let had_focus = win.is_focused().unwrap_or(false);
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
         // Tauri's frame change hides a window it didn't show itself (the edge shows it with
@@ -494,7 +496,7 @@ pub fn refresh_frame(app: &AppHandle) {
         if was_open && !is_open(&win) && let Ok(hwnd) = win.hwnd() {
             let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
         }
-        if is_open(&win) && !state.hover.load(Ordering::Relaxed) {
+        if is_open(&win) && (had_focus || !state.hover.load(Ordering::Relaxed)) {
             let _ = win.set_focus();
         }
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
