@@ -402,7 +402,7 @@
 }
 
 /* Scrollbar. */
-.look-dot #root::-webkit-scrollbar-thumb {
+.look-dot :is(#root, .scroll)::-webkit-scrollbar-thumb {
   background: var(--tw-control-track);
 }
 
