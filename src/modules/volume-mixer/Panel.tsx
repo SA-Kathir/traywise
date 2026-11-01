@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useState, type CSSProperties } from "react";
 import { commands, events, type AppAudio, type OutputDevice, type Target } from "../../bindings";
 import { Num, Tile } from "../../shell/Tile";
+import { Slider as VolumeSlider } from "../../shell/Slider";
 import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
 
@@ -13,9 +14,6 @@ const BELL = String.fromCodePoint(0xea8f);
 const APP = String.fromCodePoint(0xecaa);
 const CHEVRON = String.fromCodePoint(0xe70d);
 const CHECK = String.fromCodePoint(0xe73e);
-
-/** At most one volume change per frame (~60 a second) while a slider is dragged. */
-const SEND_EVERY_MS = 16;
 
 const useMixer = () => useLive(commands.mixerState, events.mixerChanged);
 
@@ -225,60 +223,5 @@ function Row({ name, icon, glyph, volume, muted, target, output, moved, onOutput
       </span>
       <VolumeSlider name={name} value={volume} onChange={(v) => commands.mixerSetVolume(target, v)} />
     </div>
-  );
-}
-
-/** `bare`: the slider alone, without its number. */
-function VolumeSlider({ name, value, onChange, bare }: { name: string; value: number; onChange: (v: number) => void; bare?: boolean }) {
-  // While dragging, show the thumb where the pointer is, not the slightly older value Windows echoes back.
-  const [dragged, setDragged] = useState<number | null>(null);
-  const dragging = useRef(false);
-  const lastSent = useRef(0);
-  const pending = useRef<number | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  function send(v: number) {
-    const wait = SEND_EVERY_MS - (performance.now() - lastSent.current);
-    if (wait <= 0) {
-      lastSent.current = performance.now();
-      onChange(v);
-      return;
-    }
-    // Too soon: send the latest value once the frame is up, so the final position always lands.
-    pending.current = v;
-    timer.current ??= window.setTimeout(() => {
-      timer.current = undefined;
-      lastSent.current = performance.now();
-      if (pending.current !== null) onChange(pending.current);
-    }, wait);
-  }
-
-  const shown = dragged ?? value;
-  const endDrag = () => {
-    dragging.current = false;
-    setDragged(null);
-  };
-  return (
-    <>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={shown}
-        style={{ "--fill": `${shown}%` } as CSSProperties}
-        aria-label={`${name} volume`}
-        onPointerDown={() => (dragging.current = true)}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          if (dragging.current) setDragged(v);
-          send(v);
-        }}
-      />
-      {!bare && <span className="mixer-value">{shown}</span>}
-    </>
   );
 }

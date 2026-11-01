@@ -5,6 +5,8 @@
 
 mod worker;
 
+pub(crate) use worker::battery;
+
 use std::collections::VecDeque;
 use std::sync::Mutex;
 use std::sync::mpsc::{Sender, channel};
