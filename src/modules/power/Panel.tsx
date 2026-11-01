@@ -44,7 +44,7 @@ export function Tiles({ kind, size, open }: TileProps) {
         </button>
       );
     return (
-      <TileCard size={size} label="Battery" detail={b.charging ? BOLT : undefined} onOpen={open}>
+      <TileCard size={size} label="Battery" detail={b.charging ? <span className="icon">{BOLT}</span> : undefined} onOpen={open}>
         <div className={`battery-row${low(b.percent)}`}>
           <span className="battery-big">
             <Num text={`${b.percent}%`} />

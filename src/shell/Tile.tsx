@@ -66,7 +66,7 @@ export function TileCard({
   size: Size;
   label: string;
   /** Shown at the right of the title line. */
-  detail?: string;
+  detail?: ReactNode;
   /** Opens the module's own page: the title line becomes a link to it. */
   onOpen?: () => void;
   children: ReactNode;
