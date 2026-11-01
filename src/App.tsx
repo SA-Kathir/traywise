@@ -142,7 +142,7 @@ function App() {
 
   return (
     <SettingsContext.Provider value={{ settings, save }}>
-    <main className={panelClass}>
+    <main className={`${panelClass} fixed`}>
       <header className="row">
         {!tabbed && !editHome && (
           <button
@@ -200,8 +200,6 @@ function App() {
         </nav>
       )}
 
-      <UpdateNotice />
-
       {editHome && (
         <div className="row edit-bar">
           <label className="row grow">
@@ -231,6 +229,8 @@ function App() {
         </div>
       )}
 
+      <div className="scroll">
+      <UpdateNotice />
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
       ) : view === "modules" ? (
@@ -258,6 +258,7 @@ function App() {
           onLongPress={() => setEditing(true)}
         />
       )}
+      </div>
       {editHome && adding && (
         <AddTiles
           enabled={enabled}
