@@ -89,23 +89,24 @@
 
 @media (prefers-color-scheme: light) {
   .look-dot {
-    --tw-bg-base: #f4f4f2;
-    --tw-bg-deep: #eaeae7;
+    /* Softer than white on black: an off-white page, and charcoal (the dark look's card grey) for text and plates. */
+    --tw-bg-base: #ecece9;
+    --tw-bg-deep: #e2e2de;
     --tw-bg-dot: rgb(0 0 0 / 0.12);
-    --tw-glass-tile: rgb(255 255 255 / 0.72);
-    --tw-glass-tile-hover: rgb(255 255 255 / 0.88);
-    --tw-glass-tile-pressed: rgb(255 255 255 / 0.6);
-    --tw-glass-float: rgb(250 250 248 / 0.74);
-    --tw-glass-float-hover: rgb(255 255 255 / 0.9);
+    --tw-glass-tile: rgb(255 255 255 / 0.6);
+    --tw-glass-tile-hover: rgb(255 255 255 / 0.76);
+    --tw-glass-tile-pressed: rgb(255 255 255 / 0.5);
+    --tw-glass-float: rgb(244 244 241 / 0.8);
+    --tw-glass-float-hover: rgb(250 250 248 / 0.9);
     --tw-glass-edge: rgb(0 0 0 / 0.06);
     --tw-glass-edge-strong: rgb(0 0 0 / 0.12);
-    --tw-text-primary: #0b0b0c;
+    --tw-text-primary: #1c1c1e;
     --tw-text-secondary: rgb(0 0 0 / 0.6);
     --tw-text-tertiary: rgb(0 0 0 / 0.4);
     --tw-text-disabled: rgb(0 0 0 / 0.24);
-    --tw-text-inverse: #fff;
+    --tw-text-inverse: #f4f4f2;
     --tw-control-track: rgb(0 0 0 / 0.1);
-    --tw-control-fill: #0b0b0c;
+    --tw-control-fill: #1c1c1e;
     --tw-control-quiet-hover: rgb(0 0 0 / 0.06);
     --tw-accent-text: var(--tw-accent-strong);
     --tw-status-success: #137f4b;
@@ -913,8 +914,8 @@
 }
 @media (prefers-color-scheme: light) {
   .look-dot.clear {
-    --tw-glass-float: rgb(250 250 248 / var(--tw-glass-alpha));
-    --tw-glass-float-hover: rgb(255 255 255 / var(--tw-glass-alpha));
+    --tw-glass-float: rgb(240 240 237 / var(--tw-glass-alpha));
+    --tw-glass-float-hover: rgb(248 248 246 / var(--tw-glass-alpha));
   }
 }
 /* No drop shadows: they pile up in the gaps between tiles and the page row clips them into a
