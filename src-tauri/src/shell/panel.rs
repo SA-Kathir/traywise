@@ -48,6 +48,8 @@ pub struct PanelState {
     hover: AtomicBool,
     /// An edge-opened panel is sliding out: a second close request waits for it.
     closing: AtomicBool,
+    /// The frame is being changed: Windows reports the focus lost meanwhile, which isn't a click elsewhere.
+    reframing: AtomicBool,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -72,7 +74,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     let handle = win.clone();
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
-        WindowEvent::Focused(false) if is_open(&handle) => hide(&handle),
+        WindowEvent::Focused(false) if is_open(&handle) && !handle.state::<PanelState>().reframing.load(Ordering::Relaxed) => hide(&handle),
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
@@ -401,8 +403,16 @@ fn place(win: &WebviewWindow, edge: bool) {
 /// Called after Settings are saved: the look or background may have changed.
 pub fn refresh_frame(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL) {
+        let state = app.state::<PanelState>();
+        // Changing the frame makes Windows drop the focus, which would hide the panel: ignore that,
+        // then take the focus back (an edge-opened panel never had it).
+        state.reframing.store(true, Ordering::Relaxed);
         frame(&win, framed(&app.state::<SettingsState>().get()));
-        place(&win, app.state::<PanelState>().hover.load(Ordering::Relaxed));
+        place(&win, state.hover.load(Ordering::Relaxed));
+        if is_open(&win) && !state.hover.load(Ordering::Relaxed) {
+            let _ = win.set_focus();
+        }
+        state.reframing.store(false, Ordering::Relaxed);
     }
 }
 
