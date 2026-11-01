@@ -17,7 +17,7 @@ Decisions made with the owner (2026-10-29):
 | Dot-matrix type | **Numbers and the wordmark only.** Every word is Segoe UI Variable. |
 | Modes | **Dark and light**, following Windows' app mode. |
 | Glass | **Two levels.** Tiles get a faint tint and hairline, with no blur. Only floating layers (toast, menu, edit tray) get frost (blur). Fallback if this looks wrong in the app: frost everywhere, measured first. |
-| Background | App-drawn and never read from the desktop. **A Setting (Background: Dots / Plain), dot grid by default.** |
+| Background | App-drawn and never read from the desktop. **A Setting (Background: Dots / Plain), plain by default.** |
 | On tiles | **Inverted:** a white plate in dark mode (black in light) with a small accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
 | Red | **#D92B24**, so white text passes WCAG AA (about 4.9:1). |

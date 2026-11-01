@@ -75,7 +75,7 @@ impl Default for Settings {
             single_hue: false,
             preset: Preset::Ocean,
             accent: Accent::Red,
-            plain_background: false,
+            plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
