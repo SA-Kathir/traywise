@@ -1,6 +1,16 @@
 /* The page's half of the open/close animation (the window's clip is Rust's, in shell/panel.rs).
    Rust sets html[data-island] = in-tray | in-edge | out-tray | out-edge and --island-ms, together
    with starting the clip, so both run on one clock. Only transform and opacity. */
+/* The page's background scales with the panel: it's drawn on the panel (Dot draws it on the page
+   alone otherwise), and the page's own stays off, or it would stand still around the shrunken panel
+   as an empty frame. */
+html[data-island] {
+  background: none !important;
+}
+html[data-island].look-dot .panel {
+  background: var(--tw-page-bg);
+}
+
 @media not (prefers-reduced-motion: reduce) {
   html[data-island] #root {
     transform-origin: 50% 100%;

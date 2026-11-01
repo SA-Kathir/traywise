@@ -141,13 +141,16 @@
 
 /* App-drawn, never read from the desktop: a 12 px dot grid over a gentle fade, or the fade alone. */
 .look-dot {
-  background:
+  /* A variable, so the open/close animation (island.css) can draw the same background on the panel
+     that scales, instead of leaving the page's own background standing still around it. */
+  --tw-page-bg:
     radial-gradient(var(--tw-bg-dot) 0.9px, transparent 1.1px) 0 0 / 12px 12px,
     linear-gradient(var(--tw-bg-base), var(--tw-bg-deep));
+  background: var(--tw-page-bg);
   color: var(--tw-text-primary);
 }
 .look-dot.plain {
-  background: linear-gradient(var(--tw-bg-base) 30%, var(--tw-bg-deep));
+  --tw-page-bg: linear-gradient(var(--tw-bg-base) 30%, var(--tw-bg-deep));
 }
 /* html scrolls the panel, so the grid stays put under it and the panel itself is see-through. */
 .panel.look-dot {
@@ -897,6 +900,7 @@
    it, so cards are just their tint there). What isn't already a card gets one, to read over any
    wallpaper. */
 .look-dot.clear {
+  --tw-page-bg: none;
   background: none;
   /* Experiment: fully solid cards over the desktop (was 92% over black down to 68% over white,
      from --backdrop sampled as the panel opens). */
