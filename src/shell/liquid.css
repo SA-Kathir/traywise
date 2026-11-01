@@ -1315,6 +1315,13 @@ button.awake-main:hover {
 .awake-ring .lit {
   fill: var(--accent);
 }
+/* On, the tile is filled with the accent: the dots switch to the text colour on it. */
+.panel:not(.look-dot) .awake.on .awake-ring {
+  fill: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .awake.on .awake-ring .lit {
+  fill: var(--on-accent);
+}
 .awake-state {
   display: flex;
   flex-direction: column;
