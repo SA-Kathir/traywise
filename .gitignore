@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private maintainer notes for Claude sessions (never commit)
+CLAUDE.local.md
