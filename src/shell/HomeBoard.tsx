@@ -35,36 +35,42 @@ export function newTile(id: string): Placed {
   return placed(id, defaultBoard.find(([d]) => d === id)?.[1] ?? info(id).sizes[0]);
 }
 
-/** The board to show: the saved one (or the default, before it's first changed), less any tile
- *  this version doesn't know (a hand-edited or newer settings file) or whose module is off. A size
- *  the tile no longer comes in (Keep awake's old 2×2) becomes its default size. */
-export function boardToShow(saved: Placed[] | null, enabled: ModuleId[], auto: boolean): Placed[] {
-  if (!saved) return startingBoard(enabled);
+/** The pages to show: the saved ones (or the default board as one page, before it's first changed),
+ *  less any tile this version doesn't know (a hand-edited or newer settings file), whose module is
+ *  off, or that's already on an earlier page. A size the tile no longer comes in (Keep awake's old
+ *  2×2) becomes its default size. */
+export function pagesToShow(saved: Placed[][] | null, enabled: ModuleId[], auto: boolean): Placed[][] {
+  if (!saved?.length) return [startingBoard(enabled)];
   const seen = new Set<string>();
-  const known = saved.flatMap((t) => {
-    const module = tileModule(t.id);
-    const kind = enabled.includes(module) && !seen.has(t.id) && modules[module].tiles[kindOf(t.id)];
-    seen.add(t.id);
-    if (!kind) return [];
-    return [kind.sizes.includes(sizeOf(t)) ? t : { ...newTile(t.id), x: t.x, y: t.y }];
+  return saved.map((page) => {
+    const known = page.flatMap((t) => {
+      const module = tileModule(t.id);
+      const kind = enabled.includes(module) && !seen.has(t.id) && modules[module].tiles[kindOf(t.id)];
+      seen.add(t.id);
+      if (!kind) return [];
+      return [kind.sizes.includes(sizeOf(t)) ? t : { ...newTile(t.id), x: t.x, y: t.y }];
+    });
+    // A resized tile may now overlap its neighbours: settle them either way.
+    return auto ? pack(known) : compact(known);
   });
-  // A resized tile may now overlap its neighbours: settle them either way.
-  return auto ? pack(known) : compact(known);
 }
 
-/** After modules are switched on or off: the tiles of those switched off go, and those switched on
- *  get their default tiles. Nothing to do before the board is first changed (it's the default). */
-export function withModules(saved: Placed[] | null, before: ModuleId[], after: ModuleId[], auto: boolean) {
+/** After modules are switched on or off: the tiles of those switched off go from every page, and
+ *  those switched on get their default tiles on page 1. Nothing to do before the board is first
+ *  changed (it's the default). */
+export function withModules(saved: Placed[][] | null, before: ModuleId[], after: ModuleId[], auto: boolean) {
   if (!saved) return null;
-  let board = saved.filter((t) => after.includes(tileModule(t.id)));
+  const pages = saved.map((page) => page.filter((t) => after.includes(tileModule(t.id))));
+  let first = pages[0] ?? [];
   for (const [id] of defaultBoard) {
     const module = tileModule(id);
-    if (after.includes(module) && !before.includes(module) && !board.some((t) => t.id === id)) {
+    if (after.includes(module) && !before.includes(module) && !pages.some((p) => p.some((t) => t.id === id))) {
       const { w, h } = newTile(id);
-      board = add(board, id, w, h, auto);
+      first = add(first, id, w, h, auto);
     }
   }
-  return auto ? pack(board) : board;
+  pages[0] = first;
+  return auto ? pages.map(pack) : pages;
 }
 
 function placed(id: string, size: Size): Placed {
@@ -86,7 +92,21 @@ type BoardProps = {
   onChange: (tiles: Placed[]) => void;
   /** A tile was held down: start edit mode. */
   onLongPress: () => void;
+  /** How many pages there are, which one this is, and whether there's room for another. */
+  pages: number;
+  page: number;
+  canAddPage: boolean;
+  /** A tile was dropped on a page's target in the Move to bar: move it there (`pages`: a new page). */
+  onMoveToPage: (id: string, page: number) => void;
 };
+
+/** The Move to target under the pointer, if any (under the dragged tile too). */
+const targetAt = (e: PointerEvent) =>
+  document.elementsFromPoint(e.clientX, e.clientY).find((el): el is HTMLElement => el instanceof HTMLElement && el.dataset.page !== undefined);
+
+/** Lights up the target a dragged tile would go to on release. */
+const markTarget = (target?: HTMLElement) =>
+  document.querySelectorAll("[data-page]").forEach((el) => el.classList.toggle("drop", el === target));
 
 /** A tile being dragged. `tiles` is the board as it's shown: every step is worked out from `from`,
  *  the board before the drag, so tiles that made room spring back once the dragged one moves on. */
@@ -111,7 +131,7 @@ type Drag = {
 
 /** The home board: each tile in its cells of the 4-column grid, drawn by its module. In edit mode
  *  the tiles stop working and can be dragged (or moved with the arrow keys), resized and removed. */
-export function Board({ tiles, open, editing, auto, onChange, onLongPress }: BoardProps) {
+export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages, page, canAddPage, onMoveToPage }: BoardProps) {
   const board = useRef<HTMLDivElement>(null);
   // The drag lives in a ref, read by the pointer handlers: several pointer events can arrive before
   // React draws again, and each must see the last one's result. The state copy is for drawing.
@@ -144,18 +164,22 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
   // panel does no extra work otherwise, and not at all if Windows' animation effects are off.
   useLayoutEffect(() => {
     follow(); // after React moved the dragged tile to its new cell
+    if (board.current!.closest("[inert]")) return; // a neighbouring page, there only to slide in
     if (!editing || reducedMotion()) return void (lastRects = new Map());
     const before = lastRects;
     lastRects = new Map();
-    for (const el of board.current!.children as HTMLCollectionOf<HTMLElement>) {
+    const slots = [...board.current!.children] as HTMLElement[];
+    // A page just scrolled to, with none of its tiles measured yet: nothing on it is new.
+    const seen = slots.some((el) => before.has(el.dataset.id!));
+    for (const el of slots) {
       // Layout position, not getBoundingClientRect: that would include a glide still under way.
       const r = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
       lastRects.set(el.dataset.id!, r);
       const old = before.get(el.dataset.id!);
       if (dragging.current?.moved && el.dataset.id === dragging.current.id) continue; // it follows the pointer
       if (!old) {
-        // Not on entering edit mode, when nothing was measured yet: only a tile that's just been added.
-        if (before.size > 0)
+        // Not on entering edit mode or a new page, when nothing was measured yet: only a tile just added.
+        if (seen)
           el.animate([{ opacity: 0, transform: "scale(0.96)" }, {}], { duration: APPEAR_MS, easing: "ease-out" });
       } else if (old.left !== r.left || old.top !== r.top || old.width !== r.width || old.height !== r.height) {
         // A glide still under way starts the next from where the tile is drawn now, so it doesn't jump.
@@ -229,6 +253,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
     const drag = dragging.current;
     if (!drag) return;
     const moved = drag.moved || Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > DRAG_PX;
+    markTarget(moved ? targetAt(e) : undefined);
     const { x, y } = cellAt(e, drag.grabX, drag.grabY);
     const pointer = { pointerX: e.clientX, pointerY: e.clientY };
     if (moved === drag.moved && x === drag.x && y === drag.y) {
@@ -239,11 +264,16 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
     setDrag({ ...drag, ...pointer, moved, x, y, tiles: next });
   }
 
-  function pointerUp() {
+  function pointerUp(e: PointerEvent) {
     cancelPress();
+    markTarget();
     const d = dragging.current;
     const el = d?.moved && slot(d.id);
-    if (d && el) {
+    const target = el && targetAt(e);
+    if (d && el && target) {
+      el.style.transform = "";
+      onMoveToPage(d.id, Number(target.dataset.page));
+    } else if (d && el) {
       // Glide from under the pointer into its cell, like any other tile that moved.
       const r = lastRects.get(d.id);
       const m = new DOMMatrix(getComputedStyle(el).transform);
@@ -260,6 +290,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
 
   function cancelDrag() {
     cancelPress();
+    markTarget();
     const d = dragging.current;
     if (d) slot(d.id)?.style.removeProperty("transform");
     setDrag(null);
@@ -276,7 +307,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
   }
 
   function keyDown(e: KeyboardEvent, t: Placed) {
-    if (e.target !== e.currentTarget) return; // a badge's own keys
+    if (e.target !== e.currentTarget || e.ctrlKey) return; // a badge's own keys; Ctrl+←/→ turns the page
     const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
     if (step) {
       e.preventDefault();
@@ -297,6 +328,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
   }
 
   return (
+    <>
     <div
       ref={board}
       className={editing ? "board editing" : "board"}
@@ -360,5 +392,26 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress }: Boa
         );
       })}
     </div>
+    {drag?.moved && (
+      // While a tile is dragged: a big target for each other page, and one for a new page.
+      <section className="move-bar" aria-hidden>
+        <h2>Move to</h2>
+        <div className="row">
+          {Array.from({ length: pages }, (_, i) =>
+            i === page ? null : (
+              <span key={i} className="move-target" data-page={i}>
+                Page {i + 1}
+              </span>
+            ),
+          )}
+          {canAddPage && (
+            <span className="move-target" data-page={pages}>
+              + New page
+            </span>
+          )}
+        </div>
+      </section>
+    )}
+    </>
   );
 }

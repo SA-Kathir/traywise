@@ -1,6 +1,6 @@
 // Run with `pnpm test` (Node runs TypeScript directly). Boards are drawn as text, rows separated by
 // spaces: each cell is its tile's id, "." is empty.
-import { add, compact, move, pack, remove, resize, shift, type Placed } from "./board.ts";
+import { add, compact, move, moveToPage, pack, remove, resize, shift, type Placed } from "./board.ts";
 
 function draw(tiles: Placed[]): string {
   const rows: string[][] = [];
@@ -69,5 +69,11 @@ check("add, free, into a gap", add(topRight, "e", 2, 1, false), "acdd eedd bbbb 
 
 check("remove, auto", remove(board, "a", true), "c... bbbb bbbb dd.. dd..");
 check("remove, free", remove(board, "a", false), ".c.. bbbb bbbb dd.. dd..");
+
+// Pages: d goes to page 2 at its size, in its first free spot; page 1 closes the gap.
+const [one, two] = moveToPage([board, [tile("e", 2, 1)]], "d", 0, 1, true);
+check("to page, from", one, "ac.. bbbb bbbb");
+check("to page, to", two, "eedd ..dd");
+check("to page, free", moveToPage([board, topRight], "e", 0, 1, false)[0], "ac.. bbbb bbbb dd.. dd..");
 
 console.log("board: all checks passed");

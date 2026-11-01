@@ -845,6 +845,11 @@
 .look-dot .board.editing {
   margin-bottom: 48px;
 }
+/* The page dots sit above it. */
+.look-dot:has(.board.editing) .page-dots {
+  bottom: 56px;
+  margin-bottom: 40px;
+}
 
 /* ---- Settings and first run --------------------------------------------------------------- */
 
