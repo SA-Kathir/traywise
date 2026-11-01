@@ -1059,9 +1059,6 @@
 .look-dot .clock-well {
   background: var(--tw-control-track);
 }
-.look-dot .clock-shift {
-  color: var(--tw-accent-text);
-}
 .look-dot .clock-tag {
   text-transform: uppercase;
   letter-spacing: 0.06em;

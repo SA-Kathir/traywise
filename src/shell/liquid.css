@@ -1399,7 +1399,7 @@ button.clock-main:hover {
   fill: var(--accent);
 }
 
-/* A time's place: a pin for this PC's, a globe for the second zone's, then the city. */
+/* A time's place: its city, above or beside it. */
 .clock-label {
   display: flex;
   align-items: center;
@@ -1490,10 +1490,6 @@ button.clock-main:hover {
 .clock-glyph {
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 11px;
-}
-.clock-shift {
-  font-size: 11px;
-  color: var(--accent);
 }
 .clock-well.full {
   flex: none;

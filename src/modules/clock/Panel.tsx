@@ -8,10 +8,8 @@ import { city, clockAt, dayShift, difference, differenceLabel, hands, isNight, t
 import { ZONES, matches, place } from "./zones";
 
 // Segoe Fluent Icons glyphs.
-const GLOBE = String.fromCodePoint(0xe774);
 const MOON = String.fromCodePoint(0xe708);
 const SUN = String.fromCodePoint(0xe706);
-const HOME = String.fromCodePoint(0xe80f);
 const CHEVRON_DOWN = String.fromCodePoint(0xe70d);
 const CHEVRON_UP = String.fromCodePoint(0xe70e);
 
@@ -112,29 +110,21 @@ function Face({ date, zone }: { date: Date; zone?: string }) {
   );
 }
 
-/** The second zone, always in its own inset well so it never reads as this PC's time: a globe, the
- *  city and how many days off it is, then its time. `full` (4×2): a column, with its date, the
+/** The second zone, always in its own inset well so it never reads as this PC's time: the city,
+ *  then its time. `full` (4×2): a column, with its date, the
  *  hours between, a moon or sun, and a Tomorrow / Yesterday tag. */
 function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }) {
   const shift = dayShift(date, zone);
-  const globe = (
-    <span className="clock-glyph" aria-hidden>
-      {GLOBE}
-    </span>
-  );
   if (!full)
     return (
       <span className="clock-well">
-        {globe}
         <span className="clock-over clock-city">{place(zone)}</span>
-        {shift !== 0 && <span className="clock-shift">{shift > 0 ? "+1" : "−1"}</span>}
         <Time date={date} zone={zone} />
       </span>
     );
   return (
     <span className="clock-well full">
       <span className="clock-well-head">
-        {globe}
         <span className="clock-over clock-city">{place(zone)}</span>
         <span className="clock-glyph" aria-label={isNight(date, zone) ? "Night" : "Day"}>
           {isNight(date, zone) ? MOON : SUN}
@@ -151,16 +141,12 @@ function Zone({ date, zone, full }: { date: Date; zone: string; full?: boolean }
   );
 }
 
-/** This PC's place, named like the second zone's (a house instead of the globe), so two times on one
- *  tile never read as one. */
+/** This PC's place, named like the second zone's, so two times on one tile never read as one. */
 const HERE = city(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 function Label({ zone, extra }: { zone?: string; extra?: string }) {
   return (
     <span className="clock-label">
-      <span className="clock-glyph" aria-hidden>
-        {zone ? GLOBE : HOME}
-      </span>
       <span className="clock-over">
         {zone ? place(zone) : HERE}
         {extra && ` · ${extra}`}
@@ -171,7 +157,6 @@ function Label({ zone, extra }: { zone?: string; extra?: string }) {
 
 /** Analogue with a second zone: two matching faces side by side, each named under it. */
 function Twins({ date, zone, size }: { date: Date; zone: string; size: TileProps["size"] }) {
-  const shift = dayShift(date, zone);
   return (
     <span className="clock-twins">
       <span className="clock-place">
@@ -188,7 +173,6 @@ function Twins({ date, zone, size }: { date: Date; zone: string; size: TileProps
           <span className="clock-over dim">
             {day(date, "short", zone)}
             {size === "4x2" && ` · ${differenceLabel(difference(date, zone))}`}
-            {shift !== 0 && <span className="clock-shift"> {shift > 0 ? "+1" : "−1"}</span>}
           </span>
         </span>
       </span>
