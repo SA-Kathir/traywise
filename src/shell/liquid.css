@@ -606,8 +606,7 @@ label.row + .hint,
 
 /* ---- Controls -------------------------------------------------------------------------- */
 
-button,
-select {
+button {
   font: inherit;
   color: inherit;
   padding: 6px 10px;
@@ -618,8 +617,7 @@ select {
   cursor: pointer;
   transition: background 120ms ease;
 }
-button:hover,
-select:hover {
+button:hover {
   background: rgb(var(--ink) / 0.14);
 }
 button:active {
@@ -869,7 +867,7 @@ section > .link-row:only-child {
 .look-windows .stats:hover {
   background: color-mix(in srgb, var(--card) 94%, rgb(var(--ink)));
 }
-.look-windows :is(button, select) {
+.look-windows button {
   border-radius: 4px;
   box-shadow: none;
 }
