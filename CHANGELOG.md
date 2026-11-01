@@ -2,8 +2,11 @@
 
 ## Unreleased
 
-### Highlights
-
+- **Displays** module: a brightness slider for each screen (the laptop's own, and external monitors that have DDC/CI switched on in their menu), and a **Project** switch like Win+P: PC screen only, Duplicate, Extend or Second screen only. Tiles from 1×1 to 4×2; the page is in the System tab.
+- **Power** module: Windows' power mode (Efficiency, Balanced or Performance), the battery with time left, and whether Energy saver is on, with a shortcut to its settings (Windows doesn't let apps switch it). Tiles at 1×1 and 2×1.
+- **Per-app output.** In the volume mixer, click the device under an app's name to send it to another output (Spotify on the speakers while a call stays on the headset), or back to Default. Windows remembers it, even after the app or Traywise restarts. An app set to a device that's been unplugged goes back to Default. **Reset all** sends every app back. Apps on other devices now show in the mixer too.
+- **Clock** module: the time and date on a tile from 1×1 to 4×2, Digital (dot-matrix numbers) or Analogue (a face of dots). An optional second time zone (picked from a short, searchable list of places) shows on the 4×1, 2×2 and 4×2 tiles, each time labelled with its city: in its own box beside the digital time, or as a second face beside the analogue one. Without one, the bigger tiles give your own time the whole tile. It only updates while the panel is open, once a minute.
+- **Focus** module: switches Windows' Do not disturb. The Focus tile turns it on for 25 minutes with a click (or 25 min, 50 min or 1 hour from the 2×2), with a countdown and a ring of dots that empties; it turns itself off when time's up. A plain Do not disturb tile switches it on or off. Both show changes made in Windows too. Windows has no official way to do this, so it uses the same hidden setting Windows' own switch does, and says "Not available" if a Windows update ever removes it.
 - **Board pages.** Home can have up to five pages of tiles, each with its own layout:
   - Swipe between pages with a touchpad or touchscreen (or Shift with the mouse wheel); they follow your fingers and snap into place. Ctrl+← / Ctrl+→, PageUp / PageDown and the dots at the bottom work too.
   - In edit mode, pick up a tile and drop it on **Move to** › a page (or a new one) at the bottom.

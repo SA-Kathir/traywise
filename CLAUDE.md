@@ -2,7 +2,24 @@
 
 A free, open-source (GPL-3.0-or-later) Windows 11 tray toolkit: one tray icon and one panel, with features as modules you switch on or off. It's inspired by vorssaint/vorssaint-utils (macOS). Don't use Vorssaint's name, icon or look, which are trademarked, and don't copy its code (it's Swift).
 
-Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass look.**
+Priorities, in order: **1. fast and lean, with no bloat; 2. a distinctive, polished look** (Dot, the default, is Nothing OS-inspired with restrained glass; see `docs/design-system.md`).
+
+**Start here:** read `CLAUDE.local.md` if it exists (private maintainer notes: design links, accounts, the reasons behind boundaries; git-ignored, so never commit or quote it). Then read `docs/ROADMAP.md`, which has what's released, what's in progress (open PRs, branches, worktrees), what's next, the product boundaries and open owner decisions. Read it, then run `git fetch && gh pr list` to see what has changed since it was written.
+
+## Sources of truth
+
+- **Design:**
+  - The maintainers' Figma file (link in `CLAUDE.local.md`). Its "Design System" page holds tokens, components, tiles at every size and board screens.
+  - `docs/design-system.md` is the written spec the code follows. New UI is designed in Figma first, or Figma is updated to match what shipped.
+- **Releases:** `CHANGELOG.md` (each release's section becomes its GitHub release notes) and CONTRIBUTING.md › Branches for the release steps.
+- **Repo:** https://github.com/SA-Kathir/traywise, through the `gh` CLI (account details in `CLAUDE.local.md`).
+
+## Product boundaries
+
+- Out of scope: launcher features (clipboard history, snippets, notes, timer/Pomodoro, calculator, web search). Launchers can drive Traywise through `traywise://` links instead (planned).
+- No paid services (code signing etc.) for now.
+- **Keep private notes private:** no Figma links, account names, personal details or mentions of other people's projects in tracked files, commits, PRs, issues or release notes. They belong in `CLAUDE.local.md`.
+- Never decompile or copy other products (Nothing OS, Vorssaint). Learn from public material only.
 
 ## Working with the owner
 
@@ -13,6 +30,12 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass
   - Never commit to `main`; it holds released versions only, each tagged `vX.Y.Z`.
   - New work goes on `feature/<name>` or `fix/<name>`, branched from `dev`, and is merged back into `dev` by pull request.
   - Check `git branch --show-current` before your first commit.
+- **Parallel sessions:**
+  - Several Claude sessions often work at once, each on its own branch in its own **git worktree**: a sibling folder like `../tw-<name>`, made with `git worktree add ../tw-<name> -b feature/<name> origin/dev`. Then copy `CLAUDE.local.md` into it, since worktrees don't get untracked files.
+  - Never switch branches in another session's folder.
+  - **Only one Traywise can run at a time** (single-instance, and `pnpm tauri dev` uses port 1420). Before launching, check `tasklist | grep -i traywise` and port 1420.
+  - Never kill another session's process. Ask the owner before closing their installed copy, and close your own copy when done.
+- **Brainstorm before building:** the owner likes to agree the interaction and look first. Ask short, specific questions, then work in small steps, and stop for their OK after each.
 - **Commit messages and PR titles use Conventional Commits** (see CONTRIBUTING.md):
   - Format: `<type>(<scope>): <imperative summary>`, e.g. `feat(board): swipeable board pages`, `fix(mixer): …`, `docs: …`.
   - Types: feat, fix, perf, refactor, style, docs, test, build, ci, chore.
@@ -45,7 +68,7 @@ Module rules:
 - Modules are built in. No third-party plugin loading; that would mean running other people's native code.
 - Event-driven, never polling. When nothing is happening, CPU should be about 0%.
 
-## Proven in ../glass-spike (read its README and src-tauri/src/lib.rs)
+## Hard-won rules (measured; first proven in ../glass-spike)
 
 Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a CPU core while hidden, about 140–150 MB of RAM (working set) once hidden for a minute or more. The spike's old "76 MB" was an early reading taken ~30 s after hiding, not the steady state. Keep open time and CPU there; the RAM target is paused for now (WebView2 browser flags cut it to ~125–130 MB, not adopted yet).
 

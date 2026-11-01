@@ -434,9 +434,15 @@
   align-content: space-between;
   text-align: left;
 }
+/* OCR-A is wide (0.7 em a letter): at 12 px only six letters fit a 1×1, so names like
+   "Headphones" lost all but three. 10 px fits seven, and a second line takes a second word. */
 .look-dot .size-1x1 .tile-detail {
-  font-size: 12px;
-  line-height: 16px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  font-size: 10px;
+  line-height: 13px;
   font-weight: 600;
   color: inherit;
 }
@@ -575,6 +581,14 @@
 }
 .look-dot .vol-apps .tile-detail {
   color: var(--tw-text-secondary);
+}
+.look-dot .mixer-name .mixer-output {
+  background-color: var(--tw-glass-tile);
+  font-size: 10px;
+  color: var(--tw-text-tertiary);
+}
+.look-dot .mixer-name .mixer-output.moved {
+  color: var(--tw-accent-text);
 }
 .look-dot .mixer-value {
   margin-left: 4px;
@@ -1007,6 +1021,88 @@
   font-size: 16px;
 }
 
+/* ---- Clock ------------------------------------------------------------------------------- */
+
+.look-dot .clock-time .num {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+  font-size: 32px;
+}
+.look-dot .clock-time.stacked .num {
+  font-size: 18px;
+}
+.look-dot .clock.analogue .clock-here .num {
+  font-size: 18px;
+}
+.look-dot .clock.size-2x2 .clock-here .num {
+  font-size: 34px;
+}
+.look-dot .clock-page .num {
+  font-size: 48px;
+}
+.look-dot .clock.size-4x2 .clock-here .num {
+  font-size: 40px;
+}
+.look-dot .clock.size-2x2 .clock-time.stacked .num {
+  font-size: 48px;
+}
+.look-dot .clock.analogue.size-4x2 .clock-here .num {
+  font-size: 36px;
+}
+/* 4×2 on its own: the time has the tile to itself (beside the face, if analogue). */
+.look-dot .clock.digital.size-4x2:not(.zoned) .clock-here .num {
+  font-size: 64px;
+}
+/* 4×1 shares its row with the zone's box: a little smaller, so "11:17 PM" leaves the city room. */
+.look-dot .clock.size-4x1 .clock-here .num {
+  font-size: 28px;
+}
+.look-dot .clock-well .num {
+  font-size: 18px;
+}
+.look-dot .clock.size-2x2 .clock-well .num {
+  font-size: 16px;
+}
+.look-dot .clock-well.full .num {
+  font-size: 26px;
+}
+.look-dot .clock-over {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tw-text-secondary);
+}
+.look-dot .clock-over.dim {
+  color: var(--tw-text-tertiary);
+}
+.look-dot .clock-well {
+  background: var(--tw-control-track);
+}
+.look-dot .clock-tag {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-accent-text);
+  background: var(--tw-accent-tint);
+}
+.look-dot .clock-face .tick {
+  fill: var(--tw-text-tertiary);
+}
+.look-dot .clock-face :is(.major, .hand) {
+  fill: var(--tw-text-primary);
+}
+.look-dot .clock-face .tip {
+  fill: var(--tw-accent-base);
+}
+.look-dot .clock-hours {
+  fill: var(--tw-control-track);
+}
+.look-dot .clock-hours .lit {
+  fill: var(--tw-text-secondary);
+}
+.look-dot .clock-hours .now {
+  fill: var(--tw-accent-base);
+}
+
 /* ---- 2×2 toggle tiles, and the Connect pages ------------------------------------------------ */
 
 .look-dot .tile.size-2x2 .tile-icon,
@@ -1098,4 +1194,47 @@
 /* A wide countdown runs the full width: keep clear of the details chevron. */
 .look-dot .tile:not(.size-1x1):has(.tile-detail .num):has(.tile-more) .tile-main {
   padding-right: 24px;
+}
+
+/* ---- Power: battery gauge -------------------------------------------------------------------- */
+
+/* Levels stay neutral; only a low battery takes the status colours. */
+.look-dot .gauge {
+  color: var(--tw-text-secondary);
+  fill: var(--tw-control-track);
+}
+.look-dot .gauge .lit {
+  fill: var(--tw-text-primary);
+}
+.look-dot .low :is(.num, .gauge) {
+  color: var(--tw-status-warning);
+}
+.look-dot .critical :is(.num, .gauge) {
+  color: var(--tw-status-danger);
+}
+.look-dot .battery-big .num {
+  font-size: 32px;
+}
+.look-dot .battery.size-1x1 .num {
+  font-size: 20px;
+}
+
+/* ---- Displays: Project choices ---------------------------------------------------------------- */
+
+/* Glass with a hairline; the picked one is the inverted plate. */
+.look-dot .segmented.project-grid {
+  gap: 6px;
+  border-radius: 0;
+  background: none;
+}
+.look-dot .segmented.project-grid button {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--tw-radius-md);
+  background: var(--tw-control-track);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge);
+}
+.look-dot .segmented.project-grid button.on {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
 }
