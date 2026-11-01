@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Highlights
+
+- **Board pages.** Home can have up to five pages of tiles, each with its own layout:
+  - Turn the page with a sideways swipe or drag, a touchpad (or Shift with the mouse wheel), Ctrl+← / Ctrl+→, PageUp / PageDown, or the dots at the bottom.
+  - In edit mode, add a page, move it left or right, or remove it (its tiles go back to Add tiles). Drag a tile onto a page's dot to move it there.
+  - A tile is on one page at a time. New installs still start with one page, and your current board becomes page 1.
+
 ## 0.2.0 (2026-10-31)
 
 ### Highlights
