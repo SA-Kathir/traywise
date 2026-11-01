@@ -119,14 +119,25 @@ body {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
 }
 /* Transparent: the cards float over the desktop (shown through the window, never read). Anything
-   not already in a card gets one, so it reads over any wallpaper. The title's pill hugs the name;
-   the icon buttons are their own cards. */
+   not already in a card gets one, so it reads over any wallpaper. The header (title and its icon
+   buttons, or Back and the page's name) is one card, like Dot's. */
+.look-liquid.clear header {
+  padding: 6px 8px 6px 16px;
+  border-radius: 14px;
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
+}
+.look-liquid.clear header :is(h1, .icon-button) {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
 .look-liquid.clear header h1 {
   flex: none;
+  padding: 0;
   margin-right: auto;
-  padding: 3px 14px 5px;
 }
-.look-liquid.clear :is(header h1, .welcome, .setup-intro) {
+.look-liquid.clear :is(.welcome, .setup-intro) {
   border-radius: 14px;
   background: var(--tint);
   border: 1px solid var(--tint-edge);
