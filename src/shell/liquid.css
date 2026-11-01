@@ -174,6 +174,8 @@ section,
    its padding and the scrollbar's gutter), so 4 columns of 76 px with 8 px gaps make square cells.
    The cards themselves are the glass cards above; --tile-* is what tiles add to them. */
 .board {
+  /* Contains the tiles' badges and grips, so the Add tiles button and tray always sit above. */
+  isolation: isolate;
   --cell: 76px;
   --board-gap: 8px;
   --tile-pad: 10px 12px;
@@ -489,6 +491,17 @@ button.tile-title:hover {
 }
 .tray .link-row {
   margin-top: 0;
+}
+.tray-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* Editing over a transparent background: solid black, so the tiles read over any desktop. */
+.panel.clear.editing,
+html.clear.editing {
+  background: #000;
 }
 .tray .link-row > .grow {
   display: flex;
