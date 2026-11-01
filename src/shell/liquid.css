@@ -359,7 +359,11 @@ button.tile-title:hover {
   font-size: 22px;
   font-weight: 300;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  /* The unit drops under the number when they don't fit side by side. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 3px;
 }
 :is(.size-2x2, .size-4x2) .stat-chip-value {
   font-size: 40px;

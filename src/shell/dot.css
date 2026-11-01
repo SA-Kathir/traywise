@@ -613,12 +613,14 @@
   color: var(--tw-text-secondary);
 }
 .look-dot .stat-chip-value .num {
-  margin-right: 3px;
-  font-size: 24px;
+  font-size: 20px;
   color: var(--tw-text-primary);
 }
+.look-dot .size-4x1 .stat-chip-value .num {
+  font-size: 24px;
+}
 .look-dot :is(.size-2x2, .size-4x2) .stat-chip-value .num {
-  font-size: 56px;
+  font-size: 48px;
 }
 .look-dot .reading-sub {
   color: var(--tw-text-tertiary);
