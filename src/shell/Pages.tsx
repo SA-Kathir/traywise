@@ -6,8 +6,7 @@ const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").match
  *  scrolling is the browser's own, so a touchpad, a touchscreen or Shift with the mouse wheel moves
  *  the pages under the fingers, smoothly; Ctrl+←/→, PageUp/PageDown and the dots underneath scroll
  *  to a page. Only the page on screen and its neighbours are drawn (`render`), so the next one is
- *  ready as it slides in and the rest cost nothing. In edit mode a tile dropped on a dot moves to
- *  that page (`data-page`, read by the board). */
+ *  ready as it slides in and the rest cost nothing. */
 export function Pages({
   count,
   page,
@@ -66,7 +65,6 @@ export function Pages({
           {Array.from({ length: count }, (_, i) => (
             <button
               key={i}
-              data-page={i}
               aria-label={`Page ${i + 1}`}
               title={`Page ${i + 1}`}
               aria-current={i === page ? "page" : undefined}

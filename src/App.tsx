@@ -184,7 +184,7 @@ function App() {
         {editHome ? (
           <div className="grow">
             <h1>{title}</h1>
-            <p className="hint">{pages.length > 1 ? "Drag to move, or onto a page dot" : "Drag to move, corner to resize"}</p>
+            <p className="hint">{pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize"}</p>
           </div>
         ) : (
           <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
@@ -325,7 +325,11 @@ function App() {
                 auto={auto}
                 onChange={setBoard}
                 onLongPress={() => setEditing(true)}
-                onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage(pages, id, current, to, auto) })}
+                pages={pages.length}
+                page={i}
+                canAddPage={pages.length < MAX_PAGES}
+                // A new page (`to` is one past the last) goes at the end.
+                onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage([...pages, ...(to === pages.length ? [[]] : [])], id, current, to, auto) })}
               />
             )
           }
