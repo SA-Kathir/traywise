@@ -900,6 +900,11 @@
     --tw-glass-float-hover: rgb(255 255 255 / var(--tw-glass-alpha));
   }
 }
+/* No drop shadows: they pile up in the gaps between tiles and the page row clips them into a
+   faint box, which spoils the see-through look. */
+.look-dot.clear :is(section, .tile, .stats) {
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+}
 .look-dot.clear :is(header, .tabs, .edit-bar, .welcome, .setup-intro) {
   padding: 6px 8px 6px 16px;
   border-radius: var(--tw-radius-tile);

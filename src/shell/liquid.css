@@ -136,6 +136,10 @@ body {
   border: 1px solid var(--tint-edge);
 }
 
+/* No drop shadows: they pile up between tiles and the page row clips them into a faint box. */
+.look-liquid.clear :is(section, .tile, .stats) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent);
+}
 .look-liquid.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
 }
@@ -1310,6 +1314,13 @@ button.awake-main:hover {
 }
 .awake-ring .lit {
   fill: var(--accent);
+}
+/* On, the tile is filled with the accent: the dots switch to the text colour on it. */
+.panel:not(.look-dot) .awake.on .awake-ring {
+  fill: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .awake.on .awake-ring .lit {
+  fill: var(--on-accent);
 }
 .awake-state {
   display: flex;
