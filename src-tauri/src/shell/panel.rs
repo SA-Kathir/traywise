@@ -219,7 +219,10 @@ fn show(win: &WebviewWindow) {
         let _ = win.set_focus();
     }
     if animate {
-        reveal(win, true, hover, || {});
+        let w = win.clone();
+        reveal(win, true, hover, move || page_island(&w, None));
+    } else {
+        page_island(win, None);
     }
     win.state::<Modules>().panel_visible(true);
     let _ = PanelShown { backdrop, hover }.emit(win);
@@ -307,15 +310,37 @@ fn hide_now(win: &WebviewWindow) {
         // So the next open starts from a whole window.
         let _ = unsafe { SetWindowRgn(hwnd, None, false) };
     }
+    page_island(win, None);
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
 }
 
-/// How long the panel takes to grow out of its tiny bar, and to shrink back into it.
-const OPEN_MS: u64 = 260;
-const CLOSE_MS: u64 = 170;
+/// How long the panel takes to come out of its tiny bar, and to go back into it. The page's own
+/// animation (shell/island.css) runs for the same time, started at the same moment.
+const OPEN_MS: u64 = 350;
+const CLOSE_MS: u64 = 210;
+
+/// Starts (or, with `None`, clears) the page's half of the animation: the CSS in shell/island.css.
+fn page_island(win: &WebviewWindow, anim: Option<(bool, bool)>) {
+    let _ = match anim {
+        Some((opening, edge)) => win.eval(format!(
+            "document.documentElement.style.setProperty('--island-ms','{}ms');document.documentElement.dataset.island='{}-{}'",
+            if opening { OPEN_MS } else { CLOSE_MS },
+            if opening { "in" } else { "out" },
+            if edge { "edge" } else { "tray" },
+        )),
+        None => win.eval("delete document.documentElement.dataset.island"),
+    };
+}
+
+/// How far the window's clip has opened sideways and up/down, 0 to 1 each, `s` along the way out
+/// (0 the bar, 1 whole). Sideways leads and up/down follows a beat later; closing plays it backwards.
+fn stage(s: f64) -> (f64, f64) {
+    let part = |from: f64, to: f64| ((s - from) / (to - from)).clamp(0.0, 1.0);
+    (1.0 - (1.0 - part(0.0, 0.6)).powi(3), 1.0 - (1.0 - part(0.12, 1.0)).powi(4))
+}
 
 fn win_size(hwnd: HWND) -> (i32, i32) {
     let mut r = RECT::default();
@@ -349,6 +374,7 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
     let app = win.app_handle().clone();
     let id = app.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
     let hwnd = hwnd.0 as isize;
+    page_island(win, Some((opening, edge)));
     std::thread::spawn(move || {
         let hwnd = HWND(hwnd as _);
         let (w, h) = win_size(hwnd);
@@ -362,10 +388,10 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
             }
             // From the time elapsed, not a frame count: a late frame doesn't slow it down.
             let t = (start.elapsed().as_secs_f64() * 1000.0 / ms as f64).min(1.0);
-            // Out: fast, then easing to a stop. Back in: speeding up.
-            let p = if opening { 1.0 - (1.0 - t).powi(3) } else { 1.0 - t * t * t };
-            let lerp = |a: i32, b: i32| a + (f64::from(b - a) * p).round() as i32;
-            set_region(hwnd, (lerp(from.0, full.0), lerp(from.1, full.1), lerp(from.2, full.2), lerp(from.3, full.3)), lerp(8, 32));
+            let (pw, ph) = stage(if opening { t } else { 1.0 - t });
+            let lerp = |a: i32, b: i32, p: f64| a + (f64::from(b - a) * p).round() as i32;
+            // The corners ease from a pill to the panel's own radius as it grows.
+            set_region(hwnd, (lerp(from.0, full.0, pw), lerp(from.1, full.1, ph), lerp(from.2, full.2, pw), lerp(from.3, full.3, ph)), lerp(8, 32, ph));
             if t >= 1.0 {
                 break;
             }
