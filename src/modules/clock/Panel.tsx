@@ -5,7 +5,7 @@ import { Num } from "../../shell/Tile";
 import { useSettings } from "../../shell/SettingsContext";
 import type { TileProps } from "..";
 import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time";
-import { ZONES, place } from "./zones";
+import { ZONES, matches, place } from "./zones";
 
 // Segoe Fluent Icons glyphs.
 const GLOBE = String.fromCodePoint(0xe774);
@@ -262,14 +262,21 @@ export default function Panel() {
   );
 }
 
-/** The second zone: a button showing the one picked, which opens a short list of places. */
+/** The places, A to Z by country. */
+const SORTED = [...ZONES].sort((a, b) => a[1].localeCompare(b[1]));
+
+/** The second zone: a button showing the one picked, which opens a list of places with a search
+ *  box ready to type in ("ind" leaves India; Enter picks the first left, Esc closes). */
 function ZonePicker({ zone, onPick }: { zone: string | null; onPick: (zone: string | null) => void }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const known = ZONES.find(([z]) => z === zone);
   const pick = (z: string | null) => {
     onPick(z);
     setOpen(false);
+    setSearch("");
   };
+  const found = SORTED.filter((entry) => matches(entry, search));
   return (
     <div className="zone-picker">
       <button className="zone-current" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -279,11 +286,32 @@ function ZonePicker({ zone, onPick }: { zone: string | null; onPick: (zone: stri
         </span>
       </button>
       {open && (
+        <input
+          className="text zone-search"
+          placeholder="Search a country or city"
+          aria-label="Search places"
+          autoFocus
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && found[0]) pick(found[0][0]);
+            if (e.key === "Escape") {
+              e.stopPropagation(); // close the list, not the panel
+              setOpen(false);
+              setSearch("");
+            }
+          }}
+        />
+      )}
+      {open && (
         <div className="segmented vertical zone-list" role="listbox" aria-label="Second time zone">
-          <button role="option" aria-selected={!zone} className={!zone ? "on" : ""} onClick={() => pick(null)}>
-            None
-          </button>
-          {ZONES.map(([z, country, cities]) => (
+          {!search && (
+            <button role="option" aria-selected={!zone} className={!zone ? "on" : ""} onClick={() => pick(null)}>
+              None
+            </button>
+          )}
+          {found.length === 0 && <p className="hint">No places match.</p>}
+          {found.map(([z, country, cities]) => (
             <button key={z} role="option" aria-selected={zone === z} className={zone === z ? "on" : ""} onClick={() => pick(z)}>
               <span className="grow">{country}</span>
               <span className="zone-cities">{cities}</span>

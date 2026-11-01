@@ -72,3 +72,13 @@ export function place(zone: string) {
   const known = ZONES.find(([z]) => z === zone);
   return known ? known[2].split(",")[0] : city(zone);
 }
+
+/** Whether a place matches what's typed: any word of its country or cities starting with it, ignoring
+ *  case and accents ("sao" finds São Paulo, "york" New York). */
+export function matches([, country, cities]: (typeof ZONES)[number], typed: string) {
+  const plain = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const query = plain(typed.trim());
+  const words = plain(`${country} ${cities}`).split(/[\s,]+/);
+  // From each word on, so "new york" matches as well as "york".
+  return !query || words.some((_, i) => words.slice(i).join(" ").startsWith(query));
+}

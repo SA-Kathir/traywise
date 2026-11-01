@@ -1,5 +1,5 @@
 // Run with `pnpm test`. Fixed zones and dates, so it passes whatever zone this PC is in.
-import { ZONES, place } from "./zones.ts";
+import { ZONES, matches, place } from "./zones.ts";
 import { city, dayShift, difference, differenceLabel, hands, isNight, time, toNextMinute } from "./time.ts";
 
 function check(name: string, got: unknown, expected: unknown) {
@@ -38,5 +38,14 @@ for (const [zone] of ZONES) new Intl.DateTimeFormat("en", { timeZone: zone }); /
 check("zones unique", new Set(ZONES.map(([z]) => z)).size, ZONES.length);
 check("place", place("Asia/Kolkata"), "Delhi");
 check("place, unlisted", place("America/Argentina/Cordoba"), "Cordoba");
+
+const india = ZONES.find(([z]) => z === "Asia/Kolkata")!;
+check("search by country", matches(india, "ind"), true);
+check("search by city", matches(india, "mum"), true);
+check("search, any case", matches(india, "DELHI"), true);
+check("search, not mid-word", matches(india, "elhi"), false);
+check("search, accents", matches(ZONES.find(([z]) => z === "America/Sao_Paulo")!, "sao"), true);
+check("search, two words", matches(ZONES.find(([z]) => z === "America/New_York")!, "new york"), true);
+check("search, empty", matches(india, " "), true);
 
 console.log("clock: all checks passed");

@@ -1470,8 +1470,12 @@ button.clock-main:hover {
 .zone-list button {
   display: flex;
   flex: none;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+}
+.zone-search {
+  width: 100%;
+  margin-top: 6px;
 }
 .zone-cities {
   max-width: 60%;
