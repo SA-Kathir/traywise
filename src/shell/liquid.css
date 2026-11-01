@@ -408,7 +408,12 @@ button.tile-title:hover {
    shows a remove badge (top left) and, if it comes in more than one size, a resize badge (bottom
    right), just inside its corners. The one being dragged or focused gets a solid accent edge. */
 .edit-bar {
-  gap: 12px;
+  gap: 8px;
+}
+/* A slim title: Add tiles and Done sit beside it. */
+.editing header h1 {
+  font-size: 16px;
+  white-space: nowrap;
 }
 .board-slot {
   position: relative;
@@ -1967,9 +1972,6 @@ section > .setting:last-child {
 .move-target.drop {
   border: 1.5px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.page-bar {
-  gap: 8px;
 }
 
 /* The pages overview: each page an outline of where its tiles are, three to a row. */
