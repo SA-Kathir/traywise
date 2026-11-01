@@ -202,8 +202,12 @@ fn show(win: &WebviewWindow) {
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
     let animate = animations_on();
     let hwnd = win.hwnd().ok();
-    // The tiny bar first, so the window never flashes at full size before it grows.
-    if animate && let Some(hwnd) = hwnd {
+    // With a frame (its shadow can't be clipped) the page just rises and fades in; without one it grows
+    // out of a tiny bar. The page's start state is set before showing, so it never flashes at full size.
+    let pop = framed(&settings);
+    if animate && pop {
+        page_island(win, Some((true, hover, true)));
+    } else if animate && let Some(hwnd) = hwnd {
         set_region(hwnd, bar(win_size(hwnd), hover), 8);
         set_border(win, false);
     }
@@ -291,7 +295,9 @@ fn hide(win: &WebviewWindow) {
             return; // already closing
         }
         *state.last_hidden.lock().unwrap() = Some(Instant::now());
-        set_border(win, false);
+        if !framed(&win.state::<SettingsState>().get()) {
+            set_border(win, false);
+        }
         let w = win.clone();
         reveal(win, false, state.hover.load(Ordering::Relaxed), move || {
             let w2 = w.clone();
@@ -324,15 +330,27 @@ fn hide_now(win: &WebviewWindow) {
 /// animation (shell/island.css) runs for the same time, started at the same moment.
 const OPEN_MS: u64 = 350;
 const CLOSE_MS: u64 = 210;
+/// The same for a framed panel, which only rises and fades (shell/island.css, `pop`).
+const POP_OPEN_MS: u64 = 200;
+const POP_CLOSE_MS: u64 = 140;
 
 /// Starts (or, with `None`, clears) the page's half of the animation: the CSS in shell/island.css.
-fn page_island(win: &WebviewWindow, anim: Option<(bool, bool)>) {
+fn duration(opening: bool, pop: bool) -> Duration {
+    Duration::from_millis(match (opening, pop) {
+        (true, false) => OPEN_MS,
+        (false, false) => CLOSE_MS,
+        (true, true) => POP_OPEN_MS,
+        (false, true) => POP_CLOSE_MS,
+    })
+}
+
+fn page_island(win: &WebviewWindow, anim: Option<(bool, bool, bool)>) {
     let _ = match anim {
-        Some((opening, edge)) => win.eval(format!(
+        Some((opening, edge, pop)) => win.eval(format!(
             "document.documentElement.style.setProperty('--island-ms','{}ms');document.documentElement.dataset.island='{}-{}'",
-            if opening { OPEN_MS } else { CLOSE_MS },
+            duration(opening, pop).as_millis(),
             if opening { "in" } else { "out" },
-            if edge { "edge" } else { "tray" },
+            if pop { "pop" } else if edge { "edge" } else { "tray" },
         )),
         None => win.eval("delete document.documentElement.dataset.island"),
     };
@@ -377,14 +395,23 @@ fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + 
     let app = win.app_handle().clone();
     let id = app.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
     let hwnd = hwnd.0 as isize;
-    page_island(win, Some((opening, edge)));
+    let pop = framed(&win.state::<SettingsState>().get());
+    page_island(win, Some((opening, edge, pop)));
     let win = win.clone();
     std::thread::spawn(move || {
+        if pop {
+            // The page animates itself; this only waits for it (unless another open or close starts).
+            std::thread::sleep(duration(opening, true));
+            if app.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
+                done();
+            }
+            return;
+        }
         let hwnd = HWND(hwnd as _);
         let (w, h) = win_size(hwnd);
         let full = (0, 0, w, h);
         let from = bar((w, h), edge);
-        let ms = if opening { OPEN_MS } else { CLOSE_MS };
+        let ms = duration(opening, false).as_millis() as u64;
         let start = Instant::now();
         loop {
             if app.state::<PanelState>().anim.load(Ordering::Relaxed) != id {
