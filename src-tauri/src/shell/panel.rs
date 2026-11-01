@@ -471,8 +471,14 @@ pub fn refresh_frame(app: &AppHandle) {
         // handler ignores it for a moment (`just_reframed`), then we take the focus back (an
         // edge-opened panel never had it).
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
+        let was_open = is_open(&win);
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
+        // Tauri's frame change hides a window it didn't show itself (the edge shows it with
+        // ShowWindow, so Tauri thinks it's hidden): show it again, still without taking the keyboard.
+        if was_open && !is_open(&win) && let Ok(hwnd) = win.hwnd() {
+            let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
+        }
         if is_open(&win) && !state.hover.load(Ordering::Relaxed) {
             let _ = win.set_focus();
         }
