@@ -845,13 +845,16 @@
 }
 /* Add tiles, in the top bar: a glass pill with a plus. */
 .look-dot .add-tiles {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
 }
 .look-dot .add-tiles::before {
   content: "\e710"; /* Segoe Fluent "Add" */
-  margin-right: 5px;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 12px;
+  line-height: 1;
 }
 /* Tighter pills in edit mode, so the title, Add tiles and Done share one row. The edit bar's are
    slimmer than the 32 px pills too, and its page number is small. */
