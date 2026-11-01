@@ -32,7 +32,7 @@ const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
 const REOPEN_GUARD: Duration = Duration::from_millis(250);
 /// How long after a frame change the focus loss Windows reports is ignored.
-const REFRAME_GUARD: Duration = Duration::from_millis(1500);
+const REFRAME_GUARD: Duration = Duration::from_millis(400);
 /// Panel size in logical pixels. The height is fixed, so nothing moves when switching pages; what
 /// doesn't fit scrolls.
 const WIDTH: f64 = 360.0;
@@ -81,7 +81,6 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
         WindowEvent::Focused(false) if is_open(&handle) => {
-            dbg_log(&format!("focus lost; just_reframed={}", just_reframed(&handle)));
             if !just_reframed(&handle) {
                 hide(&handle);
             }
@@ -491,7 +490,6 @@ pub fn refresh_frame(app: &AppHandle) {
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
         let was_open = is_open(&win);
         let had_focus = win.is_focused().unwrap_or(false) || win.hwnd().is_ok_and(|h| unsafe { GetForegroundWindow() } == h);
-        dbg_log(&format!("refresh_frame start: open={was_open} had_focus={had_focus} hover={}", state.hover.load(Ordering::Relaxed)));
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
         // Tauri's frame change hides a window it didn't show itself (the edge shows it with
@@ -503,7 +501,6 @@ pub fn refresh_frame(app: &AppHandle) {
             let _ = win.set_focus();
             // The page inside needs it too, or clicking elsewhere may not register as leaving.
             let _ = tauri::Webview::set_focus(win.as_ref());
-            dbg_log(&format!("refresh_frame refocused; focused now={:?}", win.is_focused()));
         }
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
     }
@@ -577,10 +574,3 @@ mod tests {
     }
 }
 
-/// TEMP: appended to traywise-debug.log in the temp folder.
-fn dbg_log(msg: &str) {
-    use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(std::env::temp_dir().join("traywise-debug.log")) {
-        let _ = writeln!(f, "{:?} {msg}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default());
-    }
-}
