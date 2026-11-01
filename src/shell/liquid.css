@@ -1878,7 +1878,7 @@ section > .setting:last-child {
    the panel's edges (its padding), so a page slides all the way out; it fills the panel's height,
    so a swipe works below the tiles too. Up and down, the panel scrolls as before. */
 .pages {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   /* 8px more above and below than it takes up, so edit mode's badges and outlines aren't cut off. */
   margin: -8px -10px -8px -16px;
