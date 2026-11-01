@@ -87,6 +87,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         }
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
+            dbg_log("close requested");
             api.prevent_close();
             hide(&handle);
         }
@@ -96,6 +97,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
 }
 
 pub fn toggle(app: &AppHandle) {
+    dbg_log("toggle (tray click or shortcut)");
     let Some(win) = app.get_webview_window(LABEL) else { return };
     let just_hidden = app
         .state::<PanelState>()
@@ -140,6 +142,7 @@ pub fn hide_panel(app: AppHandle) -> bool {
     {
         return false;
     }
+    dbg_log("hide_panel (pointer left the panel)");
     hide(&win);
     true
 }
@@ -187,6 +190,7 @@ fn is_open(win: &WebviewWindow) -> bool {
 }
 
 fn show(win: &WebviewWindow) {
+    dbg_log(&format!("show hover={}", win.state::<PanelState>().hover.load(Ordering::Relaxed)));
     win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
     *win.state::<PanelState>().shown_at.lock().unwrap() = Some(Instant::now());
     webview::set_active(win, true);
@@ -460,6 +464,7 @@ fn place(win: &WebviewWindow, edge: bool) {
 
 /// Called after Settings are saved: the look or background may have changed.
 pub fn refresh_frame(app: &AppHandle) {
+    dbg_log("refresh_frame start");
     if let Some(win) = app.get_webview_window(LABEL) {
         let state = app.state::<PanelState>();
         // Changing the frame makes Windows drop the focus, which would hide the panel: the focus-loss
@@ -472,6 +477,7 @@ pub fn refresh_frame(app: &AppHandle) {
             let _ = win.set_focus();
         }
         *state.reframed_at.lock().unwrap() = Some(Instant::now());
+        dbg_log("refresh_frame end");
     }
 }
 
