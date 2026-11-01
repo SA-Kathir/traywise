@@ -30,6 +30,8 @@ use crate::settings::{Look, Settings, SettingsState};
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
 const REOPEN_GUARD: Duration = Duration::from_millis(250);
+/// How long after a frame change the focus loss Windows reports is ignored.
+const REFRAME_GUARD: Duration = Duration::from_millis(600);
 /// Panel size in logical pixels. The height is fixed, so nothing moves when switching pages; what
 /// doesn't fit scrolls.
 const WIDTH: f64 = 360.0;
@@ -48,8 +50,9 @@ pub struct PanelState {
     hover: AtomicBool,
     /// An edge-opened panel is sliding out: a second close request waits for it.
     closing: AtomicBool,
-    /// The frame is being changed: Windows reports the focus lost meanwhile, which isn't a click elsewhere.
-    reframing: AtomicBool,
+    /// When the frame was last changed: Windows reports the focus lost a moment later (after the change
+    /// has returned), which isn't a click elsewhere.
+    reframed_at: Mutex<Option<Instant>>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -74,7 +77,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     let handle = win.clone();
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
-        WindowEvent::Focused(false) if is_open(&handle) && !handle.state::<PanelState>().reframing.load(Ordering::Relaxed) => hide(&handle),
+        WindowEvent::Focused(false) if is_open(&handle) && !just_reframed(&handle) => hide(&handle),
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
@@ -404,16 +407,21 @@ fn place(win: &WebviewWindow, edge: bool) {
 pub fn refresh_frame(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL) {
         let state = app.state::<PanelState>();
-        // Changing the frame makes Windows drop the focus, which would hide the panel: ignore that,
-        // then take the focus back (an edge-opened panel never had it).
-        state.reframing.store(true, Ordering::Relaxed);
+        // Changing the frame makes Windows drop the focus, which would hide the panel: the focus-loss
+        // handler ignores it for a moment (`just_reframed`), then we take the focus back (an
+        // edge-opened panel never had it).
+        *state.reframed_at.lock().unwrap() = Some(Instant::now());
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
         if is_open(&win) && !state.hover.load(Ordering::Relaxed) {
             let _ = win.set_focus();
         }
-        state.reframing.store(false, Ordering::Relaxed);
+        *state.reframed_at.lock().unwrap() = Some(Instant::now());
     }
+}
+
+fn just_reframed(win: &WebviewWindow) -> bool {
+    win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
 /// Whether the window gets Windows 11's frame: every look except transparent Liquid or Dot, whose cards
