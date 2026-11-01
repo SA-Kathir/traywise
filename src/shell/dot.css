@@ -891,8 +891,8 @@
   /* Experiment: fully solid cards over the desktop (was 92% over black down to 68% over white,
      from --backdrop sampled as the panel opens). */
   --tw-glass-alpha: 1;
-  --tw-glass-float: rgb(8 8 9 / var(--tw-glass-alpha));
-  --tw-glass-float-hover: rgb(24 24 26 / var(--tw-glass-alpha));
+  --tw-glass-float: rgb(28 28 30 / var(--tw-glass-alpha));
+  --tw-glass-float-hover: rgb(48 48 50 / var(--tw-glass-alpha));
 }
 @media (prefers-color-scheme: light) {
   .look-dot.clear {
