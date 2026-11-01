@@ -1908,19 +1908,22 @@ section > .setting:last-child {
   scroll-snap-stop: always;
 }
 
-/* A footer strip under what scrolls, so it never overlaps tiles and never moves between pages. */
+/* Just the dots, no bar: a footer under what scrolls, so it never overlaps tiles and never moves
+   between pages. */
 .page-dots {
   flex: none;
   /* Closer than the panel's usual gap: 6 rows of tiles (496px) plus this strip fit in 648px. */
   margin-top: -6px;
   display: flex;
   justify-content: center;
+  background: none;
 }
-/* A 16px target around each 6px dot. */
+/* A 16 x 12px target around each 6px dot. */
 .panel .page-dots button {
   width: 16px;
-  height: 16px;
+  height: 12px;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   border: none;
   background: none;
