@@ -303,10 +303,17 @@ mod tests {
         );
 
         // A 0.2 file's single board becomes page 1; a board never changed (null) stays the default.
-        std::fs::write(&path, r#"{ "board": [{ "id": "wifi/wifi", "w": 1, "h": 1, "x": 3, "y": 0 }] }"#).unwrap();
+        std::fs::write(
+            &path,
+            r#"{ "board": [{ "id": "wifi/wifi", "w": 1, "h": 1, "x": 3, "y": 0 }, { "id": "clock/clock", "w": 2, "h": 1, "x": 0, "y": 1 }] }"#,
+        )
+        .unwrap();
         assert_eq!(
             read(&path).pages,
-            Some(vec![vec![BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0 }]]),
+            Some(vec![vec![
+                BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0 },
+                BoardTile { id: "clock/clock".into(), w: 2, h: 1, x: 0, y: 1 },
+            ]]),
             "0.2 board"
         );
         std::fs::write(&path, r#"{ "board": null }"#).unwrap();
