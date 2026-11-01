@@ -318,7 +318,10 @@ fn hide_now(win: &WebviewWindow) {
         // So the next open starts from a whole window.
         let _ = unsafe { SetWindowRgn(hwnd, None, false) };
     }
-    page_island(win, None);
+    // Ready for the next open: the page waits in its start state, because a message sent as the panel
+    // shows can reach the page a few frames late, and the page would flash at full size, then hop.
+    let settings = win.state::<SettingsState>().get();
+    page_island(win, animations_on().then(|| (true, win.state::<PanelState>().hover.load(Ordering::Relaxed), framed(&settings))));
     set_border(win, true);
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
