@@ -55,9 +55,10 @@ body {
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
-  /* Reaches the window's edge so the scrollbar sits where #root's did. */
-  margin-right: -16px;
-  padding-right: 10px;
+  /* Reaches the window's edges (so the scrollbar sits where #root's did) and 8px beyond the content
+     above and below, so edit mode's outlines and badges on the outer tiles aren't clipped. */
+  margin: -8px -16px -8px -16px;
+  padding: 8px 10px 8px 16px;
   scrollbar-gutter: stable;
 }
 .scroll::-webkit-scrollbar {
@@ -116,7 +117,7 @@ body {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
 }
 /* Less above and below than the Windows look: transparent's title card is taller, and the home
-   view with every module on still has to fit the 640 px window. */
+   view with every module on still has to fit the 648 px window. */
 .panel.look-liquid {
   padding-top: 12px;
   padding-bottom: 12px;
@@ -501,11 +502,6 @@ button.tile-title:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-}
-/* Editing over a transparent background: solid black, so the tiles read over any desktop. */
-.panel.clear.editing,
-html.clear.editing {
-  background: #000;
 }
 .tray .link-row > .grow {
   display: flex;
@@ -1899,6 +1895,11 @@ section > .setting:last-child {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
+/* Where a page slides out of the row, it fades over 10px (clear of the tiles' outlines and
+   badges) instead of being cut off. */
+.pages:has(.page + .page) {
+  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
 .page {
   flex: 0 0 100%;
   box-sizing: border-box;
@@ -1907,11 +1908,11 @@ section > .setting:last-child {
   scroll-snap-stop: always;
 }
 
-/* Under the board, at the panel's bottom when the board is short, stuck there when it scrolls. */
+/* A footer strip under what scrolls, so it never overlaps tiles and never moves between pages. */
 .page-dots {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
+  flex: none;
+  /* Closer than the panel's usual gap: 6 rows of tiles (496px) plus this strip fit in 648px. */
+  margin-top: -6px;
   display: flex;
   justify-content: center;
 }
@@ -2046,7 +2047,7 @@ section > .setting:last-child {
 /* Transparent looks: the dots get a small card of their own, so they show over any wallpaper. */
 .clear .page-dots {
   align-self: center;
-  padding: 2px 6px;
+  padding: 0 6px;
   border-radius: 999px;
 }
 .look-liquid.clear .page-dots {

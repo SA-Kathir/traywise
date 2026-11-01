@@ -843,13 +843,11 @@
   font-weight: normal;
   font-size: 12px;
 }
-/* Room under the board for it. */
+/* Room under the board for it, and the page dots sit above it. */
 .look-dot .board.editing {
   margin-bottom: 48px;
 }
-/* The page dots sit above it. */
 .look-dot:has(.board.editing) .page-dots {
-  bottom: 56px;
   margin-bottom: 40px;
 }
 

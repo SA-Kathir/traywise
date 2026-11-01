@@ -19,6 +19,7 @@ export function Pages({
   render: (page: number) => ReactNode;
 }) {
   const row = useRef<HTMLDivElement>(null);
+  const lastCount = useRef<number | undefined>(undefined);
 
   /** The page the row is scrolled to (or nearest to). */
   const shown = () => Math.round(row.current!.scrollLeft / row.current!.clientWidth);
@@ -28,10 +29,13 @@ export function Pages({
     el.scrollTo({ left: to * el.clientWidth, behavior: reducedMotion() ? "instant" : "smooth" });
   };
 
-  // A page picked from outside (opening the panel, adding or removing a page) is shown at once.
+  // A page picked from outside (opening the panel, adding or removing a page) is shown at once; a
+  // dot slides to it.
   useLayoutEffect(() => {
     const el = row.current!;
-    if (shown() !== page) el.scrollTo({ left: page * el.clientWidth, behavior: "instant" });
+    const slide = lastCount.current === count && !reducedMotion();
+    lastCount.current = count;
+    if (shown() !== page) el.scrollTo({ left: page * el.clientWidth, behavior: slide ? "smooth" : "instant" });
   }, [page, count]);
 
   useEffect(() => {
@@ -47,32 +51,34 @@ export function Pages({
   });
 
   return (
-    <>
-      <div
-        ref={row}
-        className="pages"
-        // Once the row comes to rest on a page, that's the page on screen.
-        onScrollEnd={() => shown() !== page && onPage(shown())}
-      >
-        {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="page" aria-hidden={i !== page || undefined} inert={i !== page}>
-            {Math.abs(i - page) <= 1 && render(i)}
-          </div>
-        ))}
-      </div>
-      {count > 1 && (
-        <nav className="page-dots" aria-label="Pages">
-          {Array.from({ length: count }, (_, i) => (
-            <button
-              key={i}
-              aria-label={`Page ${i + 1}`}
-              title={`Page ${i + 1}`}
-              aria-current={i === page ? "page" : undefined}
-              onClick={() => go(i)}
-            />
-          ))}
-        </nav>
-      )}
-    </>
+    <div
+      ref={row}
+      className="pages"
+      // Once the row comes to rest on a page, that's the page on screen.
+      onScrollEnd={() => shown() !== page && onPage(shown())}
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="page" aria-hidden={i !== page || undefined} inert={i !== page}>
+          {Math.abs(i - page) <= 1 && render(i)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The dots under the board, outside what scrolls: one per page, the current one lit. */
+export function PageDots({ count, page, onPage }: { count: number; page: number; onPage: (page: number) => void }) {
+  return (
+    <nav className="page-dots" aria-label="Pages">
+      {Array.from({ length: count }, (_, i) => (
+        <button
+          key={i}
+          aria-label={`Page ${i + 1}`}
+          title={`Page ${i + 1}`}
+          aria-current={i === page ? "page" : undefined}
+          onClick={() => onPage(i)}
+        />
+      ))}
+    </nav>
   );
 }
