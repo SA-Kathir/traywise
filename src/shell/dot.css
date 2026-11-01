@@ -732,8 +732,8 @@
 
 /* ---- Edit mode ------------------------------------------------------------------------------ */
 
-/* Every tile gets a dashed edge, a remove badge, a resize corner and a grip, all the time (not
-   just on hover). The one being dragged lifts: an accent edge, a shadow, 102% and a slight tilt. */
+/* Every tile gets a dashed edge; its remove badge, resize corner and grip show on hover (like the
+   other looks), so the board isn't cluttered. The one being dragged lifts: an accent edge, a shadow, 102% and a slight tilt. */
 .look-dot .board.editing .board-tile {
   border-radius: var(--tw-radius-tile);
   outline: 1px dashed var(--tw-glass-edge-strong);
@@ -752,10 +752,6 @@
 .look-dot .board-slot.dragging .board-tile {
   transform: scale(1.02) rotate(-2deg);
   box-shadow: 0 2px 8px var(--tw-effect-shadow);
-}
-.look-dot .board.editing .tile-badge {
-  opacity: 1;
-  pointer-events: auto;
 }
 .look-dot .board-slot.dragging .tile-badge {
   opacity: 0;
@@ -802,6 +798,21 @@
 .look-dot .board .tile-resize:hover::before {
   border-color: var(--tw-accent-base);
 }
+/* On a switched-on tile (a light plate) the controls invert, so they don't vanish into it. */
+.look-dot .board-slot:has(.tile.on) .tile-resize::before {
+  border-color: var(--tw-text-inverse);
+}
+.look-dot .board-slot:has(.tile.on) .tile-resize:hover::before {
+  border-color: var(--tw-accent-base);
+}
+.look-dot .board-slot:has(.tile.on) .tile-remove {
+  background: var(--tw-text-inverse);
+  color: var(--tw-text-primary);
+}
+.look-dot .board-slot:has(.tile.on) .tile-remove:hover {
+  background: var(--tw-status-danger);
+  color: #fff;
+}
 /* Grip: 3 × 2 dots on a small frosted pill at the top edge. */
 .look-dot .board.editing .board-slot::after {
   content: "";
@@ -820,6 +831,11 @@
     var(--tw-glass-float);
   box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.look-dot .board.editing .board-slot:is(:hover, :focus-within)::after {
+  opacity: 1;
 }
 .look-dot .board-slot.dragging::after {
   display: none;
