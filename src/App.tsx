@@ -307,24 +307,29 @@ function App() {
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
       ) : (
-        <Pages count={pages.length} page={current} onPage={setPage} swipe={!editing}>
-          {tiles.length === 0 && !editing ? (
-            <div className="welcome">
-              <p className="hint">{pages.length > 1 ? "This page is empty." : "Your home is empty."}</p>
-              <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
-            </div>
-          ) : (
-            <Board
-              tiles={tiles}
-              open={(id) => setView(modules[id].category)}
-              editing={editing}
-              auto={auto}
-              onChange={setBoard}
-              onLongPress={() => setEditing(true)}
-              onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage(pages, id, current, to, auto) })}
-            />
-          )}
-        </Pages>
+        <Pages
+          count={pages.length}
+          page={current}
+          onPage={setPage}
+          render={(i) =>
+            pages[i].length === 0 && !editing ? (
+              <div className="welcome">
+                <p className="hint">{pages.length > 1 ? "This page is empty." : "Your home is empty."}</p>
+                <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
+              </div>
+            ) : (
+              <Board
+                tiles={pages[i]}
+                open={(id) => setView(modules[id].category)}
+                editing={editing}
+                auto={auto}
+                onChange={setBoard}
+                onLongPress={() => setEditing(true)}
+                onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage(pages, id, current, to, auto) })}
+              />
+            )
+          }
+        />
       )}
       {editHome && adding && (
         <AddTiles

@@ -1411,6 +1411,27 @@ section > .setting:last-child {
 
 /* ---- Board pages ------------------------------------------------------------------------- */
 
+/* The pages side by side, scrolled sideways by the browser and snapping to each. The row reaches
+   the panel's edges (its padding), so a page slides all the way out; it fills the panel's height,
+   so a swipe works below the tiles too. Up and down, the panel scrolls as before. */
+.pages {
+  flex: 1;
+  display: flex;
+  margin: 0 -10px 0 -16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.page {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  padding: 0 10px 0 16px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 /* Under the board, at the panel's bottom when the board is short, stuck there when it scrolls. */
 .page-dots {
   position: sticky;
@@ -1456,4 +1477,18 @@ section > .setting:last-child {
 }
 .page-bar .grow {
   text-align: center;
+}
+/* Transparent looks: the dots get a small card of their own, so they show over any wallpaper. */
+.clear .page-dots {
+  align-self: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.look-liquid.clear .page-dots {
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
+}
+.look-dot.clear .page-dots {
+  background: var(--tw-glass-float);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
 }

@@ -160,18 +160,22 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, onMov
   // panel does no extra work otherwise, and not at all if Windows' animation effects are off.
   useLayoutEffect(() => {
     follow(); // after React moved the dragged tile to its new cell
+    if (board.current!.closest("[inert]")) return; // a neighbouring page, there only to slide in
     if (!editing || reducedMotion()) return void (lastRects = new Map());
     const before = lastRects;
     lastRects = new Map();
-    for (const el of board.current!.children as HTMLCollectionOf<HTMLElement>) {
+    const slots = [...board.current!.children] as HTMLElement[];
+    // A page just scrolled to, with none of its tiles measured yet: nothing on it is new.
+    const seen = slots.some((el) => before.has(el.dataset.id!));
+    for (const el of slots) {
       // Layout position, not getBoundingClientRect: that would include a glide still under way.
       const r = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
       lastRects.set(el.dataset.id!, r);
       const old = before.get(el.dataset.id!);
       if (dragging.current?.moved && el.dataset.id === dragging.current.id) continue; // it follows the pointer
       if (!old) {
-        // Not on entering edit mode, when nothing was measured yet: only a tile that's just been added.
-        if (before.size > 0)
+        // Not on entering edit mode or a new page, when nothing was measured yet: only a tile just added.
+        if (seen)
           el.animate([{ opacity: 0, transform: "scale(0.96)" }, {}], { duration: APPEAR_MS, easing: "ease-out" });
       } else if (old.left !== r.left || old.top !== r.top || old.width !== r.width || old.height !== r.height) {
         // A glide still under way starts the next from where the tile is drawn now, so it doesn't jump.
