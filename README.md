@@ -27,7 +27,7 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 - **Bluetooth**: switch it on or off, see your paired devices, and connect or disconnect headphones and speakers.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
 
-Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the right edge**: rest the mouse on the middle of the screen's right edge and the panel slides in.
+Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
 
 **Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 

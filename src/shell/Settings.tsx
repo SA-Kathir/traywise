@@ -1,6 +1,6 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState, type ReactNode } from "react";
-import { commands, type Accent, type Look, type Preset, type Settings } from "../bindings";
+import { commands, type Accent, type EdgeSide, type Look, type Preset, type Settings } from "../bindings";
 import { ModulesPage } from "./ModulesPage";
 import { modules } from "../modules";
 
@@ -8,6 +8,11 @@ const LOOKS: { id: Look; label: string }[] = [
   { id: "dot", label: "Dot" },
   { id: "liquid", label: "Tint" },
   { id: "windows", label: "Windows" },
+];
+
+const SIDES: { id: EdgeSide; label: string }[] = [
+  { id: "left", label: "Left" },
+  { id: "right", label: "Right" },
 ];
 
 const PRESETS: { id: Preset; label: string }[] = [
@@ -168,17 +173,29 @@ export function SettingsPage(props: Props) {
           <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
         </Row>
         <SwitchRow
-          label="Open from the right edge"
+          label="Open from the screen edge"
           desc="Rest the mouse on its middle"
           checked={settings.edgeOpen}
           onChange={(edgeOpen) => save({ ...settings, edgeOpen })}
         />
+        {settings.edgeOpen && (
+          <Row label="Side" stacked>
+            <Pick label="Side" options={SIDES} value={settings.edgeSide} onChange={(edgeSide) => save({ ...settings, edgeSide })} />
+          </Row>
+        )}
         {settings.edgeOpen && (
           <SwitchRow
             label="Show a handle"
             desc="A small mark on the edge, where to rest the mouse"
             checked={settings.edgeHandle}
             onChange={(edgeHandle) => save({ ...settings, edgeHandle })}
+          />
+        )}
+        {settings.edgeOpen && settings.edgeHandle && (
+          <SwitchRow
+            label="Handle in the accent colour"
+            checked={settings.edgeHandleAccent}
+            onChange={(edgeHandleAccent) => save({ ...settings, edgeHandleAccent })}
           />
         )}
       </Collapsible>
