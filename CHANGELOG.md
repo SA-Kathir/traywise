@@ -13,6 +13,7 @@
   - **Pages** in edit mode shows every page as a small outline: go to one, drag to reorder, add, or remove (its tiles go back to Add tiles).
   - A tile is on one page at a time. New installs still start with one page, and your current board becomes page 1.
 - **Panel polish.** The title bar, tab bar and Settings' Back button stay pinned while the page scrolls. Switching look or background in Settings no longer closes the panel. Add tiles lists modules first, then asks for the size. Edit mode on a Transparent background is solid black, and the Add tiles button is no longer covered by tile controls. System Monitor values no longer spill out of small tiles.
+- **A new open and close animation.** The title, tabs and tiles come in one after another, each rising out of a soft blur, and the page fades when it closes (it replaces the edge slide). Dot's panel edge catches the accent along the top and bottom, and brighter where the pointer is; hovered tiles get a thin accent ring.
 - **Dot now starts on a plain background** (it used to start over a dot grid) for new installs. Existing installs keep their choice.
 
 ## 0.2.0 (2026-10-31)
