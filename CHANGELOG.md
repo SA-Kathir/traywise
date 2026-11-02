@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-11-02)
 
 - **Displays** module: a brightness slider for each screen (the laptop's own, and external monitors that have DDC/CI switched on in their menu), and a **Project** switch like Win+P: PC screen only, Duplicate, Extend or Second screen only. Tiles from 1×1 to 4×2; the page is in the System tab.
 - **Power** module: Windows' power mode (Efficiency, Balanced or Performance), the battery with time left, and whether Energy saver is on, with a shortcut to its settings (Windows doesn't let apps switch it). Tiles at 1×1 and 2×1.
@@ -12,8 +12,9 @@
   - In edit mode, pick up a tile and drop it on **Move to** › a page (or a new one) at the bottom.
   - **Pages** in edit mode shows every page as a small outline: go to one, drag to reorder, add, or remove (its tiles go back to Add tiles).
   - A tile is on one page at a time. New installs still start with one page, and your current board becomes page 1.
-- **Panel polish.** The title bar, tab bar and Settings' Back button stay pinned while the page scrolls. Switching look or background in Settings no longer closes the panel. Add tiles lists modules first, then asks for the size. Edit mode on a Transparent background is solid black, and the Add tiles button is no longer covered by tile controls. System Monitor values no longer spill out of small tiles.
+- **Panel polish.** The title bar, tab bar and Settings' Back button stay pinned while the page scrolls. Switching look or background in Settings no longer closes the panel. Add tiles lists modules first, then asks for the size. Edit mode on a Transparent background shows the look's plain background, and the Add tiles button is no longer covered by tile controls. System Monitor values no longer spill out of small tiles.
 - **A new open and close animation.** The title, tabs and tiles come in one after another, each rising out of a soft blur, and they blur away again when it closes (it replaces the edge slide). Every look's panel edge catches the accent along the top and bottom, and brighter where the pointer is; in Dot, hovered tiles get a thin accent ring. A new app icon: four tiles, one switched on.
+- **Settings** sections (Modules, Appearance, Opening, System) open and close the same way, with the module switches inside Settings. Dot's light mode is softer: charcoal and off-white instead of black and white.
 - **Open from the left or the right edge** (Settings › Opening), and the handle can be in your accent colour.
 - **The Liquid look is now called Tint**, since it's cards tinted in one colour and nothing liquid is left. Your saved look carries over.
 - **Fixed:** in Tint with Single hue, hovering a System monitor tile no longer turns it into the shaded look; it stays in its own hue and gets a little lighter.
