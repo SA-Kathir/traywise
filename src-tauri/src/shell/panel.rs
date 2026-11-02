@@ -10,12 +10,12 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowB
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
     DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_TRANSITIONS_FORCEDISABLED, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
-    DWMWCP_ROUND, DwmFlush, DwmSetWindowAttribute,
+    DWMWCP_ROUND, DwmSetWindowAttribute,
 };
 use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::Graphics::Gdi::{
     BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
-    CreateRoundRectRgn, DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, SetWindowRgn, StretchBlt,
+    DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, GetForegroundWindow, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
@@ -200,21 +200,10 @@ fn show(win: &WebviewWindow) {
     // Before showing it, so the sample is of what's behind the panel, not the panel.
     let settings = win.state::<SettingsState>().get();
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
-    let animate = animations_on();
-    let hwnd = win.hwnd().ok();
-    // With a frame (its shadow can't be clipped) the page just rises and fades in; without one it grows
-    // out of a tiny bar. The page's start state is set before showing, so it never flashes at full size.
-    let pop = framed(&settings);
-    if animate && pop {
-        page_island(win, Some((true, hover, true)));
-    } else if animate && let Some(hwnd) = hwnd {
-        set_region(hwnd, bar(win_size(hwnd), hover), 8);
-        set_border(win, false);
-    }
     if hover {
         // Shown without taking the keyboard, so typing elsewhere carries on; a click gives it focus.
         // (SW_SHOWNOACTIVATE also un-minimises.)
-        if let Some(hwnd) = hwnd {
+        if let Ok(hwnd) = win.hwnd() {
             let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
         }
     } else {
@@ -224,11 +213,19 @@ fn show(win: &WebviewWindow) {
         let _ = win.show();
         let _ = win.set_focus();
     }
-    if animate {
+    // The page's tiles come in one after another (shell/island.css). It's been waiting in its start
+    // state since the panel last hid; once they're all in, the page goes back to normal.
+    let id = win.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
+    if animations_on() {
         let w = win.clone();
-        reveal(win, true, hover, move || page_island(&w, None));
+        std::thread::spawn(move || {
+            std::thread::sleep(IN_MS);
+            if w.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
+                page_state(&w, None);
+            }
+        });
     } else {
-        page_island(win, None);
+        page_state(win, None);
     }
     win.state::<Modules>().panel_visible(true);
     let _ = PanelShown { backdrop, hover }.emit(win);
@@ -289,19 +286,21 @@ fn brightness(bgra: &[u8]) -> u8 {
 
 fn hide(win: &WebviewWindow) {
     let state = win.state::<PanelState>();
-    // The panel shrinks back into its tiny bar first.
+    // The page fades out first (shell/island.css).
     if is_open(win) && animations_on() {
         if state.closing.swap(true, Ordering::Relaxed) {
             return; // already closing
         }
         *state.last_hidden.lock().unwrap() = Some(Instant::now());
-        if !framed(&win.state::<SettingsState>().get()) {
-            set_border(win, false);
-        }
+        let id = state.anim.fetch_add(1, Ordering::Relaxed) + 1;
+        page_state(win, Some("out"));
         let w = win.clone();
-        reveal(win, false, state.hover.load(Ordering::Relaxed), move || {
-            let w2 = w.clone();
-            let _ = w.run_on_main_thread(move || hide_now(&w2));
+        std::thread::spawn(move || {
+            std::thread::sleep(OUT_MS);
+            if w.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
+                let w2 = w.clone();
+                let _ = w.run_on_main_thread(move || hide_now(&w2));
+            }
         });
         return;
     }
@@ -315,131 +314,28 @@ fn hide_now(win: &WebviewWindow) {
     let _ = win.hide();
     if let Ok(hwnd) = win.hwnd() {
         let _ = unsafe { ShowWindow(hwnd, SW_HIDE) };
-        // So the next open starts from a whole window.
-        let _ = unsafe { SetWindowRgn(hwnd, None, false) };
     }
-    // Ready for the next open: the page waits in its start state, because a message sent as the panel
-    // shows can reach the page a few frames late, and the page would flash at full size, then hop.
-    let settings = win.state::<SettingsState>().get();
-    page_island(win, animations_on().then(|| (true, win.state::<PanelState>().hover.load(Ordering::Relaxed), framed(&settings))));
-    set_border(win, true);
+    // Ready for the next open: the page waits in its start state (tiles not yet in), because a message
+    // sent as the panel shows can reach the page a few frames late, and the tiles would flash first.
+    page_state(win, animations_on().then_some("in"));
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
 }
 
-/// How long the panel takes to come out of its tiny bar, and to go back into it. The page's own
-/// animation (shell/island.css) runs for the same time, started at the same moment.
-const OPEN_MS: u64 = 350;
-const CLOSE_MS: u64 = 210;
-/// The same for a framed panel, which only rises and fades (shell/island.css, `pop`).
-const POP_OPEN_MS: u64 = 200;
-const POP_CLOSE_MS: u64 = 140;
+/// How long the tiles take to come in (the last one starts about 0.5 s in), and the page to fade out.
+/// Shell/island.css has the same numbers.
+const IN_MS: Duration = Duration::from_millis(1000);
+const OUT_MS: Duration = Duration::from_millis(140);
 
-/// Starts (or, with `None`, clears) the page's half of the animation: the CSS in shell/island.css.
-fn duration(opening: bool, pop: bool) -> Duration {
-    Duration::from_millis(match (opening, pop) {
-        (true, false) => OPEN_MS,
-        (false, false) => CLOSE_MS,
-        (true, true) => POP_OPEN_MS,
-        (false, true) => POP_CLOSE_MS,
-    })
-}
-
-fn page_island(win: &WebviewWindow, anim: Option<(bool, bool, bool)>) {
-    let _ = match anim {
-        Some((opening, edge, pop)) => win.eval(format!(
-            "document.documentElement.style.setProperty('--island-ms','{}ms');document.documentElement.dataset.island='{}-{}'",
-            duration(opening, pop).as_millis(),
-            if opening { "in" } else { "out" },
-            if pop { "pop" } else if edge { "edge" } else { "tray" },
-        )),
+/// Sets which part of the open/close animation the page is in (`html[data-island]`: "in" or "out"),
+/// or none.
+fn page_state(win: &WebviewWindow, state: Option<&str>) {
+    let _ = match state {
+        Some(s) => win.eval(format!("document.documentElement.dataset.island='{s}'")),
         None => win.eval("delete document.documentElement.dataset.island"),
     };
-}
-
-/// How far the window's clip has opened sideways and up/down, 0 to 1 each, `s` along the way out
-/// (0 the bar, 1 whole). Sideways leads and up/down follows a beat later; closing plays it backwards.
-fn stage(s: f64) -> (f64, f64) {
-    let part = |from: f64, to: f64| ((s - from) / (to - from)).clamp(0.0, 1.0);
-    (1.0 - (1.0 - part(0.0, 0.6)).powi(3), 1.0 - (1.0 - part(0.12, 1.0)).powi(4))
-}
-
-fn win_size(hwnd: HWND) -> (i32, i32) {
-    let mut r = RECT::default();
-    let _ = unsafe { GetWindowRect(hwnd, &mut r) };
-    (r.right - r.left, r.bottom - r.top)
-}
-
-/// The tiny bar the panel grows from (window coordinates: left, top, right, bottom): a vertical one on
-/// the screen's edge for an edge-opened panel, a horizontal one at the bottom, by the taskbar, otherwise.
-fn bar((w, h): (i32, i32), edge: bool) -> (i32, i32, i32, i32) {
-    if edge {
-        (w - 8, (h - 64) / 2, w, (h + 64) / 2)
-    } else {
-        ((w - 64) / 2, h - 8, (w + 64) / 2, h)
-    }
-}
-
-/// Clips the window to a rounded rectangle (its contents aren't redrawn or laid out again).
-fn set_region(hwnd: HWND, r: (i32, i32, i32, i32), round: i32) {
-    unsafe {
-        let region = CreateRoundRectRgn(r.0, r.1, r.2 + 1, r.3 + 1, round, round);
-        let _ = SetWindowRgn(hwnd, Some(region), true);
-    }
-}
-
-/// Grows the panel out of its tiny bar (or shrinks it back into it), once per screen refresh on a
-/// thread of its own, by clipping the window to a rounded rectangle. Then runs `done`. Stops quietly
-/// if another open or close starts meanwhile.
-fn reveal(win: &WebviewWindow, opening: bool, edge: bool, done: impl FnOnce() + Send + 'static) {
-    let Ok(hwnd) = win.hwnd() else { return };
-    let app = win.app_handle().clone();
-    let id = app.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
-    let hwnd = hwnd.0 as isize;
-    let pop = framed(&win.state::<SettingsState>().get());
-    page_island(win, Some((opening, edge, pop)));
-    let win = win.clone();
-    std::thread::spawn(move || {
-        if pop {
-            // The page animates itself; this only waits for it (unless another open or close starts).
-            std::thread::sleep(duration(opening, true));
-            if app.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
-                done();
-            }
-            return;
-        }
-        let hwnd = HWND(hwnd as _);
-        let (w, h) = win_size(hwnd);
-        let full = (0, 0, w, h);
-        let from = bar((w, h), edge);
-        let ms = duration(opening, false).as_millis() as u64;
-        let start = Instant::now();
-        loop {
-            if app.state::<PanelState>().anim.load(Ordering::Relaxed) != id {
-                return;
-            }
-            // From the time elapsed, not a frame count: a late frame doesn't slow it down.
-            let t = (start.elapsed().as_secs_f64() * 1000.0 / ms as f64).min(1.0);
-            let (pw, ph) = stage(if opening { t } else { 1.0 - t });
-            let lerp = |a: i32, b: i32, p: f64| a + (f64::from(b - a) * p).round() as i32;
-            // The corners ease from a pill to the panel's own radius as it grows.
-            set_region(hwnd, (lerp(from.0, full.0, pw), lerp(from.1, full.1, ph), lerp(from.2, full.2, pw), lerp(from.3, full.3, ph)), lerp(8, 32, ph));
-            if t >= 1.0 {
-                break;
-            }
-            // Wait for the screen's next frame, so each step lands on one (Sleep is too coarse).
-            if unsafe { DwmFlush() }.is_err() {
-                std::thread::sleep(Duration::from_millis(8));
-            }
-        }
-        if opening {
-            let _ = unsafe { SetWindowRgn(hwnd, None, true) };
-            set_border(&win, true);
-        }
-        done();
-    });
 }
 
 /// Windows' "Animation effects" setting (Accessibility › Visual effects): off means no slide.
@@ -550,17 +446,6 @@ fn just_reframed(win: &WebviewWindow) -> bool {
 /// float over the desktop, where a frame would outline empty space.
 fn framed(settings: &Settings) -> bool {
     settings.look == Look::Windows || !settings.transparent
-}
-
-/// Hides or restores the frame's 1 px border while the panel grows out of (or shrinks into) its bar:
-/// Windows draws it around the whole window, which would show as an empty frame before the panel does.
-fn set_border(win: &WebviewWindow, visible: bool) {
-    if !framed(&win.state::<SettingsState>().get()) {
-        return;
-    }
-    let Ok(hwnd) = win.hwnd() else { return };
-    let color = if visible { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
-    let _ = unsafe { DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color as *const _ as *const c_void, size_of_val(&color) as u32) };
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none

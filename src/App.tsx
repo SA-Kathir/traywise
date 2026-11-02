@@ -31,6 +31,9 @@ const LEAVE_MS = 400;
 /** …and how long it stays if the mouse never comes in (it rested on the edge, then went elsewhere). */
 const NEVER_ENTERED_MS = 1500;
 
+// The tiles' entrance (island.css) waits for the first open; Rust clears it, and sets it again each time the panel hides.
+document.documentElement.dataset.island = "in";
+
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
@@ -46,6 +49,23 @@ function App() {
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
+  }, []);
+
+  // The panel's accent edge (dot.css) brightens where the pointer is.
+  useEffect(() => {
+    let frame = 0;
+    const move = (e: globalThis.PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        document.body.style.setProperty("--gx", `${e.clientX}px`);
+        document.body.style.setProperty("--gy", `${e.clientY}px`);
+      });
+    };
+    addEventListener("pointermove", move);
+    return () => {
+      removeEventListener("pointermove", move);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
