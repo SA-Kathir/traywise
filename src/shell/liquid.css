@@ -2173,3 +2173,27 @@ section > .setting:last-child {
 .chevron.open {
   transform: rotate(90deg);
 }
+
+/* ---- Accent edge ---------------------------------------------------------------------------- */
+
+/* The panel's edge catches the accent in every look: along the top and (fainter) the bottom, and
+   brighter where the pointer is (--gx and --gy come from App.tsx). Only where the panel has an edge:
+   not Transparent, whose cards float. */
+html:not(.clear) body::after {
+  --gx: 50%;
+  --gy: 0%;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  padding: 1.5px;
+  border-radius: 8px;
+  pointer-events: none;
+  background:
+    radial-gradient(280px circle at var(--gx) var(--gy), var(--accent), transparent 62%),
+    radial-gradient(220px circle at 50% 0%, var(--accent), transparent 70%),
+    radial-gradient(220px circle at 50% 100%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
