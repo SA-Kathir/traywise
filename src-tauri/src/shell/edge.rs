@@ -20,7 +20,7 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
     SetWindowPos, ShowWindow, TranslateMessage, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
@@ -181,10 +181,19 @@ fn button_held() -> bool {
     unsafe { GetAsyncKeyState(VK_LBUTTON.0.into()) < 0 || GetAsyncKeyState(VK_RBUTTON.0.into()) < 0 }
 }
 
-/// A fullscreen game or video, or presentation mode: stay out of the way.
+/// A fullscreen game or video, or presentation mode: stay out of the way. (Not the desktop itself:
+/// with nothing else open, Windows answers "busy" because the desktop covers the whole screen.)
 fn fullscreen() -> bool {
-    unsafe { SHQueryUserNotificationState() }
-        .is_ok_and(|s| s == QUNS_BUSY || s == QUNS_RUNNING_D3D_FULL_SCREEN || s == QUNS_PRESENTATION_MODE)
+    !desktop_in_front()
+        && unsafe { SHQueryUserNotificationState() }
+            .is_ok_and(|s| s == QUNS_BUSY || s == QUNS_RUNNING_D3D_FULL_SCREEN || s == QUNS_PRESENTATION_MODE)
+}
+
+/// The desktop is the window in front (nothing else is open, or it was just clicked).
+fn desktop_in_front() -> bool {
+    let mut class = [0u16; 32];
+    let len = unsafe { GetClassNameW(GetForegroundWindow(), &mut class) } as usize;
+    matches!(String::from_utf16_lossy(&class[..len]).as_str(), "Progman" | "WorkerW")
 }
 
 /// The primary monitor's whole area (the edge, not the work area: the taskbar may be on the right).
