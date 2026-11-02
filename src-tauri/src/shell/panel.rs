@@ -287,7 +287,7 @@ fn brightness(bgra: &[u8]) -> u8 {
 
 fn hide(win: &WebviewWindow) {
     let state = win.state::<PanelState>();
-    // The page fades out first (shell/island.css).
+    // The tiles blur away first (shell/island.css).
     if is_open(win) && animations_on() {
         if state.closing.swap(true, Ordering::Relaxed) {
             return; // already closing
@@ -325,10 +325,10 @@ fn hide_now(win: &WebviewWindow) {
     crate::updater::check(win.app_handle());
 }
 
-/// How long the tiles take to come in (the last one starts about 0.5 s in), and the page to fade out.
+/// How long the tiles take to come in (the last one starts about 0.5 s in), and to blur away.
 /// Shell/island.css has the same numbers.
 const IN_MS: Duration = Duration::from_millis(1000);
-const OUT_MS: Duration = Duration::from_millis(140);
+const OUT_MS: Duration = Duration::from_millis(390);
 
 /// Sets which part of the open/close animation the page is in (`html[data-island]`: "pre", "in" or
 /// "out"), or none.
