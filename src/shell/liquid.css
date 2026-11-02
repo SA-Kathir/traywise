@@ -1,4 +1,4 @@
-/* The panel's styles. Two looks: Liquid (a near-black panel with cards tinted in a colour
+/* The panel's styles. Two looks: Tint (called Liquid in the code: a near-black panel with cards tinted in a colour
    preset) and Windows (flat, like Windows 11's flyouts; at the end). Nothing is read from the
    desktop. */
 
@@ -96,7 +96,7 @@ body {
 .bg-ember { --base: #160f0b; --c1: #774029; --c2: #50291a; --c3: #95583a; --accent: #f0c3a6; }
 .bg-rose { --base: #160d12; --c1: #6b3a51; --c2: #482536; --c3: #89546e; --accent: #f0bfd4; }
 
-/* Liquid: cards tinted in the preset, lighter at the top left (or one even hue: .flat). --tint
+/* Tint (`.look-liquid`): cards tinted in the preset, lighter at the top left (or one even hue: .flat). --tint
    and --tint-edge are shared with the tab bar, icon buttons and title so they match. The look's
    classes are on html too, so the page behind the panel (the scrollbar's strip) matches it. */
 .look-liquid {

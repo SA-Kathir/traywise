@@ -6,7 +6,7 @@ The source of truth is the **Design System** page of the maintainers' Figma file
 - **v0.2 · Shipped**: what 0.2.0 looks like (home, tabs, Connect, Settings, Modules, edge opening).
 - **v0.3 · Next release**: clock, focus, board pages (as built), displays, power, project, per-app output, and the other looks.
 
-This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Liquid and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
+This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Tint and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
 
 ## Direction
 
@@ -282,13 +282,13 @@ Figma: v0.3 › Sound + System pages.
 
 ### Other looks
 
-Figma: v0.3 › Liquid + Windows looks.
+Figma: v0.3 › Tint + Windows looks.
 
-The same layouts and sizes in Liquid and Windows. What changes:
+The same layouts and sizes in Tint and Windows. What changes:
 
-- **Cards:** Liquid uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
+- **Cards:** Tint uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
 - **Type:** numbers are in Segoe UI Variable Display Semibold, not Doto.
-- **Accent:** "on" tiles and selections fill with the look's accent (the Liquid preset's, or Windows blue #4CC2FF).
+- **Accent:** "on" tiles and selections fill with the look's accent (the Tint preset's, or Windows blue #4CC2FF).
 - **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
 - **Analogue clock:** line ticks and solid hands instead of dots.
 

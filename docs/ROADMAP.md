@@ -50,5 +50,5 @@ Once every PR is merged into `dev`, a release follows the usual steps (CONTRIBUT
 
 ## Open owner decisions
 
-- Liquid look: **Background** Tinted or Transparent, and **Tiles** Shaded or Single hue (both are still Settings options).
+- Tint look (the old Liquid): **Background** Tinted or Transparent, and **Tiles** Shaded or Single hue (both are still Settings options).
 - Clean-machine test in Windows Sandbox (`docs/testing-release.md`) hasn't been run yet.

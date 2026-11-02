@@ -6,7 +6,7 @@ import { modules } from "../modules";
 
 const LOOKS: { id: Look; label: string }[] = [
   { id: "dot", label: "Dot" },
-  { id: "liquid", label: "Liquid" },
+  { id: "liquid", label: "Tint" },
   { id: "windows", label: "Windows" },
 ];
 
