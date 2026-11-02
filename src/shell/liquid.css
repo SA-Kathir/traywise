@@ -1,4 +1,4 @@
-/* The panel's styles. Two looks: Liquid (a near-black panel with cards tinted in a colour
+/* The panel's styles. Two looks: Tint (called Liquid in the code: a near-black panel with cards tinted in a colour
    preset) and Windows (flat, like Windows 11's flyouts; at the end). Nothing is read from the
    desktop. */
 
@@ -42,15 +42,44 @@ body {
   background: rgb(var(--ink) / 0.22);
 }
 
+/* Main view: header, tabs and edit bar stay put; only .scroll (the page) scrolls. */
+.panel.fixed {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  /* Reaches the window's edges (so the scrollbar sits where #root's did) and 8px beyond the content
+     above and below, so edit mode's outlines and badges on the outer tiles aren't clipped. */
+  margin: -8px -16px -8px -16px;
+  padding: 8px 10px 8px 16px;
+  scrollbar-gutter: stable;
+}
+.scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgb(var(--ink) / 0.22);
+}
+
 .panel {
   box-sizing: border-box;
   /* Fills the window on short pages too, so the background reaches the bottom. */
   min-height: 100%;
   /* The right side is 10px + the 6px scrollbar's space. */
-  padding: 16px 10px 16px 16px;
+  padding: 12px 10px 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  /* 12px above, below and between: title, tabs, 6 rows of tiles and the dots fit the 648 px window
+     in every look. */
+  gap: 12px;
   position: relative;
   isolation: isolate;
   color: rgb(var(--ink) / 0.95);
@@ -67,7 +96,7 @@ body {
 .bg-ember { --base: #160f0b; --c1: #774029; --c2: #50291a; --c3: #95583a; --accent: #f0c3a6; }
 .bg-rose { --base: #160d12; --c1: #6b3a51; --c2: #482536; --c3: #89546e; --accent: #f0bfd4; }
 
-/* Liquid: cards tinted in the preset, lighter at the top left (or one even hue: .flat). --tint
+/* Tint (`.look-liquid`): cards tinted in the preset, lighter at the top left (or one even hue: .flat). --tint
    and --tint-edge are shared with the tab bar, icon buttons and title so they match. The look's
    classes are on html too, so the page behind the panel (the scrollbar's strip) matches it. */
 .look-liquid {
@@ -89,27 +118,35 @@ body {
 .look-liquid:not(.clear) {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
 }
-/* Less above and below than the Windows look: transparent's title card is taller, and the home
-   view with every module on still has to fit the 640 px window. */
-.panel.look-liquid {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  gap: 12px;
-}
 /* Transparent: the cards float over the desktop (shown through the window, never read). Anything
-   not already in a card gets one, so it reads over any wallpaper. The title's pill hugs the name;
-   the icon buttons are their own cards. */
+   not already in a card gets one, so it reads over any wallpaper. The header (title and its icon
+   buttons, or Back and the page's name) is one card, like Dot's. */
+.look-liquid.clear header {
+  padding: 6px 8px 6px 16px;
+  border-radius: 14px;
+  background: var(--tint);
+  border: 1px solid var(--tint-edge);
+}
+.look-liquid.clear header :is(h1, .icon-button) {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
 .look-liquid.clear header h1 {
   flex: none;
+  padding: 0;
   margin-right: auto;
-  padding: 3px 14px 5px;
 }
-.look-liquid.clear :is(header h1, .welcome, .setup-intro) {
+.look-liquid.clear :is(.welcome, .setup-intro) {
   border-radius: 14px;
   background: var(--tint);
   border: 1px solid var(--tint-edge);
 }
 
+/* No drop shadows: they pile up between tiles and the page row clips them into a faint box. */
+.look-liquid.clear :is(section, .tile, .stats) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent);
+}
 .look-liquid.clear :is(.welcome, .setup-intro) {
   padding: 24px 16px;
 }
@@ -148,6 +185,8 @@ section,
    its padding and the scrollbar's gutter), so 4 columns of 76 px with 8 px gaps make square cells.
    The cards themselves are the glass cards above; --tile-* is what tiles add to them. */
 .board {
+  /* Contains the tiles' badges and grips, so the Add tiles button and tray always sit above. */
+  isolation: isolate;
   --cell: 76px;
   --board-gap: 8px;
   --tile-pad: 10px 12px;
@@ -311,6 +350,14 @@ button.tile-title:hover {
     color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
   );
 }
+/* Single hue: the hover stays in the card's own hue, a little lighter than at rest. */
+.look-liquid.flat .stats:hover {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--c3) 62%, var(--base)),
+    color-mix(in srgb, var(--c1) 52%, var(--base))
+  );
+}
 .reading {
   flex: 1;
   min-width: 0;
@@ -359,7 +406,11 @@ button.tile-title:hover {
   font-size: 22px;
   font-weight: 300;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  /* The unit drops under the number when they don't fit side by side. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 3px;
 }
 :is(.size-2x2, .size-4x2) .stat-chip-value {
   font-size: 40px;
@@ -376,7 +427,12 @@ button.tile-title:hover {
    shows a remove badge (top left) and, if it comes in more than one size, a resize badge (bottom
    right), just inside its corners. The one being dragged or focused gets a solid accent edge. */
 .edit-bar {
-  gap: 12px;
+  gap: 8px;
+}
+/* A slim title: Add tiles and Done sit beside it. */
+.editing header h1 {
+  font-size: 16px;
+  white-space: nowrap;
 }
 .board-slot {
   position: relative;
@@ -459,6 +515,12 @@ button.tile-title:hover {
 }
 .tray .link-row {
   margin-top: 0;
+}
+.tray-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 .tray .link-row > .grow {
   display: flex;
@@ -1268,6 +1330,13 @@ button.awake-main:hover {
 .awake-ring .lit {
   fill: var(--accent);
 }
+/* On, the tile is filled with the accent: the dots switch to the text colour on it. */
+.panel:not(.look-dot) .awake.on .awake-ring {
+  fill: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .awake.on .awake-ring .lit {
+  fill: var(--on-accent);
+}
 .awake-state {
   display: flex;
   flex-direction: column;
@@ -1835,7 +1904,7 @@ section > .setting:last-child {
    the panel's edges (its padding), so a page slides all the way out; it fills the panel's height,
    so a swipe works below the tiles too. Up and down, the panel scrolls as before. */
 .pages {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   /* 8px more above and below than it takes up, so edit mode's badges and outlines aren't cut off. */
   margin: -8px -10px -8px -16px;
@@ -1845,6 +1914,11 @@ section > .setting:last-child {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
+/* Where a page slides out of the row, it fades over 10px (clear of the tiles' outlines and
+   badges) instead of being cut off. */
+.pages:has(.page + .page) {
+  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
 .page {
   flex: 0 0 100%;
   box-sizing: border-box;
@@ -1853,19 +1927,22 @@ section > .setting:last-child {
   scroll-snap-stop: always;
 }
 
-/* Under the board, at the panel's bottom when the board is short, stuck there when it scrolls. */
+/* Just the dots, no bar: a footer under what scrolls, so it never overlaps tiles and never moves
+   between pages. */
 .page-dots {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
+  flex: none;
+  /* Closer than the panel's usual gap: 6 rows of tiles (496px) plus this strip fit in 648px. */
+  margin-top: -6px;
   display: flex;
   justify-content: center;
+  background: none;
 }
-/* A 16px target around each 6px dot. */
+/* A 16 x 12px target around each 6px dot. */
 .panel .page-dots button {
   width: 16px;
-  height: 16px;
+  height: 12px;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   border: none;
   background: none;
@@ -1893,18 +1970,25 @@ section > .setting:last-child {
   z-index: 3;
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  /* Above the page dots' strip. */
+  bottom: 30px;
+  /* One slim row (MOVE_BAR_PX in HomeBoard.tsx is its height and margin): the title, then the pages. */
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+}
+.move-bar h2 {
+  flex: none;
+  margin: 0;
 }
 .move-bar .row {
-  flex-wrap: wrap;
+  flex: 1;
   gap: 8px;
 }
 .move-target {
-  flex: 1 0 auto;
-  padding: 14px 12px;
+  flex: 1 1 0;
+  padding: 7px 10px;
   border-radius: 12px;
   border: 1.5px dashed rgb(var(--ink) / 0.35);
   text-align: center;
@@ -1914,9 +1998,6 @@ section > .setting:last-child {
 .move-target.drop {
   border: 1.5px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.page-bar {
-  gap: 8px;
 }
 
 /* The pages overview: each page an outline of where its tiles are, three to a row. */
@@ -1992,7 +2073,7 @@ section > .setting:last-child {
 /* Transparent looks: the dots get a small card of their own, so they show over any wallpaper. */
 .clear .page-dots {
   align-self: center;
-  padding: 2px 6px;
+  padding: 0 6px;
   border-radius: 999px;
 }
 .look-liquid.clear .page-dots {
@@ -2091,4 +2172,36 @@ section > .setting:last-child {
 }
 .display-row + .hint {
   margin-top: 8px;
+}
+
+/* A Settings section's chevron turns down when it's open. */
+.chevron {
+  transition: transform 0.15s;
+}
+.chevron.open {
+  transform: rotate(90deg);
+}
+
+/* ---- Accent edge ---------------------------------------------------------------------------- */
+
+/* The panel's edge catches the accent in every look: along the top and (fainter) the bottom, and
+   brighter where the pointer is (--gx and --gy come from App.tsx). Only where the panel has an edge:
+   not Transparent, whose cards float. */
+html:not(.clear) body::after {
+  --gx: 50%;
+  --gy: 0%;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  padding: 1.5px;
+  border-radius: 8px;
+  pointer-events: none;
+  background:
+    radial-gradient(280px circle at var(--gx) var(--gy), var(--accent), transparent 62%),
+    radial-gradient(220px circle at 50% 0%, var(--accent), transparent 70%),
+    radial-gradient(220px circle at 50% 100%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }

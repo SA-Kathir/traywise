@@ -3,15 +3,15 @@
 One tray icon, one panel, and a handful of small Windows 11 tools you can switch on or off.
 
 <p align="center">
-  <img src="docs/screenshot-dot.png" width="250" alt="The Traywise panel in the Dot look: monochrome tiles over a dot grid, with dot-matrix numbers and a red accent">
-  <img src="docs/screenshot-liquid.png" width="250" alt="The Traywise panel in the Liquid look: tiles tinted in a colour preset">
+  <img src="docs/screenshot-dot.png" width="250" alt="The Traywise panel in the Dot look: monochrome tiles on a plain background, with dot-matrix numbers and a red accent">
+  <img src="docs/screenshot-liquid.png" width="250" alt="The Traywise panel in the Tint look: tiles tinted in a colour preset">
   <img src="docs/screenshot-windows.png" width="250" alt="The Traywise panel in the Windows look: flat, like Windows 11's own flyouts">
 </p>
 
 Pick a look when you first start it, and change it any time in Settings:
 
-- **Dot** (the default): monochrome tiles over a dot grid, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
-- **Liquid**: tiles tinted in one of six colours, on a tinted background or floating over your desktop.
+- **Dot** (the default): monochrome tiles on a plain background, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
+- **Tint**: tiles tinted in one of six colours, on a tinted background or floating over your desktop.
 - **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
 
 ## Modules
@@ -27,7 +27,7 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 - **Bluetooth**: switch it on or off, see your paired devices, and connect or disconnect headphones and speakers.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
 
-Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the right edge**: rest the mouse on the middle of the screen's right edge and the panel slides in.
+Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
 
 **Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 

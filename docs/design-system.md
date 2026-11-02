@@ -6,11 +6,11 @@ The source of truth is the **Design System** page of the maintainers' Figma file
 - **v0.2 · Shipped**: what 0.2.0 looks like (home, tabs, Connect, Settings, Modules, edge opening).
 - **v0.3 · Next release**: clock, focus, board pages (as built), displays, power, project, per-app output, and the other looks.
 
-This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Liquid and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
+This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Tint and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
 
 ## Direction
 
-The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel, under frosted glass. It's built for Windows 11 and the fixed 360 × 640 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
+The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel, under frosted glass. It's built for Windows 11 and the fixed 360 × 648 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
 
 Decisions with the owner:
 
@@ -21,7 +21,7 @@ Decisions with the owner:
 | Words | **OCR-A** (public domain, bundled, one weight, no faux bold), a size smaller than the Segoe ramp because it's wide. |
 | Modes | **Dark and light**, following Windows' app mode. |
 | Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. |
-| Background | **Dots** (default), **Plain** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
+| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
 | On tiles | **Inverted plate** (white in dark, black in light) with a 6 px accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
 | Board pages (0.3) | As built: **plain dots** at the panel bottom, a **page bar** in edit mode, and tiles move by **dropping them on a page's dot**. (The owner kept their own picks over the Figma pill and Move to bar.) |
@@ -114,7 +114,7 @@ Accent rows show the Red preset.
 | `--tw-board-cell` | 76 | Square cells |
 | `--tw-board-gutter` | 8 | |
 | `--tw-board-inset` | 16 | Panel side padding (the code uses padding + scrollbar gutter to reach 328) |
-| `--tw-panel-width` × `--tw-panel-height` | 360 × 640 | Fixed |
+| `--tw-panel-width` × `--tw-panel-height` | 360 × 648 | Fixed |
 | `--tw-stroke-hairline` | 1 | All glass edges, inside |
 | `--tw-icon-size` | 20 | On a 24 px grid |
 | `--tw-icon-stroke` | 1.5 | |
@@ -195,16 +195,16 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 
 ## Panel layout
 
-- Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: "Edit board" + hint + Done; Page: Back + title).
+- Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: small "Edit home" title, Add tiles, Done; Page: Back + title).
 - Icon tab bar, 36 px, at y 58: Home, Sound, System, Connect, Tools (only categories with a module on). The selected icon is in the accent colour; there's no track.
-- The board starts at y 100. In edit mode, the edit bar (Auto-arrange, Reset, Add tiles) replaces the tabs, and from 0.3 the page bar sits under it.
+- The board starts at y 100. In edit mode, one slim edit bar (Auto-arrange, Reset, a "Pages 1/2" chip that opens the pages overview) replaces the tabs; Add tiles sits in the header beside Done.
 - Board grid (matches `.board`): 4 columns, 76 px square cells, 8 px gaps, 328 px wide. Sizes 1×1 76×76, 2×1 160×76, 4×1 328×76, 2×2 160×160, 4×2 328×160. Dot pads tiles 12 px all round.
 
 ## Components (Figma, Design System and v0.2 pages)
 
 | Component | Variants | Spec |
 |---|---|---|
-| Background | Pattern = Dots / Plain | 360×640. Dots: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
+| Background | Pattern = Dots / Plain | 360×648. Dots: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
 | Switch | Checked × State | 40×20 pill. Off: track + hairline, grey 12 px knob. On: accent track, `accent-on` knob. 14 px knob on hover. |
 | Slider | Style (Inline/Tile) × State | Inline: 4 px track, neutral fill, 16 px white thumb. Tile: a 28–36 px bar whose fill is the thumb. Never accent. |
 | Button | Style (Primary/Secondary/Quiet) × State | Pill, 32 px tall, 16 px side padding. One Primary per view. |
@@ -212,7 +212,7 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 | Segmented control | Selected | Track pill, 3 px inset; the selected segment is the inverted pill. |
 | Tab bar | Selected = Home/Sound/System/Connect/Tools | Icon-only; selected icon in accent. |
 | Panel header | Mode = Normal/Edit/Page | See [Panel layout](#panel-layout). |
-| Edit bar | Reset = Rest/Confirm reset | Auto-arrange switch, Reset (second click: "Reset board?" on the inverted pill), Add tiles. |
+| Edit bar | Reset = Rest/Confirm reset | Auto-arrange switch, Reset (second click: "Reset board?" on the inverted pill), Pages chip. |
 | Setting row | Type = Switch, Switch + desc, Value, Link, Stacked choice, Colour | Uniform rows inside a card, 1 px `glass-edge` divider between rows. Colour: 22 px swatches, the picked one ringed in text-primary. |
 | Module row | On = Yes/No | 36 px icon well, name, what it does, "Idle: …" in text-tertiary, switch. |
 | Network row | State = Connected/Saved/Open/Joining | Wi-Fi icon (accent when connected), name, state, lock if secured. Joining expands in place: password field + Cancel / Join. |
@@ -220,7 +220,7 @@ There are no white specular highlights, no blobs and no refraction. The backgrou
 | Text input | State = Rest/Focus | `control-track` fill, radius 12, no border; focus = 1.5 px accent ring. |
 | Toast | Tone = Neutral/Success/Danger | Frosted, 328×44, 8 px status dot, optional quiet action. |
 | Edit chrome, Edit overlay, Drop slot, Size picker, Edit tray | as before | Remove badge top left, grip top centre, resize corner bottom right; dashed idle edge, 2 px accent when selected. The size picker has five sizes. |
-| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
+| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 × 12 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
 | **Page bar** (0.3) | State = Rest/Confirm remove | Under the edit bar: ‹ (move page left), "Page 1 of 3" (numbers in Doto), › (move page right), trash, +. |
 
 ### Tiles
@@ -248,7 +248,7 @@ Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is th
 As built on `feature/board-pages` (the owner kept their own picks over the earlier Figma direction). Figma: v0.3 › Board pages.
 
 - Up to 5 boards side by side. Turn pages with Ctrl+←/→, PageUp/PageDown, a sideways wheel or Shift+wheel, a drag, or a dot.
-- Page dots: plain 6 px dots (16 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
+- Page dots: plain 6 px dots (16 × 12 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
 - Edit mode: a page bar under the edit bar, ‹ "Page N of M" › trash +. ‹ and › move this page left or right; + adds a page after this one; trash removes it. Removing a page with tiles asks first, and its tiles go back to Add tiles. Suggested confirm pattern: the trash turns into "Remove page?" on the inverted pill, like "Reset board?".
 - Moving a tile to another page: drag it onto that page's dot. The dot grows to 12 px in the accent while the tile is over it; drop it there.
 - A new page shows empty drop slots, "This page is empty" and a primary "Add tiles".
@@ -282,13 +282,13 @@ Figma: v0.3 › Sound + System pages.
 
 ### Other looks
 
-Figma: v0.3 › Liquid + Windows looks.
+Figma: v0.3 › Tint + Windows looks.
 
-The same layouts and sizes in Liquid and Windows. What changes:
+The same layouts and sizes in Tint and Windows. What changes:
 
-- **Cards:** Liquid uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
+- **Cards:** Tint uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
 - **Type:** numbers are in Segoe UI Variable Display Semibold, not Doto.
-- **Accent:** "on" tiles and selections fill with the look's accent (the Liquid preset's, or Windows blue #4CC2FF).
+- **Accent:** "on" tiles and selections fill with the look's accent (the Tint preset's, or Windows blue #4CC2FF).
 - **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
 - **Analogue clock:** line ticks and solid hands instead of dots.
 

@@ -1,4 +1,5 @@
-import { Suspense, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
 import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
@@ -13,6 +14,10 @@ const LONG_PRESS_MS = 500;
 const DRAG_PX = 5;
 /** How long a tile takes to glide to its new place, to appear, and to go. */
 const MOVE_MS = 180;
+/** The Move to bar's height with its margin (px): the board keeps this much room under it while a tile is dragged. */
+const MOVE_BAR_PX = 60;
+/** Dragging a tile this close (px) above the Move to bar, or below the top, scrolls the page. */
+const SCROLL_ZONE_PX = 48;
 const APPEAR_MS = 260;
 const REMOVE_MS = 160;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
@@ -203,6 +208,28 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
     };
   }
 
+  // Dragging near the page's top or bottom scrolls it, so a tile can be moved further down or up.
+  const pointerMoveRef = useRef(pointerMove);
+  pointerMoveRef.current = pointerMove;
+  useEffect(() => {
+    const scroller = board.current?.closest<HTMLElement>(".scroll");
+    if (!drag?.moved || !scroller) return;
+    let frame = requestAnimationFrame(function tick() {
+      const d = dragging.current;
+      if (d) {
+        const r = scroller.getBoundingClientRect();
+        const bottom = r.bottom - MOVE_BAR_PX;
+        const depth = d.pointerY > bottom - SCROLL_ZONE_PX && d.pointerY <= bottom ? d.pointerY - (bottom - SCROLL_ZONE_PX) : d.pointerY < r.top + SCROLL_ZONE_PX ? d.pointerY - (r.top + SCROLL_ZONE_PX) : 0;
+        const before = scroller.scrollTop;
+        scroller.scrollTop += Math.round((depth / SCROLL_ZONE_PX) * 10);
+        // The tile under the pointer changed with the scroll: work it out again from where the pointer is.
+        if (scroller.scrollTop !== before) pointerMoveRef.current({ clientX: d.pointerX, clientY: d.pointerY } as PointerEvent);
+      }
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [drag?.moved]);
+
   function cancelPress() {
     if (press.current) clearTimeout(press.current.timer);
     press.current = null;
@@ -332,6 +359,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
     <div
       ref={board}
       className={editing ? "board editing" : "board"}
+      style={drag?.moved ? { marginBottom: MOVE_BAR_PX } : undefined}
       onPointerMove={pointerMove}
       onPointerUp={pointerUp}
       onPointerCancel={cancelDrag}
@@ -392,8 +420,10 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
         );
       })}
     </div>
-    {drag?.moved && (
-      // While a tile is dragged: a big target for each other page, and one for a new page.
+    {drag?.moved &&
+      // While a tile is dragged: a target for each other page, and one for a new page. In the page
+      // itself the row of pages' edge fade would clip it, so it's drawn on the document.
+      createPortal(
       <section className="move-bar" aria-hidden>
         <h2>Move to</h2>
         <div className="row">
@@ -410,8 +440,9 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
             </span>
           )}
         </div>
-      </section>
-    )}
+      </section>,
+      document.body,
+      )}
     </>
   );
 }

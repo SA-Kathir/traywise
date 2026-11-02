@@ -40,10 +40,14 @@ pub struct Settings {
     pub auto_arrange: bool,
     /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
     pub monitor_readings: [Reading; 2],
-    /// Resting the mouse on the middle of the screen's right edge opens the panel.
+    /// Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel.
     pub edge_open: bool,
     /// With `edge_open`, a small pill on the edge shows where.
     pub edge_handle: bool,
+    /// With `edge_open`: which side of the screen it's on.
+    pub edge_side: EdgeSide,
+    /// With `edge_handle`: the pill is in the accent colour, not grey.
+    pub edge_handle_accent: bool,
     /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
     pub clock_zone: Option<String>,
     pub clock_style: ClockStyle,
@@ -89,7 +93,7 @@ impl Default for Settings {
             single_hue: false,
             preset: Preset::Ocean,
             accent: Accent::Red,
-            plain_background: false,
+            plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
@@ -99,10 +103,20 @@ impl Default for Settings {
             monitor_readings: [Reading::Cpu, Reading::Memory],
             edge_open: false,
             edge_handle: false,
+            edge_side: EdgeSide::Right,
+            edge_handle_accent: false,
             clock_zone: None,
             clock_style: ClockStyle::Digital,
         }
     }
+}
+
+/// Which side of the screen the panel opens from, when it opens from an edge.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum EdgeSide {
+    Left,
+    Right,
 }
 
 /// How the panel is drawn. The styles are in `src/shell/liquid.css`.
@@ -268,6 +282,8 @@ mod tests {
             monitor_readings: [Reading::Upload, Reading::Cpu],
             edge_open: true,
             edge_handle: true,
+            edge_side: EdgeSide::Left,
+            edge_handle_accent: true,
             clock_zone: Some("Asia/Tokyo".into()),
             clock_style: ClockStyle::Analogue,
         };

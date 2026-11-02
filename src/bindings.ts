@@ -213,6 +213,9 @@ export type DisplaysState = {
 	project: Project | null,
 };
 
+/**  Which side of the screen the panel opens from, when it opens from an edge. */
+export type EdgeSide = "left" | "right";
+
 /**  Sent to the UI whenever the state changes. */
 export type FocusChanged = FocusState;
 
@@ -435,10 +438,14 @@ export type Settings = {
 	autoArrange: boolean,
 	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
 	monitorReadings: [Reading, Reading],
-	/**  Resting the mouse on the middle of the screen's right edge opens the panel. */
+	/**  Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel. */
 	edgeOpen: boolean,
 	/**  With `edge_open`, a small pill on the edge shows where. */
 	edgeHandle: boolean,
+	/**  With `edge_open`: which side of the screen it's on. */
+	edgeSide: EdgeSide,
+	/**  With `edge_handle`: the pill is in the accent colour, not grey. */
+	edgeHandleAccent: boolean,
 	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
 	clockZone: string | null,
 	clockStyle: ClockStyle,

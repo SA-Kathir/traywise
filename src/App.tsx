@@ -5,7 +5,7 @@ import { AddTiles } from "./shell/AddTiles";
 import { add, moveToPage, pack, type Placed } from "./shell/board";
 import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
-import { Pages } from "./shell/Pages";
+import { PageDots, Pages } from "./shell/Pages";
 import { PagesOverview } from "./shell/PagesOverview";
 import { Num } from "./shell/Tile";
 import { SettingsPage, useSave } from "./shell/Settings";
@@ -14,6 +14,7 @@ import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
+import "./shell/island.css";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
@@ -30,6 +31,9 @@ const LEAVE_MS = 400;
 /** …and how long it stays if the mouse never comes in (it rested on the edge, then went elsewhere). */
 const NEVER_ENTERED_MS = 1500;
 
+// The tiles' entrance (island.css) waits for the first open; Rust starts and clears it, and sets this again each time the panel hides.
+document.documentElement.dataset.island = "pre";
+
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
@@ -45,6 +49,23 @@ function App() {
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
+  }, []);
+
+  // The panel's accent edge (dot.css) brightens where the pointer is.
+  useEffect(() => {
+    let frame = 0;
+    const move = (e: globalThis.PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        document.body.style.setProperty("--gx", `${e.clientX}px`);
+        document.body.style.setProperty("--gy", `${e.clientY}px`);
+      });
+    };
+    addEventListener("pointermove", move);
+    return () => {
+      removeEventListener("pointermove", move);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
@@ -106,7 +127,7 @@ function App() {
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent && !(view === "home" && editing) ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
@@ -161,7 +182,7 @@ function App() {
 
   return (
     <SettingsContext.Provider value={{ settings, save }}>
-    <main className={panelClass}>
+    <main className={`${panelClass} fixed`}>
       <header className="row">
         {!tabbed && !editHome && (
           <button
@@ -173,18 +194,21 @@ function App() {
             {BACK}
           </button>
         )}
-        {editHome ? (
-          <div className="grow">
-            <h1>{title}</h1>
-            <p className="hint">{pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize"}</p>
-          </div>
-        ) : (
-          <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
-        )}
+        <h1
+          className={view === "home" && enabled.length > 0 && !editHome ? "grow wordmark" : "grow"}
+          title={editHome ? (pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize") : undefined}
+        >
+          {title}
+        </h1>
         {editHome && (
-          <button className="primary" onClick={() => setEditing(false)}>
-            Done
-          </button>
+          <>
+            <button className="add-tiles" onClick={() => setAdding(true)}>
+              Add tiles
+            </button>
+            <button className="primary" onClick={() => setEditing(false)}>
+              Done
+            </button>
+          </>
         )}
         {tabbed && (
           <>
@@ -219,8 +243,6 @@ function App() {
         </nav>
       )}
 
-      <UpdateNotice />
-
       {editHome && (
         <div className="row edit-bar">
           <label className="row grow">
@@ -244,22 +266,16 @@ function App() {
           >
             {confirmReset ? "Reset board?" : "Reset"}
           </button>
-          <button className="add-tiles" onClick={() => setAdding(true)}>
-            Add tiles
+          <button title="All pages" onClick={() => setOverview(true)}>
+            Pages <Num text={String(current + 1)} />/<Num text={String(pages.length)} />
           </button>
         </div>
       )}
-      {editHome && (
-        <div className="row page-bar">
-          <span className="grow">
-            Page <Num text={String(current + 1)} /> of <Num text={String(pages.length)} />
-          </span>
-          <button onClick={() => setOverview(true)}>Pages</button>
-        </div>
-      )}
 
+      <div className="scroll">
+      <UpdateNotice />
       {view === "settings" ? (
-        <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
+        <SettingsPage settings={settings} onChange={setSettings} />
       ) : view === "modules" ? (
         <ModulesPage settings={settings} onChange={setSettings} />
       ) : view !== "home" ? (
@@ -309,6 +325,8 @@ function App() {
           onClose={() => setOverview(false)}
         />
       )}
+      </div>
+      {view === "home" && enabled.length > 0 && pages.length > 1 && <PageDots count={pages.length} page={current} onPage={setPage} />}
       {editHome && adding && (
         <AddTiles
           enabled={enabled}
