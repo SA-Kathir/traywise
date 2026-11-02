@@ -167,7 +167,7 @@ fn report_pdh<T>(status: u32) -> Option<T> {
     None
 }
 
-fn battery() -> Option<Battery> {
+pub(crate) fn battery() -> Option<Battery> {
     let mut status = SYSTEM_POWER_STATUS::default();
     unsafe { GetSystemPowerStatus(&mut status) }.ok()?;
     // BatteryFlag 128: no battery; 255: unknown. BatteryLifePercent and BatteryLifeTime use 255 and

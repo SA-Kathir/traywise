@@ -2,15 +2,19 @@ import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
 import { AddTiles } from "./shell/AddTiles";
-import { add, pack, type Placed } from "./shell/board";
-import { Board, boardToShow } from "./shell/HomeBoard";
+import { add, moveToPage, pack, type Placed } from "./shell/board";
+import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
+import { PageDots, Pages } from "./shell/Pages";
+import { PagesOverview } from "./shell/PagesOverview";
+import { Num } from "./shell/Tile";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { SettingsContext } from "./shell/SettingsContext";
 import { Setup } from "./shell/Setup";
 import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
+import "./shell/island.css";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
@@ -19,23 +23,49 @@ const POWER = String.fromCodePoint(0xe7e8);
 const BACK = String.fromCodePoint(0xe72b);
 const EDIT = String.fromCodePoint(0xe70f);
 
+/** Pages on the home board, at most. */
+const MAX_PAGES = 5;
+
 /** How long the mouse can be outside an edge-opened panel before it closes. */
 const LEAVE_MS = 400;
 /** …and how long it stays if the mouse never comes in (it rested on the edge, then went elsewhere). */
 const NEVER_ENTERED_MS = 1500;
 
+// The tiles' entrance (island.css) waits for the first open; Rust starts and clears it, and sets this again each time the panel hides.
+document.documentElement.dataset.island = "pre";
+
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   // Home, a category's tab, Settings, or the Modules page (opened from Settings).
   const [view, setView] = useState<"home" | Category | "settings" | "modules">("home");
-  // Edit mode on Home, and its list of tiles to add.
+  // Edit mode on Home, its list of tiles to add, and its overview of pages.
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [overview, setOverview] = useState(false);
   // Reset asks once more before it throws the layout away.
   const [confirmReset, setConfirmReset] = useState(false);
+  // The home board's page on screen.
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     commands.getSettings().then(setSettings);
+  }, []);
+
+  // The panel's accent edge (dot.css) brightens where the pointer is.
+  useEffect(() => {
+    let frame = 0;
+    const move = (e: globalThis.PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        document.body.style.setProperty("--gx", `${e.clientX}px`);
+        document.body.style.setProperty("--gy", `${e.clientY}px`);
+      });
+    };
+    addEventListener("pointermove", move);
+    return () => {
+      removeEventListener("pointermove", move);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
@@ -71,8 +101,10 @@ function App() {
         close(NEVER_ENTERED_MS);
       }
       setView("home"); // every open starts on the main view, like Windows' own flyouts
+      setPage(0);
       setEditing(false);
       setAdding(false);
+      setOverview(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
       requestAnimationFrame(() => requestAnimationFrame(() => commands.panelPainted()));
     });
@@ -81,21 +113,21 @@ function App() {
     };
   }, []);
 
-  // Esc steps out: from the tray of tiles to add, then out of edit mode.
+  // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode.
   useEffect(() => {
     if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") (adding ? setAdding : setEditing)(false);
+      if (e.key === "Escape") (adding ? setAdding : overview ? setOverview : setEditing)(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, adding]);
+  }, [editing, adding, overview]);
 
   // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent && !(view === "home" && editing) ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
@@ -112,9 +144,17 @@ function App() {
     enabled.some((id) => modules[id].category === c && modules[id].Panel),
   );
   const auto = settings.autoArrange;
-  const tiles = boardToShow(settings.board, enabled, auto);
+  const pages = pagesToShow(settings.pages, enabled, auto);
+  // A page removed (or a settings file with fewer) leaves the last one on screen.
+  const current = Math.min(page, pages.length - 1);
+  const tiles = pages[current];
   // Every change to the board is saved straight away.
-  const setBoard = (board: Placed[]) => save({ ...settings, board });
+  const setBoard = (board: Placed[]) => save({ ...settings, pages: pages.map((p, i) => (i === current ? board : p)) });
+  /** Saves the pages and shows page `show`. */
+  const setPages = (next: Placed[][], show: number) => {
+    save({ ...settings, pages: next });
+    setPage(show);
+  };
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
@@ -142,7 +182,7 @@ function App() {
 
   return (
     <SettingsContext.Provider value={{ settings, save }}>
-    <main className={panelClass}>
+    <main className={`${panelClass} fixed`}>
       <header className="row">
         {!tabbed && !editHome && (
           <button
@@ -154,18 +194,21 @@ function App() {
             {BACK}
           </button>
         )}
-        {editHome ? (
-          <div className="grow">
-            <h1>{title}</h1>
-            <p className="hint">Drag to move, corner to resize</p>
-          </div>
-        ) : (
-          <h1 className={view === "home" && enabled.length > 0 ? "grow wordmark" : "grow"}>{title}</h1>
-        )}
+        <h1
+          className={view === "home" && enabled.length > 0 && !editHome ? "grow wordmark" : "grow"}
+          title={editHome ? (pages.length > 1 ? "Drag to move, or to another page" : "Drag to move, corner to resize") : undefined}
+        >
+          {title}
+        </h1>
         {editHome && (
-          <button className="primary" onClick={() => setEditing(false)}>
-            Done
-          </button>
+          <>
+            <button className="add-tiles" onClick={() => setAdding(true)}>
+              Add tiles
+            </button>
+            <button className="primary" onClick={() => setEditing(false)}>
+              Done
+            </button>
+          </>
         )}
         {tabbed && (
           <>
@@ -200,8 +243,6 @@ function App() {
         </nav>
       )}
 
-      <UpdateNotice />
-
       {editHome && (
         <div className="row edit-bar">
           <label className="row grow">
@@ -210,7 +251,7 @@ function App() {
               type="checkbox"
               checked={auto}
               onChange={(e) =>
-                save({ ...settings, autoArrange: e.target.checked, board: e.target.checked ? pack(tiles) : tiles })
+                save({ ...settings, autoArrange: e.target.checked, pages: e.target.checked ? pages.map(pack) : pages })
               }
             />
           </label>
@@ -220,19 +261,21 @@ function App() {
             onClick={() => {
               if (!confirmReset) return setConfirmReset(true);
               setConfirmReset(false);
-              save({ ...settings, board: null, autoArrange: true }); // back to the default board
+              save({ ...settings, pages: null, autoArrange: true }); // back to the default board, one page
             }}
           >
             {confirmReset ? "Reset board?" : "Reset"}
           </button>
-          <button className="add-tiles" onClick={() => setAdding(true)}>
-            Add tiles
+          <button title="All pages" onClick={() => setOverview(true)}>
+            Pages <Num text={String(current + 1)} />/<Num text={String(pages.length)} />
           </button>
         </div>
       )}
 
+      <div className="scroll">
+      <UpdateNotice />
       {view === "settings" ? (
-        <SettingsPage settings={settings} onChange={setSettings} openModules={() => setView("modules")} />
+        <SettingsPage settings={settings} onChange={setSettings} />
       ) : view === "modules" ? (
         <ModulesPage settings={settings} onChange={setSettings} />
       ) : view !== "home" ? (
@@ -243,25 +286,51 @@ function App() {
           <p className="hint">Pick the modules you want, and they'll show up here.</p>
           <button onClick={() => setView("modules")}>Choose modules</button>
         </div>
-      ) : tiles.length === 0 && !editing ? (
-        <div className="welcome">
-          <p className="hint">Your home is empty.</p>
-          <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
-        </div>
       ) : (
-        <Board
-          tiles={tiles}
-          open={(id) => setView(modules[id].category)}
-          editing={editing}
-          auto={auto}
-          onChange={setBoard}
-          onLongPress={() => setEditing(true)}
+        <Pages
+          count={pages.length}
+          page={current}
+          onPage={setPage}
+          render={(i) =>
+            pages[i].length === 0 && !editing ? (
+              <div className="welcome">
+                <p className="hint">{pages.length > 1 ? "This page is empty." : "Your home is empty."}</p>
+                <button onClick={() => (setEditing(true), setAdding(true))}>Add tiles</button>
+              </div>
+            ) : (
+              <Board
+                tiles={pages[i]}
+                open={(id) => setView(modules[id].category)}
+                editing={editing}
+                auto={auto}
+                onChange={setBoard}
+                onLongPress={() => setEditing(true)}
+                pages={pages.length}
+                page={i}
+                canAddPage={pages.length < MAX_PAGES}
+                // A new page (`to` is one past the last) goes at the end.
+                onMoveToPage={(id, to) => save({ ...settings, pages: moveToPage([...pages, ...(to === pages.length ? [[]] : [])], id, current, to, auto) })}
+              />
+            )
+          }
         />
       )}
+      {editHome && overview && (
+        <PagesOverview
+          pages={pages}
+          current={current}
+          canAdd={pages.length < MAX_PAGES}
+          onGo={(i) => (setPage(i), setOverview(false))}
+          onChange={setPages}
+          onClose={() => setOverview(false)}
+        />
+      )}
+      </div>
+      {view === "home" && enabled.length > 0 && pages.length > 1 && <PageDots count={pages.length} page={current} onPage={setPage} />}
       {editHome && adding && (
         <AddTiles
           enabled={enabled}
-          tiles={tiles}
+          tiles={pages.flat()}
           onAdd={(id, size: Size) => {
             const [w, h] = size.split("x").map(Number);
             setBoard(add(tiles, id, w, h, auto));

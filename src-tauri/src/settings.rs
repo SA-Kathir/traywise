@@ -18,7 +18,7 @@ pub struct Settings {
     pub look: Look,
     /// Liquid and Dot: no panel background, so the cards float over the desktop.
     pub transparent: bool,
-    /// Liquid: cards in one even hue, instead of lighter at the top left fading darker.
+    /// Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker.
     pub single_hue: bool,
     pub preset: Preset,
     /// Dot: the accent colour.
@@ -33,16 +33,24 @@ pub struct Settings {
     pub check_updates: bool,
     /// Whether first-run setup (pick a look, then modules) is done.
     pub onboarded: bool,
-    /// The home board's tiles. None until it's first changed: the UI shows its default board.
-    pub board: Option<Vec<BoardTile>>,
+    /// The home board's pages, each with its own tiles. None until it's first changed: the UI shows
+    /// its default board as one page. (A 0.2 file's single `board` becomes page 1 when read.)
+    pub pages: Option<Vec<Vec<BoardTile>>>,
     /// Home board: tiles fill gaps (true), or stay where they're put (false).
     pub auto_arrange: bool,
     /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
     pub monitor_readings: [Reading; 2],
-    /// Resting the mouse on the middle of the screen's right edge opens the panel.
+    /// Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel.
     pub edge_open: bool,
     /// With `edge_open`, a small pill on the edge shows where.
     pub edge_handle: bool,
+    /// With `edge_open`: which side of the screen it's on.
+    pub edge_side: EdgeSide,
+    /// With `edge_handle`: the pill is in the accent colour, not grey.
+    pub edge_handle_accent: bool,
+    /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
+    pub clock_zone: Option<String>,
+    pub clock_style: ClockStyle,
 }
 
 /// A reading the system monitor graphs.
@@ -53,6 +61,16 @@ pub enum Reading {
     Memory,
     Download,
     Upload,
+}
+
+/// How the clock tile draws the time.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ClockStyle {
+    /// Dot-matrix digits.
+    Digital,
+    /// A round face of dots, with dot hands.
+    Analogue,
 }
 
 /// A tile on the home board: `w` × `h` grid cells, with its top-left cell at column `x`, row `y`.
@@ -72,21 +90,33 @@ impl Default for Settings {
             enabled_modules: vec![ModuleId::VolumeMixer],
             look: Look::Dot,
             transparent: false,
-            single_hue: false,
+            single_hue: true,
             preset: Preset::Ocean,
             accent: Accent::Red,
-            plain_background: false,
+            plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
-            board: None,
+            pages: None,
             auto_arrange: true,
             monitor_readings: [Reading::Cpu, Reading::Memory],
             edge_open: false,
             edge_handle: false,
+            edge_side: EdgeSide::Right,
+            edge_handle_accent: false,
+            clock_zone: None,
+            clock_style: ClockStyle::Digital,
         }
     }
+}
+
+/// Which side of the screen the panel opens from, when it opens from an edge.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum EdgeSide {
+    Left,
+    Right,
 }
 
 /// How the panel is drawn. The styles are in `src/shell/liquid.css`.
@@ -148,7 +178,11 @@ fn read(path: &Path) -> Settings {
     let Ok(text) = std::fs::read_to_string(path) else { return Settings::default() };
     // Lay the file's fields over the defaults (rather than `#[serde(default)]`, which would make
     // every field optional in the generated TypeScript type).
-    let merged = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&text).and_then(|file| {
+    let merged = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&text).and_then(|mut file| {
+        // 0.2 had one board: it becomes page 1.
+        if let Some(board) = file.remove("board").filter(|b| b.is_array()) {
+            file.entry("pages").or_insert(serde_json::Value::Array(vec![board]));
+        }
         let serde_json::Value::Object(mut fields) = serde_json::to_value(Settings::default())? else {
             unreachable!("Settings serializes to a JSON object")
         };
@@ -235,7 +269,7 @@ mod tests {
             enabled_modules: vec![],
             look: Look::Windows,
             transparent: true,
-            single_hue: true,
+            single_hue: false,
             preset: Preset::Graphite,
             accent: Accent::Blue,
             plain_background: true,
@@ -243,11 +277,15 @@ mod tests {
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
-            board: Some(vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }]),
+            pages: Some(vec![vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }], vec![]]),
             auto_arrange: false,
             monitor_readings: [Reading::Upload, Reading::Cpu],
             edge_open: true,
             edge_handle: true,
+            edge_side: EdgeSide::Left,
+            edge_handle_accent: true,
+            clock_zone: Some("Asia/Tokyo".into()),
+            clock_style: ClockStyle::Analogue,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");
@@ -273,12 +311,30 @@ mod tests {
                 enabled_modules: vec![ModuleId::VolumeMixer, ModuleId::KeepAwake, ModuleId::AudioDevices, ModuleId::SystemMonitor, ModuleId::QuickToggles],
                 look: Look::Liquid,
                 transparent: true,
+                single_hue: false,
                 preset: Preset::Plum,
                 onboarded: true,
                 ..Settings::default()
             },
             "0.1.0 file"
         );
+
+        // A 0.2 file's single board becomes page 1; a board never changed (null) stays the default.
+        std::fs::write(
+            &path,
+            r#"{ "board": [{ "id": "wifi/wifi", "w": 1, "h": 1, "x": 3, "y": 0 }, { "id": "clock/clock", "w": 2, "h": 1, "x": 0, "y": 1 }] }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            read(&path).pages,
+            Some(vec![vec![
+                BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0 },
+                BoardTile { id: "clock/clock".into(), w: 2, h: 1, x: 0, y: 1 },
+            ]]),
+            "0.2 board"
+        );
+        std::fs::write(&path, r#"{ "board": null }"#).unwrap();
+        assert_eq!(read(&path), Settings::default(), "0.2 default board");
 
         std::fs::write(&path, "{ not json").unwrap();
         assert_eq!(read(&path), Settings::default(), "invalid file");

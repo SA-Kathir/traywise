@@ -1,27 +1,31 @@
-# Traywise design system (v0.2 direction)
+# Traywise design system (0.2.0 as shipped, 0.3.0 designs)
 
-The source of truth is the **Design System** page of the Figma file:
-https://www.figma.com/design/grZMZ3PYBcb1Z8PTlibcxn/TrayWise?node-id=11-359
+The source of truth is the **Design System** page of the maintainers' Figma file. It has three pages:
 
-This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them.
+- **Design System**: foundations and components.
+- **v0.2 · Shipped**: what 0.2.0 looks like (home, tabs, Connect, Settings, Modules, edge opening).
+- **v0.3 · Next release**: clock, focus, board pages (as built), displays, power, project, per-app output, and the other looks.
+
+This document lists every token with its value. The app's **Dot** look (`src/shell/dot.css`) is built from them. Tint and Windows keep their own styles (`src/shell/liquid.css`); see [Other looks](#other-looks).
 
 ## Direction
 
-The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel. On top of that sits restrained glass. It's built for Windows 11 and the fixed 360 × 640 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
+The look takes its cues from Nothing OS: a monochrome base, one accent, dot-matrix numbers, generous rounded tiles, and a quiet, industrial feel, under frosted glass. It's built for Windows 11 and the fixed 360 × 648 tray panel. Traywise has its own identity: no Nothing fonts (NDot/NType), logo or assets.
 
-Decisions made with the owner (2026-10-29):
+Decisions with the owner:
 
 | Topic | Decision |
 |---|---|
-| Accent | **Red** by default. Settings offers presets: Red, Amber, Violet, Blue, Green (the `Accent` collection's modes). |
-| Dot-matrix type | **Numbers and the wordmark only.** Every word is Segoe UI Variable. |
+| Accent | **Red (#D92B24)** by default, chosen so white text passes WCAG AA (about 4.9:1). Settings › Accent: Red, Amber, Violet, Blue, Green. |
+| Numbers | **Doto** (OFL, bundled, Black only) for numbers, times and the TRAYWISE wordmark. Nothing else. |
+| Words | **OCR-A** (public domain, bundled, one weight, no faux bold), a size smaller than the Segoe ramp because it's wide. |
 | Modes | **Dark and light**, following Windows' app mode. |
-| Glass | **Two levels.** Tiles get a faint tint and hairline, with no blur. Only floating layers (toast, menu, edit tray) get frost (blur). Fallback if this looks wrong in the app: frost everywhere, measured first. |
-| Background | App-drawn and never read from the desktop. **A Setting (Background: Dots / Plain), dot grid by default.** |
-| On tiles | **Inverted:** a white plate in dark mode (black in light) with a small accent "live" dot. Red stays rare. |
+| Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. |
+| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
+| On tiles | **Inverted plate** (white in dark, black in light) with a 6 px accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
-| Red | **#D92B24**, so white text passes WCAG AA (about 4.9:1). |
-| Words (2026-10-30, in the app) | **OCR-A** (public domain) instead of Segoe UI Variable, in one weight and a size smaller, so the words set off the dot-matrix numbers. The type ramp below is the Figma file's. |
+| Board pages (0.3) | As built: **plain dots** at the panel bottom, a **page bar** in edit mode, and tiles move by **dropping them on a page's dot**. (The owner kept their own picks over the Figma pill and Move to bar.) |
+| Clock (0.3) | **Digital or Analogue** (a setting). The second time zone always sits in its own labelled well. |
 
 ## Tokens
 
@@ -35,6 +39,7 @@ gray/300 #A9A9A5 gray/400 #8A8A87  gray/500 #6C6C69  gray/600 #51514F  gray/700 
 gray/800 #262627 gray/850 #1C1C1E  gray/900 #141416  gray/950 #0B0B0C  gray/1000 #000000
 white/N and black/N for N in 4 6 8 10 12 14 20 24 40 60 72 88 (alpha %)
 glass/float-dark #1C1C1E/72        glass/float-light #FAFAF8/74
+glass/float-hover-dark #303032/76  glass/float-hover-light #FFFFFF/90
 red    300 #FF7A72  500 #D92B24  700 #B81F19
 orange 500 #FF7A1A  700 #B84A08
 amber  300 #FFC774  500 #F2A33A  700 #A8620A
@@ -63,34 +68,35 @@ Accent rows show the Red preset.
 | `--tw-bg-base` | #0B0B0C | #F4F4F2 | Panel background |
 | `--tw-bg-deep` | #000000 | #EAEAE7 | Bottom of the background gradient |
 | `--tw-bg-dot` | #FFFFFF/10 | #000000/12 | Dot-grid dots |
-| `--tw-glass-tile` | #FFFFFF/6 | #FFFFFF/72 | Level-1 glass: tiles, cards, controls |
+| `--tw-glass-tile` | #FFFFFF/6 | #FFFFFF/72 | Unfrosted fills: wells, chips, glass icon buttons |
 | `--tw-glass-tile-hover` | #FFFFFF/10 | #FFFFFF/88 | |
 | `--tw-glass-tile-pressed` | #FFFFFF/4 | #FFFFFF/60 | |
-| `--tw-glass-float` | #1C1C1E/72 | #FAFAF8/74 | Level-2 glass (with blur): toast, menu, tray |
-| `--tw-glass-edge` | #FFFFFF/8 | #000000/6 | 1 px inside edge |
-| `--tw-glass-edge-strong` | #FFFFFF/14 | #000000/12 | Floating edges, hover, edit-mode dashes |
+| `--tw-glass-float` | #1C1C1E/72 | #FAFAF8/74 | **Every tile and card** (with blur), toast, tray |
+| `--tw-glass-float-hover` | #303032/76 | #FFFFFF/90 | Hovered tile or card |
+| `--tw-glass-edge` | #FFFFFF/8 | #000000/6 | Hairlines: row dividers, wells |
+| `--tw-glass-edge-strong` | #FFFFFF/14 | #000000/12 | The 1 px edge of tiles and cards, edit-mode dashes |
 | `--tw-text-primary` | #F4F4F2 | #0B0B0C | |
 | `--tw-text-secondary` | #FFFFFF/60 | #000000/60 | |
 | `--tw-text-tertiary` | #FFFFFF/40 | #000000/40 | |
 | `--tw-text-disabled` | #FFFFFF/24 | #000000/24 | |
-| `--tw-text-inverse` | #0B0B0C | #FFFFFF | Text on `control-fill` (selected pills) |
+| `--tw-text-inverse` | #0B0B0C | #FFFFFF | Text on `control-fill` (selected pills, on-tiles) |
 | `--tw-icon-primary` | #F4F4F2 | #0B0B0C | |
 | `--tw-icon-secondary` | #FFFFFF/60 | #000000/60 | |
-| `--tw-control-track` | #FFFFFF/12 | #000000/10 | Switch-off, slider and segmented tracks |
+| `--tw-control-track` | #FFFFFF/12 | #000000/10 | Switch-off, slider and segmented tracks, wells, text fields |
 | `--tw-control-fill` | #F4F4F2 | #0B0B0C | Slider fill, selected segment, play button |
 | `--tw-control-thumb` | #FFFFFF | #FFFFFF | Slider thumb |
-| `--tw-control-quiet-hover` | #FFFFFF/8 | #000000/6 | Quiet button and list-row hover |
-| `--tw-accent-base` (theme) | accent-base | accent-base | |
+| `--tw-control-quiet-hover` | #FFFFFF/8 | #000000/6 | Quiet button, row and menu-item hover |
 | `--tw-accent-text` | accent-base | accent-strong | Accent used as text |
-| `--tw-accent-on` (theme) | accent-on | accent-on | |
-| `--tw-accent-soft-bg` | accent-tint | accent-tint | Drop target, tinted backgrounds |
+| `--tw-accent-soft-bg` | accent-tint | accent-tint | Drop target, TOMORROW tag |
 | `--tw-tile-on-fill` | control-fill (#F4F4F2) | control-fill (#0B0B0C) | Fill of "on" tiles (inverted) |
 | `--tw-tile-on-text` | text-inverse (#0B0B0C) | text-inverse (#FFFFFF) | Text and icons on "on" tiles |
 | `--tw-status-success` | #34C77B | #137F4B | |
-| `--tw-status-warning` | #F2A33A | #A8620A | |
-| `--tw-status-danger` | #FF7A1A | #B84A08 | Orange-red, separate from the accent |
-| `--tw-effect-shadow` | #000000/40 | #000000/14 | Shadow colour (floating layers only) |
-| `--tw-effect-scrim` | #000000/40 | #000000/20 | Behind the edit tray |
+| `--tw-status-warning` | #F2A33A | #A8620A | Battery below 20 % |
+| `--tw-status-danger` | #FF7A1A | #B84A08 | Errors, battery below 10 % |
+| `--tw-effect-shadow` | #000000/40 | #000000/14 | Shadow colour |
+| `--tw-effect-scrim` | #000000/40 | #000000/20 | Behind the Add tiles tray |
+
+**Transparent background** (`.look-dot.clear`): the glass alpha follows the brightness behind the panel, `0.92 − brightness × 0.24` (brightness 0–1 from the 8 × 8 sample), for both `glass-float` and `glass-float-hover`. The header and tab bar get their own frosted cards.
 
 ### Dimension
 
@@ -98,18 +104,17 @@ Accent rows show the Red preset.
 |---|---|---|
 | `--tw-space-0 … 12` | 0, 4, 8, 12, 16, 20, 24, 32 (`space-8`), 40 (`space-10`), 48 (`space-12`) | 4 px base. Name = multiple of 4. |
 | `--tw-radius-xs` | 4 | |
-| `--tw-radius-sm` | 8 | Panel corners are Windows' own 8 px. |
-| `--tw-radius-md` | 12 | List rows, tile slider bar, artwork |
-| `--tw-radius-lg` | 16 | Toast, floating cards |
-| `--tw-radius-tile` | 20 | Every board tile and the edit tray |
+| `--tw-radius-sm` | 8 | Panel corners are Windows' own 8 px; menu items. |
+| `--tw-radius-md` | 12 | List rows, text fields, wells, artwork |
+| `--tw-radius-lg` | 16 | Toast |
+| `--tw-radius-tile` | 20 | Every tile, card and the tray |
 | `--tw-radius-full` | 999 | Buttons, switches, segmented, chips |
-| `--tw-blur-none` | 0 | |
-| `--tw-blur-float` | 24 in Figma | Equals CSS `blur(12px)`. |
+| `--tw-blur-float` | 12px | CSS `blur(12px) saturate(1.2)` (24 in Figma) |
 | `--tw-board-columns` | 4 | |
 | `--tw-board-cell` | 76 | Square cells |
 | `--tw-board-gutter` | 8 | |
 | `--tw-board-inset` | 16 | Panel side padding (the code uses padding + scrollbar gutter to reach 328) |
-| `--tw-panel-width` × `--tw-panel-height` | 360 × 640 | Fixed |
+| `--tw-panel-width` × `--tw-panel-height` | 360 × 648 | Fixed |
 | `--tw-stroke-hairline` | 1 | All glass edges, inside |
 | `--tw-icon-size` | 20 | On a 24 px grid |
 | `--tw-icon-stroke` | 1.5 | |
@@ -120,133 +125,175 @@ Accent rows show the Red preset.
 |---|---|---|
 | `--tw-duration-instant` | 80 ms | Hover and press feedback |
 | `--tw-duration-fast` | 140 ms | Switch thumb, tab change, tile on/off |
-| `--tw-duration-base` | 220 ms | Toast in, tile resize, content swaps |
+| `--tw-duration-base` | 220 ms | Toast in, tile resize, page slide (0.3) |
 | `--tw-duration-slow` | 320 ms | Edit mode enter/exit, tray slide |
-| `--tw-duration-edit-wiggle` | 900 ms | Optional idle wiggle in edit mode (±0.6°) |
 | `--tw-ease-standard` | cubic-bezier(0, 0, 0, 1) | Default (Windows 11 fast-out) |
 | `--tw-ease-exit` | cubic-bezier(0.4, 0, 1, 1) | Things leaving |
 | `--tw-ease-snap` | cubic-bezier(0.34, 1.4, 0.64, 1) | Only for a tile dropping or resizing into place |
 | `--tw-ease-linear` | linear | Progress, timers |
 
-Under `prefers-reduced-motion`, all durations are 0 and there's no wiggle.
+Under `prefers-reduced-motion`, all durations are 0.
 
 ### Elevation (Figma effect styles)
 
 | Style | Value |
 |---|---|
-| Elevation/0 Flat | none. Tiles at rest never cast a shadow. |
 | Elevation/1 Lift | 0 2 8 `effect-shadow`. A tile being dragged. |
-| Elevation/2 Float | 0 8 24 `effect-shadow`. Toast, menu, tray. |
-| Glass/Level 2 Frost | background blur 12 px (CSS) + Elevation/2 |
+| Elevation/2 Float | 0 8 24 `effect-shadow`. On-tiles (they have no blur). |
+| Glass/Level 2 Frost | background blur 12 px (CSS) + Elevation/2. Every tile, card and floating layer. |
 
 ## Typography
 
+The look sets 11 px as its base size, because OCR-A is wide (about 0.7 em per letter).
+
 | Style | Font | Size / line | Tracking | Use |
 |---|---|---|---|---|
-| Display/XL | Doto Black | 64 / 60 | -1% | Hero numbers, 2×2 and 4×2 |
-| Display/L | Doto Black | 44 / 42 | -1% | Large readouts |
-| Display/M | Doto Black | 28 / 28 | 0 | Numbers on 1×1 and 2×1 tiles |
-| Display/S | Doto Black | 20 / 20 | 0 | Small numbers, times, size picker |
+| Display/XL | Doto Black | 56 / 56 | 0 | Hero reading on 2×2 and 4×2 stats, 4×2 clock |
+| Display/L | Doto Black | 40 / 40 | 0 | Big volume, brightness and 2×1/2×2 clock |
+| Display/M | Doto Black | 28 / 28 | 0 | Default reading (`.num`), countdowns |
+| Display/S | Doto Black | 20 / 20 | 0 | 1×1 readings, size picker, times |
+| Display/XS | Doto Black | 16 / 16 | 0 | 1×1 countdowns, second-zone time, small values |
 | Display/Wordmark | Doto Black | 18 / 18 | 8%, uppercase | TRAYWISE only |
-| UI/Title | Segoe UI Variable Display Semibold | 20 / 26 | 0 | Page titles |
-| UI/Subtitle | Segoe UI Variable Text Semibold | 15 / 20 | 0 | Section heads, media title |
-| UI/Body strong | Segoe UI Variable Text Semibold | 13 / 18 | 0 | Tile titles, buttons, list titles |
-| UI/Body | Segoe UI Variable Text Regular | 13 / 18 | 0 | Default (the app's 13 px) |
-| UI/Caption strong | Segoe UI Variable Text Semibold | 12 / 16 | 0 | 1×1 tile labels |
-| UI/Caption | Segoe UI Variable Text Regular | 12 / 16 | 0 | Secondary lines, values |
-| UI/Overline | Segoe UI Variable Text Semibold | 11 / 14 | 6%, uppercase | Tile labels (CPU, VOLUME, NOW PLAYING) |
+| UI/Title | OCR-A | 20 / 26 | 0 | Page titles (Settings, Modules, Edit board) |
+| UI/Subtitle | OCR-A | 15 / 20 | 0 | Tray and sheet titles |
+| UI/Body strong | OCR-A | 13 / 18 | 0 | Media title |
+| UI/Caption strong | OCR-A | 12 / 16 | 0 | Tile labels and states, row labels |
+| UI/Body | OCR-A | 11 / 16 | 0 | Default text, buttons |
+| UI/Overline | OCR-A | 11 / 14 | 6%, uppercase | Section heads and tile overlines (CPU, VOLUME) |
+| UI/Caption | OCR-A | 10 / 14 | 0 | Hints, idle costs, secondary lines |
 
-- Doto is OFL-licensed and on Google Fonts. Bundle the woff2 and don't load it from a CDN, which keeps the app offline and fast. Only the Black weight is used.
-- Use dot type only for digits, times and the wordmark. Units sit beside the number in Segoe (`23` then `%`).
-- Live Segoe numbers use `font-variant-numeric: tabular-nums`. Doto is monospaced.
-- Minimum text size is 11 px.
-- In Figma, the UI styles use **Inter as a stand-in**, because Segoe UI Variable isn't available to Figma on this machine. They're bound to the `font/ui` variable: set it to "Segoe UI Variable" once Figma can see the font, and every style follows.
+- Use dot type only for digits, times and the wordmark. A unit sits beside its number in OCR-A (`23` then `%`), on the same baseline.
+- Minimum text size is 10 px.
+- In Figma, OCR-A isn't available, so the UI styles use **Share Tech Mono as a stand-in**, bound to the `font/ui` variable. Install OCR-A for Figma (the font is in `src/assets/fonts`), set `font/ui` to it, and every style follows.
 
 ## Glass recipe
 
 ```css
-/* Level 1: tiles, cards, controls. No blur. */
-.tile  { background: var(--tw-glass-tile); box-shadow: inset 0 0 0 1px var(--tw-glass-edge); border-radius: 20px; }
-.tile:hover { background: var(--tw-glass-tile-hover); }
-
-/* Level 2: only things floating over the board. */
-.float { background: var(--tw-glass-float); backdrop-filter: blur(12px) saturate(1.2);
-         box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong), 0 8px 24px var(--tw-effect-shadow);
-         border-radius: 16px; }
-
-/* App-drawn backgrounds (pick one in Settings, or keep one after comparing) */
+/* Every tile and card */
+.tile, section { background: var(--tw-glass-float); backdrop-filter: blur(var(--tw-blur-float)) saturate(1.2);
+                 box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong), 0 8px 24px var(--tw-effect-shadow);
+                 border-radius: var(--tw-radius-tile); }
+.tile:hover    { background: var(--tw-glass-float-hover); }
+/* Switched on: the inverted plate (no blur) and a live dot */
+.tile.on       { background: var(--tw-tile-on-fill); color: var(--tw-tile-on-text); }
+.tile.on::after { /* 6 px accent dot, 12 px from the top right */ }
+/* App-drawn backgrounds */
 .bg-dots  { background: radial-gradient(var(--tw-bg-dot) 0.9px, transparent 1.1px) 0 0 / 12px 12px,
                         linear-gradient(var(--tw-bg-base), var(--tw-bg-deep)); }
-.bg-plain { background: linear-gradient(var(--tw-bg-base) 0%, var(--tw-bg-base) 30%, var(--tw-bg-deep) 100%); }
+.bg-plain { background: linear-gradient(var(--tw-bg-base) 30%, var(--tw-bg-deep)); }
 ```
 
-The layers are background → tint → 1 px edge → (level 2 only) blur → (level 2 only) shadow. There are no white specular highlights, no blobs and no refraction. Level-2 blur only appears while something floats, so it costs nothing at rest.
+There are no white specular highlights, no blobs and no refraction. The background never moves, so the blur is computed once.
 
 ## Iconography
 
 - 24 px grid with a 20 px live area (2 px padding). Keylines: a 20 px circle and an 18 px square with 2.5 px corner radius.
 - 1.5 px stroke, round caps and joins. Strokes sit on half-pixels so they stay crisp at 100, 125 and 150% scaling.
-- **Signature:** small details become solid dots, echoing the dot-matrix type (the Wi-Fi origin, coffee steam, the CPU core, the drag grip).
-- One colour per icon (`icon-primary` or `icon-secondary`). Accent only for an active state. Sizes: 20 px in tiles, rows and buttons; 16 px in chips.
-- The set in Figma (`Icon/…`): volume, volume-off, wifi, bluetooth, cpu, memory, coffee, headphones, play, pause, next, moon, sliders, edit, plus, minus, check, grip, resize, chevron.
+- **Signature:** small details become solid dots (the Wi-Fi origin, coffee steam, the CPU core, the battery cells, the drag grip). A screen that is off (Project) is drawn as four corner dots.
+- One colour per icon (`icon-primary` or `icon-secondary`). Accent only for an active state (the selected tab, a connected network or device).
+- The app draws icons with Segoe Fluent glyphs. The Figma set (`Icon/…`) shows the intended style and is what new glyphs should match: volume, volume-off, wifi, bluetooth, cpu, memory, coffee, headphones, play, pause, next, previous, shuffle, repeat, moon, night, dark-mode, sliders, settings, power, home, laptop, tools, back, edit, plus, minus, check, grip, resize, chevron, mic, music, speaker, sun, display, battery, charging, gauge, leaf, bolt, focus, bell-off, globe, clock, pages, more, arrow-right, trash, lock, download, upload, eye-off, project-pc, project-duplicate, project-extend, project-second.
 
-## Board grid
+## Panel layout
 
-These numbers match `src/shell/liquid.css` (`.board`):
+- Header 48 px at y 8 (Normal: wordmark + accent dot, then Edit, Settings, Quit; Edit: small "Edit home" title, Add tiles, Done; Page: Back + title).
+- Icon tab bar, 36 px, at y 58: Home, Sound, System, Connect, Tools (only categories with a module on). The selected icon is in the accent colour; there's no track.
+- The board starts at y 100. In edit mode, one slim edit bar (Auto-arrange, Reset, a "Pages 1/2" chip that opens the pages overview) replaces the tabs; Add tiles sits in the header beside Done.
+- Board grid (matches `.board`): 4 columns, 76 px square cells, 8 px gaps, 328 px wide. Sizes 1×1 76×76, 2×1 160×76, 4×1 328×76, 2×2 160×160, 4×2 328×160. Dot pads tiles 12 px all round.
 
-- 4 columns, 76 px square cells, 8 px gaps, 328 px wide.
-- Sizes: 1×1 76×76 · 2×1 160×76 · **4×1 328×76** · 2×2 160×160 · 4×2 328×160.
-- Width = cols × 76 + (cols − 1) × 8, and the same for height.
-- Header 48 px, board starting at y 64; six rows are visible before scrolling.
-- **One difference:** the code's `--tile-pad` is `10px 12px`; the design uses 12 px all round. Either works, so it's the code's call.
-
-## Components (Figma)
+## Components (Figma, Design System and v0.2 pages)
 
 | Component | Variants | Spec |
 |---|---|---|
-| Background | Pattern = Dots / Plain | 360×640. Dot grid: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
-| Switch | Checked × State (Rest/Hover/Disabled) | 40×20 pill. Off: track + hairline, grey 12 px knob. On: accent track, `accent-on` knob. Knob is 14 px on hover. |
-| Slider | Style (Inline/Tile) × State | Inline: 4 px track, neutral fill, 16 px white thumb. Tile: a 28–36 px bar where the fill is the thumb. The fill is neutral, never accent. |
-| Button | Style (Primary/Secondary/Quiet) × State (Rest/Hover/Pressed/Disabled) | Pill, 32 px tall, 16 px side padding, optional 16 px icon. One Primary per view. Hover +12% white, pressed +12% black. Disabled is 40% opacity. |
+| Background | Pattern = Dots / Plain | 360×648. Dots: 12 px pitch, 1.8 px dots, `bg-dot`. Plain: `bg-base` fading to `bg-deep`. |
+| Switch | Checked × State | 40×20 pill. Off: track + hairline, grey 12 px knob. On: accent track, `accent-on` knob. 14 px knob on hover. |
+| Slider | Style (Inline/Tile) × State | Inline: 4 px track, neutral fill, 16 px white thumb. Tile: a 28–36 px bar whose fill is the thumb. Never accent. |
+| Button | Style (Primary/Secondary/Quiet) × State | Pill, 32 px tall, 16 px side padding. One Primary per view. |
 | Icon button | Style (Quiet/Glass) × State | 32 px circle, 20 px icon. |
-| Segmented control | Selected = 1/2/3 | Track pill, 3 px inset. The selected segment is `control-fill` with `text-inverse` (inverted pill). |
-| Tabs | Selected = 1/2/3 | Text tabs. Selected: primary, semibold, with a 4 px accent dot below. |
-| List row | Trailing (None/Switch/Chevron/Value) × State | 328 wide, 8/12 padding, radius 12. Hover wash, no dividers. |
-| Panel header | Mode = Normal/Edit | 48 px. Normal: TRAYWISE wordmark + accent dot, then the Edit and Settings icon buttons. Edit: "Edit board" + hint + Primary "Done". |
-| Toast | Tone = Neutral/Success/Danger | Level-2 glass, 328×44, 8 px status dot, optional quiet action. Sits 16 px above the bottom; auto-hides after 4 s. |
-| Edit chrome | Part (Remove badge/Resize handle/Drag grip) × State | Remove: 24 px `control-fill` with a minus, red on hover. Resize: a 2.5 px corner arc, accent while dragging. Grip: 3×2 dots on a frosted pill. |
-| Edit overlay | Size (1×1/2×1/4×1/2×2/4×2) × State (Idle/Selected) | Idle: dashed `glass-edge-strong`. Selected: 2 px solid accent; the tile lifts (Elevation/1), scales to 102% and tilts −2°. |
-| Drop slot | Size (1×1/2×1) × State (Empty/Target) | Dashed outline with a plus. Target: accent tint and accent dashes. |
-| Size picker | Selected = 1×1/2×1/4×1/2×2/4×2 | Segmented, with sizes in Doto. Hide sizes the tile doesn't support. Sits on its own row in the tray. |
-| Edit tray | none | Level-2 sheet, 344 wide: handle, "Add tiles" + size picker, then rows with + buttons. |
+| Segmented control | Selected | Track pill, 3 px inset; the selected segment is the inverted pill. |
+| Tab bar | Selected = Home/Sound/System/Connect/Tools | Icon-only; selected icon in accent. |
+| Panel header | Mode = Normal/Edit/Page | See [Panel layout](#panel-layout). |
+| Edit bar | Reset = Rest/Confirm reset | Auto-arrange switch, Reset (second click: "Reset board?" on the inverted pill), Pages chip. |
+| Setting row | Type = Switch, Switch + desc, Value, Link, Stacked choice, Colour | Uniform rows inside a card, 1 px `glass-edge` divider between rows. Colour: 22 px swatches, the picked one ringed in text-primary. |
+| Module row | On = Yes/No | 36 px icon well, name, what it does, "Idle: …" in text-tertiary, switch. |
+| Network row | State = Connected/Saved/Open/Joining | Wi-Fi icon (accent when connected), name, state, lock if secured. Joining expands in place: password field + Cancel / Join. |
+| Device row | State = Connected/Paired/Connecting | Device icon (accent when connected), name, state, Connect / Disconnect pill. |
+| Text input | State = Rest/Focus | `control-track` fill, radius 12, no border; focus = 1.5 px accent ring. |
+| Toast | Tone = Neutral/Success/Danger | Frosted, 328×44, 8 px status dot, optional quiet action. |
+| Edit chrome, Edit overlay, Drop slot, Size picker, Edit tray | as before | Remove badge top left, grip top centre, resize corner bottom right; dashed idle edge, 2 px accent when selected. The size picker has five sizes. |
+| **Page dots** (0.3) | Count × Active × Drop | Plain dots centred at the panel bottom, sticky under the board. 6 px dots in 16 × 12 px hit targets: current page full ink, others 30 %, hover 60 %. A drop target grows to 12 px in the accent. Hidden with one page. |
+| **Page bar** (0.3) | State = Rest/Confirm remove | Under the edit bar: ‹ (move page left), "Page 1 of 3" (numbers in Doto), › (move page right), trash, +. |
 
 ### Tiles
 
-Every tile is level-1 glass with a 20 px radius and 12 px padding. An "on" tile is inverted (`tile-on-fill`, `tile-on-text`, secondary text at 72%) and shows a 6 px `accent-base` live dot 12 px from its top-right corner. The 2×2 toggle shows its accent switch instead of the dot, and the 2×2 keep-awake tile its accent dot ring.
+Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is the inverted plate with a 6 px accent live dot, 12 px from its top-right corner (2×2 toggles show their switch instead, timers their ring). Wider tiles put the icon in a 40 px round well at the left.
 
-| Tile | Sizes in Figma | Content |
+| Tile | Sizes | Content |
 |---|---|---|
-| Tile/Toggle | 1×1, 2×1, 2×2 × Off/On | Icon (instance swap), title, state line. 2×2 adds a switch. |
-| Tile/Slider (volume) | 1×1, 2×1, 4×1, 2×2, 4×2 | 1×1: the whole tile is a vertical level. 2×1/4×1/2×2: a bar where the fill is the thumb, plus a Doto value. 4×2: the per-app mixer. |
-| Tile/Stat (CPU/RAM) | 1×1, 2×1, 4×1, 2×2, 4×2 | Doto number + unit, and a dot-matrix history graph (4 px dots, 3 px gap, newest column in accent). 4×1 and 4×2 show CPU and RAM side by side. |
-| Tile/Media | 2×1, 2×2, 4×2 | Artwork (dot-pattern placeholder), title, artist, accent progress bar, play/pause and next, times in Doto. |
-| Tile/Keep awake | 1×1, 2×1, 2×2 × Off/On | Countdown in Doto. 2×2 has a 24-dot ring that empties as time runs out, plus quick durations. |
+| Toggle (Wi-Fi, Bluetooth, dark mode, desktop icons, lock, mics, output, Do not disturb) | 1×1, 2×1, 2×2 | Icon, name, state ("On", network or device name). 2×2 adds a switch. |
+| Volume | 1×1, 2×1, 4×1, 2×2, 4×2 | 1×1: the whole tile is the level. Bar whose fill is the thumb, value in Doto; 4×2 adds the apps playing. |
+| Stat (CPU, Memory, Download, Upload; Two readings) | 1×1, 2×1, 2×2; 4×1, 4×2 | Doto number + unit, dot-matrix history (lit dots up to each reading, newest column in accent). |
+| Now playing | 1×1, 2×1, 2×2, 4×2 | Cover art (or a music note on the track colour), title, artist, accent progress line, play/pause (inverted circle), next; times in Doto. |
+| Keep awake | 1×1, 2×1, 2×2 | Countdown in Doto; 2×2 has a 24-dot ring (lit in accent) and quick durations. |
+| **Clock** (0.3) | 1×1, 2×1, 4×1, 2×2, 4×2 × Digital/Analogue | See [Clock](#clock-and-focus). |
+| **Focus** (0.3) | 1×1, 2×1, 2×2 | Keep-awake anatomy: countdown, 24-dot ring at 2×2, "Do not disturb on", quick durations 25m · 50m · 1h. |
+| **Brightness** (0.3) | 1×1, 2×1, 4×1, 4×2 (2×2 designed) | Volume anatomy with a sun; 4×2 has one row per display. |
+| **Power mode** (0.3) | 1×1, 2×1 | Leaf / gauge / bolt. 1×1 cycles; 2×1 is a three-step selector. No accent. |
+| **Battery** (0.3) | 1×1, 2×1 | Dot-matrix cell gauge, % in Doto, time left; status colours below 20 / 10 %. |
+| **Project** (0.3) | 1×1, 2×1 | Win+P: PC only / Duplicate / Extend / Second only. 1×1 cycles; 2×1 four-step selector; "One screen" dimmed when only one is connected. |
 
-## Screens (Figma, "10 Screens")
+## 0.3.0 designs
 
-1. Home board, normal (dark, dot grid, with a toast).
-2. Home board, edit mode (dark). One tile is mid-drag toward its target slot, and one slot is empty.
-3. Edit mode with the add-tile tray open (light, plain background).
-4. Normal, plain background (dark).
-5. Normal, light mode.
-6. Normal, Amber accent preset.
+### Board pages
 
-## Decided after review (2026-10-29)
+As built on `feature/board-pages` (the owner kept their own picks over the earlier Figma direction). Figma: v0.3 › Board pages.
 
-The owner chose these from side-by-side mockups: inverted on-tiles with an accent live dot; an orange-red danger colour; red #D92B24; Background as a Setting (dots by default); 4×1 in the size picker. Two-level glass stays until it's seen in the real app.
+- Up to 5 boards side by side. Turn pages with Ctrl+←/→, PageUp/PageDown, a sideways wheel or Shift+wheel, a drag, or a dot.
+- Page dots: plain 6 px dots (16 × 12 px hit targets), centred at the panel bottom and sticky under the board. The current page is full ink, the others 30 % (60 % on hover). Hidden with one page. In edit mode they sit above the edit area.
+- Edit mode: a page bar under the edit bar, ‹ "Page N of M" › trash +. ‹ and › move this page left or right; + adds a page after this one; trash removes it. Removing a page with tiles asks first, and its tiles go back to Add tiles. Suggested confirm pattern: the trash turns into "Remove page?" on the inverted pill, like "Reset board?".
+- Moving a tile to another page: drag it onto that page's dot. The dot grows to 12 px in the accent while the tile is over it; drop it there.
+- A new page shows empty drop slots, "This page is empty" and a primary "Add tiles".
+
+### Clock and focus
+
+Figma: v0.3 › Clock + Focus.
+
+- Settings: Clock style, Digital or Analogue.
+- Digital: Doto digits. 1×1 stacks hours over minutes with the day below; 2×1 has time + date overline; 4×2 has "HERE · SAT 31 OCT", a 56 px time and the city.
+- Analogue: a dot-matrix face (60 tick dots, the 5-minute ones brighter), hands drawn as dots, the minute hand's tip in the accent, and digits beside it from 2×1.
+- **Second time zone** (from 4×1 / 2×2): always in its own inset well (`control-track`, radius 12) with a globe, the CITY in overline caps, the day difference in accent text (+1) and the time in Doto. At 4×2 the well is a full column with "SUN 1 · +8 H", a day/night glyph and a TOMORROW / YESTERDAY tag (`accent-soft-bg`). The other zone's time is never shown bare next to local time.
+- One timer, on the minute.
+- Focus starts a Windows focus session, which also silences notifications. Do not disturb on its own is a toggle tile with the bell-off icon.
+
+### Displays, power and project
+
+Figma: v0.3 › Displays + Power (tiles) and Sound + System pages.
+
+- System page, Displays card: a row per display (icon, name, Doto value, inline slider), then PROJECT as a 2×2 grid of choices (144 px, radius 12; picked = inverted plate).
+- Power card: Efficiency / Balanced / Performance as a segmented control with icons, the battery row with a big Doto %, and Energy saver as status text plus an "Open Settings" pill. Apps can't switch Energy saver.
+- **Night light is parked:** Windows has no supported API for it. Its designs stay in Figma, dimmed, for later.
+
+### Per-app output
+
+Figma: v0.3 › Sound + System pages.
+
+- Under each app's name in the mixer: speaker glyph + device name + a down chevron, in text-tertiary. An app moved off Default shows it in `accent-text`.
+- Clicking it opens a list in place, under that row: "Default (Headphones)" first, then every output. The picked one is the inverted pill with a check.
+- When any app is moved, the card ends with "1 app not on Default" and a secondary "Reset all".
+
+### Other looks
+
+Figma: v0.3 › Tint + Windows looks.
+
+The same layouts and sizes in Tint and Windows. What changes:
+
+- **Cards:** Tint uses the preset's tint, 18 px radius and a lit top rim. Windows uses flat #2B2B2B, 8 px radius and a hairline.
+- **Type:** numbers are in Segoe UI Variable Display Semibold, not Doto.
+- **Accent:** "on" tiles and selections fill with the look's accent (the Tint preset's, or Windows blue #4CC2FF).
+- **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
+- **Analogue clock:** line ticks and solid hands instead of dots.
 
 ## Open questions
 
-1. **Two-level glass in the real app.** If it doesn't look right, the fallback is frost on tiles too, which needs a CPU measurement first.
-2. **Segoe UI Variable in Figma.** Install it for Figma (the desktop app or font helper), then set the `font/ui` variable.
-3. **Tile padding.** The code uses `10px 12px`, the design 12 px all round. Either works.
+1. **Fonts in Figma.** Install OCR-A for Figma (from `src/assets/fonts`), then set the `font/ui` variable so the mockups use the real face.
+2. **Icons.** The app uses Segoe Fluent glyphs; the Figma set is Traywise's own style. Should the app switch to the Figma icons (as inline SVG) one day, or should Figma follow Fluent?
+3. **Clock style:** one global setting, or per tile?

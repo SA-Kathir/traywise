@@ -1,9 +1,11 @@
-//! Volume mixer: master volume plus per-app volume and mute for the default output device.
+//! Volume mixer: master volume for the default output device, plus per-app volume, mute and
+//! output device for every app playing sound.
 //!
 //! One background thread (`worker.rs`) owns every Windows audio object. It sleeps until Windows
 //! reports a change or the UI asks for one, so it costs nothing while nothing happens.
 
 mod app_info;
+mod app_output;
 mod worker;
 
 use std::sync::Mutex;
@@ -14,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
 use crate::module::{Module, ModuleId};
+use crate::modules::audio_devices::OutputDevice;
 
 /// Everything the panel shows. Sent whole on every change: it's a handful of rows.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
@@ -23,6 +26,8 @@ pub struct MixerState {
     /// The output device's name, like "Headphones (Realtek(R) Audio)".
     pub device: Option<String>,
     pub apps: Vec<AppAudio>,
+    /// Devices an app can be sent to. Empty where Windows doesn't support per-app output.
+    pub outputs: Vec<OutputDevice>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, specta::Type)]
@@ -33,7 +38,7 @@ pub struct Level {
     pub muted: bool,
 }
 
-/// One app with audio on the default output device (all of its audio sessions together).
+/// One app playing sound, on any output device (all of its audio sessions together).
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppAudio {
@@ -46,6 +51,8 @@ pub struct AppAudio {
     /// Percent, 0 to 100.
     pub volume: u8,
     pub muted: bool,
+    /// The device id it's set to play through. None: it follows the default.
+    pub output: Option<String>,
 }
 
 /// What a volume or mute change applies to.
@@ -65,9 +72,12 @@ enum Msg {
     /// Percent, 0 to 100.
     SetVolume(Target, u8),
     SetMute(Target, bool),
+    /// An app (by process id) to a device, or back to the default with None.
+    SetOutput(u32, Option<String>),
+    ResetOutputs,
     /// Something changed in Windows: re-read and publish.
     Refresh,
-    /// The default output device changed: switch to the new one.
+    /// The default output device changed, or one was plugged in or removed: reopen them all.
     DeviceChanged,
     Stop,
 }
@@ -146,4 +156,18 @@ pub fn mixer_set_volume(shared: State<Shared>, target: Target, volume: u8) -> Re
 #[specta::specta]
 pub fn mixer_set_mute(shared: State<Shared>, target: Target, muted: bool) -> Result<(), String> {
     send(&shared, Msg::SetMute(target, muted))
+}
+
+/// Sends an app to an output device (an id from `outputs`), or back to the default with null.
+#[tauri::command]
+#[specta::specta]
+pub fn mixer_set_output(shared: State<Shared>, pid: u32, device: Option<String>) -> Result<(), String> {
+    send(&shared, Msg::SetOutput(pid, device))
+}
+
+/// Sends every app back to the default output device.
+#[tauri::command]
+#[specta::specta]
+pub fn mixer_reset_outputs(shared: State<Shared>) -> Result<(), String> {
+    send(&shared, Msg::ResetOutputs)
 }

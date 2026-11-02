@@ -2,7 +2,24 @@
 
 A free, open-source (GPL-3.0-or-later) Windows 11 tray toolkit: one tray icon and one panel, with features as modules you switch on or off. It's inspired by vorssaint/vorssaint-utils (macOS). Don't use Vorssaint's name, icon or look, which are trademarked, and don't copy its code (it's Swift).
 
-Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass look.**
+Priorities, in order: **1. fast and lean, with no bloat; 2. a distinctive, polished look** (Dot, the default, is Nothing OS-inspired with restrained glass; see `docs/design-system.md`).
+
+**Start here:** read `CLAUDE.local.md` if it exists (private maintainer notes: design links, accounts, the reasons behind boundaries; git-ignored, so never commit or quote it). Then read `docs/ROADMAP.md`, which has what's released, what's in progress (open PRs, branches, worktrees), what's next, the product boundaries and open owner decisions. Read it, then run `git fetch && gh pr list` to see what has changed since it was written.
+
+## Sources of truth
+
+- **Design:**
+  - The maintainers' Figma file (link in `CLAUDE.local.md`). Its "Design System" page holds tokens, components, tiles at every size and board screens.
+  - `docs/design-system.md` is the written spec the code follows. New UI is designed in Figma first, or Figma is updated to match what shipped.
+- **Releases:** `CHANGELOG.md` (each release's section becomes its GitHub release notes) and CONTRIBUTING.md › Branches for the release steps.
+- **Repo:** https://github.com/SA-Kathir/traywise, through the `gh` CLI (account details in `CLAUDE.local.md`).
+
+## Product boundaries
+
+- Out of scope: launcher features (clipboard history, snippets, notes, timer/Pomodoro, calculator, web search). Launchers can drive Traywise through `traywise://` links instead (planned).
+- No paid services (code signing etc.) for now.
+- **Keep private notes private:** no Figma links, account names, personal details or mentions of other people's projects in tracked files, commits, PRs, issues or release notes. They belong in `CLAUDE.local.md`.
+- Never decompile or copy other products (Nothing OS, Vorssaint). Learn from public material only.
 
 ## Working with the owner
 
@@ -11,8 +28,18 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass
 - Commit as you go, in small atomic commits (one concern each). No `Co-Authored-By` or other AI attribution in commit messages. Never push or create a GitHub repo without asking.
 - **Branches (see CONTRIBUTING.md):**
   - Never commit to `main`; it holds released versions only, each tagged `vX.Y.Z`.
-  - New work goes on `feature/<name>` or `fix/<name>`, branched from `develop`, and is merged back into `develop` by pull request.
+  - New work goes on `feature/<name>` or `fix/<name>`, branched from `dev`, and is merged back into `dev` by pull request.
   - Check `git branch --show-current` before your first commit.
+- **Parallel sessions:**
+  - Several Claude sessions often work at once, each on its own branch in its own **git worktree**: a sibling folder like `../tw-<name>`, made with `git worktree add ../tw-<name> -b feature/<name> origin/dev`. Then copy `CLAUDE.local.md` into it, since worktrees don't get untracked files.
+  - Never switch branches in another session's folder.
+  - **Only one Traywise can run at a time** (single-instance, and `pnpm tauri dev` uses port 1420). Before launching, check `tasklist | grep -i traywise` and port 1420.
+  - Never kill another session's process. Ask the owner before closing their installed copy, and close your own copy when done.
+- **Brainstorm before building:** the owner likes to agree the interaction and look first. Ask short, specific questions, then work in small steps, and stop for their OK after each.
+- **Commit messages and PR titles use Conventional Commits** (see CONTRIBUTING.md):
+  - Format: `<type>(<scope>): <imperative summary>`, e.g. `feat(board): swipeable board pages`, `fix(mixer): …`, `docs: …`.
+  - Types: feat, fix, perf, refactor, style, docs, test, build, ci, chore.
+  - Scope is the module or area.
 
 ## Stack
 
@@ -26,7 +53,7 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a clean liquid-glass
 
 ```
 src/                      React (owner's side)
-  shell/                  panel frame, Liquid theme, navigation, settings page
+  shell/                  panel frame, Tint theme (`look-liquid`), navigation, settings page
   modules/<id>/           index.ts (id, name, icon, lazy panel) + its components
   bindings.ts             GENERATED from Rust. Never edit by hand.
 src-tauri/src/
@@ -41,27 +68,27 @@ Module rules:
 - Modules are built in. No third-party plugin loading; that would mean running other people's native code.
 - Event-driven, never polling. When nothing is happening, CPU should be about 0%.
 
-## Proven in ../glass-spike (read its README and src-tauri/src/lib.rs)
+## Hard-won rules (measured; first proven in ../glass-spike)
 
 Measured numbers from the spike, release build: about 65 ms to open, 0.2% of a CPU core while hidden, about 140–150 MB of RAM (working set) once hidden for a minute or more. The spike's old "76 MB" was an early reading taken ~30 s after hiding, not the steady state. Keep open time and CPU there; the RAM target is paused for now (WebView2 browser flags cut it to ~125–130 MB, not adopted yet).
 
 - **Three looks, picked at first run and in Settings** (`look-dot` / `look-liquid` / `look-windows` on `.panel`, styles in `src/shell/liquid.css`, Dot's overrides in `src/shell/dot.css`):
   - **Dot** (default): built from `docs/design-system.md`'s tokens (`--tw-*`). Monochrome, one accent preset, bundled Doto (OFL) for numbers and the wordmark only, bundled OCR-A (public domain, one weight) for every word, dot-grid or plain background, follows Windows light/dark. Blur only on floating layers (the Add tiles tray).
-  - **Liquid:** cards tinted in a colour preset (Ocean, Graphite, Forest, Plum, Ember, Rose; one muted hue each, never bright; the owner rejected the multicolour Dusk preset) with a thin edge of the same hue; the tab bar, icon buttons and titles use the preset too. Two Settings choices the owner hasn't settled yet: **Background** Tinted (a deep shade of the preset) or Transparent (`.clear`: cards float over the desktop; the title row gets its own card), and **Tiles** Shaded (lighter top left, fading darker) or Single hue (`.flat`). No blobs, no white specular highlight, no `backdrop-filter`: the owner found blobs-behind-glass random and "vibe-coded". The look's classes are on `.panel` and on `html` (so the scrollbar's strip matches).
+  - **Tint** (the class and saved value are still `liquid`; it was called Liquid until 0.3.0): cards tinted in a colour preset (Ocean, Graphite, Forest, Plum, Ember, Rose; one muted hue each, never bright; the owner rejected the multicolour Dusk preset) with a thin edge of the same hue; the tab bar, icon buttons and titles use the preset too. Two Settings choices the owner hasn't settled yet: **Background** Tinted (a deep shade of the preset) or Transparent (`.clear`: cards float over the desktop; the title row gets its own card), and **Tiles** Shaded (lighter top left, fading darker) or Single hue (`.flat`). No blobs, no white specular highlight, no `backdrop-filter`: the owner found blobs-behind-glass random and "vibe-coded". The look's classes are on `.panel` and on `html` (so the scrollbar's strip matches).
   - **Windows:** flat like Windows 11's flyouts, follows Windows light/dark mode, Windows' default blue. Text and light fills use `rgb(var(--ink) / a)`, so light mode only flips `--ink`.
-- **The panel has a fixed height (640 logical px)**; pages that don't fit scroll. The owner found a window that resized to each page's content jarring.
+- **The panel has a fixed height (648 logical px: the header, the tabs, 6 rows of tiles and the page dots)**; pages that do not fit scroll. The owner found a window that resized to each page's content jarring.
 - **Native Mica/Acrylic doesn't work** on the owner's PC, even with fixes. Don't go back to it.
 - **Never read the desktop or wallpaper**, with one exception the owner allowed (2026-10-30): for a transparent look, `backdrop_brightness` in `shell/panel.rs` shrinks the area behind the panel to an 8 × 8 sample as it opens, averages it to one brightness number for the glass's strength, and deletes it. Nothing is stored, sent or used for anything else; keep it that way.
 - **The background doesn't move.** It used to drift for ~10 s after each open (continuous motion costs about 35% of a core), but blurred behind the glass the motion wasn't noticeable, so the owner agreed to drop it. The SVG refraction filter (`url(#liquid-refract)` in `backdrop-filter`) was dropped too: it was barely visible and is the likely cause of stale blue blocks seen in WebView2.
 - **When the panel hides, call `controller.SetIsVisible(false)` on WebView2.** Hiding the window alone keeps WebView2 rendering, which cost about 39% of a core while hidden.
 - **Set WebView2 `MemoryUsageTargetLevel` to Low while hidden and Normal before showing** (through `ICoreWebView2_19`). It trims RAM right after hiding (dips to ~65–75 MB), but most of it comes back within a minute or two.
-- **Create the panel window in code** (`WebviewWindowBuilder`), not in tauri.conf.json: borderless, transparent, always on top, no taskbar entry. Windows 11's rounded corners, border and shadow whenever the panel has a background (`framed`/`frame` in `shell/panel.rs`); transparent Liquid turns all three off, since rounded corners alone bring the system shadow and border. The frame's shadow takes 18 x 10 physical px of the window, so `place` adds it back (Windows misreports a frame right after resizing an unframed window, so it only measures when framed).
+- **Create the panel window in code** (`WebviewWindowBuilder`), not in tauri.conf.json: borderless, transparent, always on top, no taskbar entry. Windows 11's rounded corners, border and shadow whenever the panel has a background (`framed`/`frame` in `shell/panel.rs`); transparent Tint turns all three off, since rounded corners alone bring the system shadow and border. The frame's shadow takes 18 x 10 physical px of the window, so `place` adds it back (Windows misreports a frame right after resizing an unframed window, so it only measures when framed).
 - **Panel behaviour:**
   - Left-click on the tray icon toggles it; right-click opens a menu with Quit.
   - Losing focus hides it.
   - Ignore a tray click within 250 ms of a focus-loss hide; it's the same click.
   - Alt+F4 hides instead of quitting.
-  - Optional (Settings › Opening): resting the mouse on the middle of the right screen edge opens it (`shell/edge.rs`, a 1 px native strip; Windows' hover message, no polling). It opens at the right, centred, without focus, slides in and out (`slide` in `shell/panel.rs`), and closes when the pointer leaves unless clicked into. It's shown with ShowWindow, so hide with ShowWindow too and ask Windows (not Tauri) whether it's open. Never `minimizable(false)`: it gives the panel a title bar.
+  - Optional (Settings › Opening): resting the mouse on the middle of the right screen edge opens it (`shell/edge.rs`, a 1 px native strip; Windows' hover message, no polling). It opens at the right, centred, without focus, opens like any other open (the tiles rise in one after another, `shell/island.css`), and closes when the pointer leaves unless clicked into. It's shown with ShowWindow, so hide with ShowWindow too and ask Windows (not Tauri) whether it's open. Never `minimizable(false)`: it gives the panel a title bar.
 - **Position:** bottom-right of the primary monitor's work area with a 12 px margin. Physical pixels; convert when using logical builder APIs. The display is scaled 125%.
 - **Bundle identifier:** letters, numbers, hyphens and dots only. An underscore broke the build.
 - **Measure in release builds** (`pnpm tauri build --no-bundle`). Debug builds give misleading speed and memory numbers. The spike's `scripts/measure-memory.ps1` sums the app plus its WebView2 child processes.

@@ -6,8 +6,10 @@ import { useSave } from "./Settings";
 const MODULE_IDS = Object.keys(modules) as ModuleId[];
 
 /** Switch modules on and off, grouped by category, each with what it does and costs while idle. */
-export function ModulesPage(props: { settings: Settings; onChange: (next: Settings) => void }) {
+/** `inline`: shown inside a Settings section, so its groups aren't cards of their own. */
+export function ModulesPage(props: { settings: Settings; onChange: (next: Settings) => void; inline?: boolean }) {
   const { settings } = props;
+  const Group = props.inline ? "div" : "section";
   const { save, error } = useSave(props);
   const on = settings.enabledModules;
   const allOn = MODULE_IDS.every((m) => on.includes(m));
@@ -15,8 +17,8 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
   /** Saves which modules are on; the home board loses the tiles of those switched off and gets the
    *  default tiles of those switched on. */
   function saveOn(enabledModules: ModuleId[]) {
-    const board = withModules(settings.board, on, enabledModules, settings.autoArrange);
-    save({ ...settings, enabledModules, board });
+    const pages = withModules(settings.pages, on, enabledModules, settings.autoArrange);
+    save({ ...settings, enabledModules, pages });
   }
 
   function toggle(id: ModuleId, enable: boolean) {
@@ -26,7 +28,7 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
 
   return (
     <>
-      <section>
+      <Group>
         <label className="setting">
           <span className="setting-text">
             <span className="setting-label">All modules</span>
@@ -45,9 +47,9 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
             onChange={(e) => saveOn(e.target.checked ? MODULE_IDS : [])}
           />
         </label>
-      </section>
+      </Group>
       {(Object.keys(categories) as Category[]).map((c) => (
-        <section key={c}>
+        <Group key={c}>
           <h2>{categories[c].name}</h2>
           {MODULE_IDS.filter((id) => modules[id].category === c).map((id) => (
             <label key={id} className="setting module">
@@ -62,7 +64,7 @@ export function ModulesPage(props: { settings: Settings; onChange: (next: Settin
               <input type="checkbox" checked={on.includes(id)} onChange={(e) => toggle(id, e.target.checked)} />
             </label>
           ))}
-        </section>
+        </Group>
       ))}
       {error && <p className="error">{error}</p>}
     </>

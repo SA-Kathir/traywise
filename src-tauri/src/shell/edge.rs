@@ -1,6 +1,6 @@
-//! Opening the panel from the screen's right edge (Settings › Open from the right edge).
+//! Opening the panel from the screen's left or right edge (Settings › Open from the screen edge).
 //!
-//! A tiny native window covers the middle third of the primary monitor's right edge: an invisible
+//! A tiny native window covers the middle third of the chosen edge of the primary monitor: an invisible
 //! 1 px strip, or a small pill when the handle is on. Windows tells it when the mouse rests on it,
 //! so nothing watches the mouse anywhere else and it costs nothing while idle. It runs on its own
 //! thread, which sleeps in Windows' message loop between those messages.
@@ -20,14 +20,14 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
-    SetWindowPos, ShowWindow, TranslateMessage, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
+    SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::w;
 
-use crate::settings::Settings;
+use crate::settings::{Accent, EdgeSide, Look, Preset, Settings};
 
 /// Windows' "the mouse rested here" message (defined in its UI-controls headers, a feature not worth
 /// pulling in for one number).
@@ -46,11 +46,15 @@ pub struct EdgeState {
 struct Running {
     hwnd: isize,
     thread: JoinHandle<()>,
-    handle: bool,
+    /// What the window was made for: with a handle, which side, and the handle's colour (Windows' BGR).
+    key: Key,
 }
+
+type Key = (bool, EdgeSide, u32);
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 static SHOW_HANDLE: AtomicBool = AtomicBool::new(false);
+static LEFT: AtomicBool = AtomicBool::new(false);
 
 /// Starts, changes or stops the edge window to match the settings (after each save, and at startup).
 pub fn apply(app: &AppHandle, settings: &Settings) {
@@ -60,26 +64,27 @@ pub fn apply(app: &AppHandle, settings: &Settings) {
         app.state::<EdgeState>()
     });
     let mut running = state.running.lock().unwrap();
-    let wanted = settings.edge_open.then_some(settings.edge_handle);
-    if running.as_ref().map(|r| r.handle) == wanted {
+    let wanted: Option<Key> = settings.edge_open.then(|| (settings.edge_handle, settings.edge_side, handle_colour(settings)));
+    if running.as_ref().map(|r| r.key) == wanted {
         return; // unchanged, like most saves (a tile moved on the board)
     }
     if let Some(r) = running.take() {
         unsafe { PostMessageW(Some(HWND(r.hwnd as _)), WM_CLOSE, WPARAM(0), LPARAM(0)).ok() };
         let _ = r.thread.join();
     }
-    if let Some(handle) = wanted {
+    if let Some(key @ (handle, side, colour)) = wanted {
         SHOW_HANDLE.store(handle, Ordering::Relaxed);
+        LEFT.store(side == EdgeSide::Left, Ordering::Relaxed);
         let (tx, rx) = channel();
-        if let Ok(thread) = std::thread::Builder::new().name("edge".into()).spawn(move || run(handle, tx))
+        if let Ok(thread) = std::thread::Builder::new().name("edge".into()).spawn(move || run(handle, side, colour, tx))
             && let Ok(hwnd) = rx.recv()
         {
-            *running = Some(Running { hwnd, thread, handle });
+            *running = Some(Running { hwnd, thread, key });
         }
     }
 }
 
-fn run(handle: bool, tx: Sender<isize>) {
+fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
     let made = unsafe {
         let instance = GetModuleHandleW(None).ok();
         let class = w!("TraywiseEdge");
@@ -88,12 +93,12 @@ fn run(handle: bool, tx: Sender<isize>) {
             hInstance: instance.map(Into::into).unwrap_or_default(),
             lpszClassName: class,
             hCursor: LoadCursorW(None, IDC_ARROW).unwrap_or_default(),
-            // The handle's grey; the strip is invisible anyway.
-            hbrBackground: CreateSolidBrush(COLORREF(0x0090_9090)),
+            // The handle's colour (grey, or the accent); the strip is invisible anyway.
+            hbrBackground: CreateSolidBrush(COLORREF(colour)),
             ..Default::default()
         };
-        RegisterClassW(&wc); // fails harmlessly when already registered by an earlier start
-        let r = rect(monitor(), handle);
+        RegisterClassW(&wc); // (the class is removed when the window ends, so a new start gets its own colour)
+        let r = rect(monitor(), handle, side);
         CreateWindowExW(
             WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED,
             class,
@@ -122,6 +127,8 @@ fn run(handle: bool, tx: Sender<isize>) {
             DispatchMessageW(&msg);
         }
     }
+    // The class holds the handle's colour, so it goes with the window: the next start registers its own.
+    let _ = unsafe { UnregisterClassW(w!("TraywiseEdge"), GetModuleHandleW(None).ok().map(Into::into)) };
 }
 
 /// Nearly invisible (fully invisible windows get no mouse messages), or a translucent pill.
@@ -159,7 +166,8 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             }
             // A monitor added, removed or rescaled: move to the new edge.
             WM_DISPLAYCHANGE => {
-                let r = rect(monitor(), SHOW_HANDLE.load(Ordering::Relaxed));
+                let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
+                let r = rect(monitor(), SHOW_HANDLE.load(Ordering::Relaxed), side);
                 let _ = SetWindowPos(hwnd, None, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 LRESULT(0)
             }
@@ -181,10 +189,19 @@ fn button_held() -> bool {
     unsafe { GetAsyncKeyState(VK_LBUTTON.0.into()) < 0 || GetAsyncKeyState(VK_RBUTTON.0.into()) < 0 }
 }
 
-/// A fullscreen game or video, or presentation mode: stay out of the way.
+/// A fullscreen game or video, or presentation mode: stay out of the way. (Not the desktop itself:
+/// with nothing else open, Windows answers "busy" because the desktop covers the whole screen.)
 fn fullscreen() -> bool {
-    unsafe { SHQueryUserNotificationState() }
-        .is_ok_and(|s| s == QUNS_BUSY || s == QUNS_RUNNING_D3D_FULL_SCREEN || s == QUNS_PRESENTATION_MODE)
+    !desktop_in_front()
+        && unsafe { SHQueryUserNotificationState() }
+            .is_ok_and(|s| s == QUNS_BUSY || s == QUNS_RUNNING_D3D_FULL_SCREEN || s == QUNS_PRESENTATION_MODE)
+}
+
+/// The desktop is the window in front (nothing else is open, or it was just clicked).
+fn desktop_in_front() -> bool {
+    let mut class = [0u16; 32];
+    let len = unsafe { GetClassNameW(GetForegroundWindow(), &mut class) } as usize;
+    matches!(String::from_utf16_lossy(&class[..len]).as_str(), "Progman" | "WorkerW")
 }
 
 /// The primary monitor's whole area (the edge, not the work area: the taskbar may be on the right).
@@ -197,12 +214,42 @@ fn monitor() -> RECT {
     info.rcMonitor
 }
 
-/// The edge window: the middle third of the right edge, 1 px wide; or the handle, centred on it.
-fn rect(monitor: RECT, handle: bool) -> RECT {
+/// The edge window: the middle third of the chosen edge, 1 px wide; or the handle, centred on it.
+fn rect(monitor: RECT, handle: bool, side: EdgeSide) -> RECT {
     let height = monitor.bottom - monitor.top;
     let (w, h) = if handle { HANDLE } else { (1, height / 3) };
     let top = monitor.top + (height - h) / 2;
-    RECT { left: monitor.right - w, top, right: monitor.right, bottom: top + h }
+    let left = if side == EdgeSide::Left { monitor.left } else { monitor.right - w };
+    RECT { left, top, right: left + w, bottom: top + h }
+}
+
+/// The handle's colour as Windows wants it (0x00BBGGRR): the accent of the current look, or grey.
+/// Dot's accent presets, Tint's preset accents and Windows' blue; the same colours as in the CSS.
+fn handle_colour(settings: &Settings) -> u32 {
+    let rgb: u32 = if !settings.edge_handle_accent {
+        0x90_90_90
+    } else {
+        match settings.look {
+            Look::Dot => match settings.accent {
+                Accent::Red => 0xd9_2b_24,
+                Accent::Amber => 0xf2_a3_3a,
+                Accent::Violet => 0xa9_8b_ff,
+                Accent::Blue => 0x5a_a9_ff,
+                Accent::Green => 0x34_c7_7b,
+            },
+            Look::Liquid => match settings.preset {
+                Preset::Ocean => 0xa9_c8_ee,
+                Preset::Graphite => 0xd7_dc_e4,
+                Preset::Forest => 0xa8_d8_bd,
+                Preset::Plum => 0xd4_bd_e8,
+                Preset::Ember => 0xf0_c3_a6,
+                Preset::Rose => 0xf0_bf_d4,
+            },
+            Look::Windows => 0x4c_c2_ff,
+        }
+    };
+    let (r, g, b) = (rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff);
+    (b << 16) | (g << 8) | r
 }
 
 #[cfg(test)]
@@ -212,9 +259,11 @@ mod tests {
     #[test]
     fn edge_rect() {
         let screen = RECT { left: 0, top: 0, right: 2560, bottom: 1440 };
-        let strip = rect(screen, false);
+        let strip = rect(screen, false, EdgeSide::Right);
         assert_eq!((strip.left, strip.top, strip.right, strip.bottom), (2559, 480, 2560, 960));
-        let pill = rect(screen, true);
+        let left = rect(screen, false, EdgeSide::Left);
+        assert_eq!((left.left, left.top, left.right, left.bottom), (0, 480, 1, 960));
+        let pill = rect(screen, true, EdgeSide::Right);
         assert_eq!((pill.left, pill.top, pill.right, pill.bottom), (2552, 680, 2560, 760));
     }
 }

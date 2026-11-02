@@ -2,15 +2,15 @@
 
 use std::ffi::c_void;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
 use tauri_specta::Event;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use windows::Win32::Graphics::Dwm::{
-    DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
-    DWMWCP_ROUND, DwmFlush, DwmSetWindowAttribute,
+    DWMWA_BORDER_COLOR, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_NONE, DWMWA_TRANSITIONS_FORCEDISABLED, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND,
+    DWMWCP_ROUND, DwmSetWindowAttribute,
 };
 use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::Graphics::Gdi::{
@@ -18,22 +18,24 @@ use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetCursorPos, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
+    GetCursorPos, GetForegroundWindow, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
     SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
 };
 use windows::core::BOOL;
 
 use super::webview;
 use crate::module::Modules;
-use crate::settings::{Look, Settings, SettingsState};
+use crate::settings::{EdgeSide, Look, Settings, SettingsState};
 
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
 const REOPEN_GUARD: Duration = Duration::from_millis(250);
+/// How long after a frame change the focus loss Windows reports is ignored.
+const REFRAME_GUARD: Duration = Duration::from_millis(400);
 /// Panel size in logical pixels. The height is fixed, so nothing moves when switching pages; what
 /// doesn't fit scrolls.
 const WIDTH: f64 = 360.0;
-const HEIGHT: f64 = 640.0;
+const HEIGHT: f64 = 648.0;
 
 #[derive(Default)]
 pub struct PanelState {
@@ -48,6 +50,11 @@ pub struct PanelState {
     hover: AtomicBool,
     /// An edge-opened panel is sliding out: a second close request waits for it.
     closing: AtomicBool,
+    /// When the frame was last changed: Windows reports the focus lost a moment later (after the change
+    /// has returned), which isn't a click elsewhere.
+    reframed_at: Mutex<Option<Instant>>,
+    /// Counts open/close animations: an animation stops when a newer one has started.
+    anim: AtomicU32,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -67,12 +74,23 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .shadow(false)
         .build()?;
     frame(&win, framed(&app.state::<SettingsState>().get()));
+    // Windows fades a window in and out when it's shown or hidden: that fade would play on the empty
+    // frame around the tiny bar (it lingered for about half a second after closing). The panel
+    // animates itself.
+    if let Ok(hwnd) = win.hwnd() {
+        let off = BOOL(1);
+        let _ = unsafe { DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &off as *const _ as *const c_void, size_of_val(&off) as u32) };
+    }
     webview::set_active(&win, false);
 
     let handle = win.clone();
     win.on_window_event(move |event| match event {
         // Clicking anywhere else closes the panel, like the Windows volume and network flyouts.
-        WindowEvent::Focused(false) if is_open(&handle) => hide(&handle),
+        WindowEvent::Focused(false) if is_open(&handle) => {
+            if !just_reframed(&handle) {
+                hide(&handle);
+            }
+        }
         // Alt+F4 hides instead of quitting; quit from the tray menu.
         WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
@@ -116,11 +134,14 @@ pub fn hover_open(app: &AppHandle) {
 #[specta::specta]
 pub fn hide_panel(app: AppHandle) -> bool {
     let Some(win) = app.get_webview_window(LABEL) else { return true };
+    if just_reframed(&win) {
+        return false;
+    }
     let mut pointer = POINT::default();
     let mut r = RECT::default();
     if let Ok(hwnd) = win.hwnd()
         && unsafe { GetCursorPos(&mut pointer).is_ok() && GetWindowRect(hwnd, &mut r).is_ok() }
-        && beside(&r, pointer)
+        && beside(&r, pointer, app.state::<SettingsState>().get().edge_side)
     {
         return false;
     }
@@ -128,9 +149,10 @@ pub fn hide_panel(app: AppHandle) -> bool {
     true
 }
 
-/// Over the panel or to its right, level with it.
-fn beside(panel: &RECT, p: POINT) -> bool {
-    p.x >= panel.left && p.y >= panel.top && p.y < panel.bottom
+/// Over the panel or between it and the screen's edge it opened from, level with it.
+fn beside(panel: &RECT, p: POINT, side: EdgeSide) -> bool {
+    let across = if side == EdgeSide::Left { p.x <= panel.right } else { p.x >= panel.left };
+    across && p.y >= panel.top && p.y < panel.bottom
 }
 
 /// Registers the shortcut that opens or closes the panel, replacing the previous one. Fails (keeping
@@ -181,18 +203,9 @@ fn show(win: &WebviewWindow) {
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
     if hover {
         // Shown without taking the keyboard, so typing elsewhere carries on; a click gives it focus.
-        // It slides in from beyond the screen's edge (SW_SHOWNOACTIVATE also un-minimises).
+        // (SW_SHOWNOACTIVATE also un-minimises.)
         if let Ok(hwnd) = win.hwnd() {
-            let mut r = RECT::default();
-            let _ = unsafe { GetWindowRect(hwnd, &mut r) };
-            let animate = animations_on();
-            if animate {
-                move_to(hwnd, offscreen(&r), r.top);
-            }
             let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
-            if animate {
-                slide(hwnd, offscreen(&r), r.left, r.top, SLIDE_IN_MS, |t| 1.0 - (1.0 - t).powi(3), || {});
-            }
         }
     } else {
         if win.is_minimized().unwrap_or(false) {
@@ -200,6 +213,21 @@ fn show(win: &WebviewWindow) {
         }
         let _ = win.show();
         let _ = win.set_focus();
+    }
+    // The page's tiles come in one after another (shell/island.css). Until now the page has been
+    // waiting with nothing showing; once they're all in, it goes back to normal.
+    let id = win.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
+    if animations_on() {
+        page_state(win, Some("in"));
+        let w = win.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(IN_MS);
+            if w.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
+                page_state(&w, None);
+            }
+        });
+    } else {
+        page_state(win, None);
     }
     win.state::<Modules>().panel_visible(true);
     let _ = PanelShown { backdrop, hover }.emit(win);
@@ -260,17 +288,21 @@ fn brightness(bgra: &[u8]) -> u8 {
 
 fn hide(win: &WebviewWindow) {
     let state = win.state::<PanelState>();
-    // An edge-opened panel slides back out first.
-    if state.hover.load(Ordering::Relaxed) && is_open(win) && animations_on() && let Ok(hwnd) = win.hwnd() {
+    // The tiles blur away first (shell/island.css).
+    if is_open(win) && animations_on() {
         if state.closing.swap(true, Ordering::Relaxed) {
-            return; // already sliding out
+            return; // already closing
         }
-        let mut r = RECT::default();
-        let _ = unsafe { GetWindowRect(hwnd, &mut r) };
+        *state.last_hidden.lock().unwrap() = Some(Instant::now());
+        let id = state.anim.fetch_add(1, Ordering::Relaxed) + 1;
+        page_state(win, Some("out"));
         let w = win.clone();
-        slide(hwnd, r.left, offscreen(&r), r.top, SLIDE_OUT_MS, |t| t * t * t, move || {
-            let w2 = w.clone();
-            let _ = w.run_on_main_thread(move || hide_now(&w2));
+        std::thread::spawn(move || {
+            std::thread::sleep(OUT_MS);
+            if w.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
+                let w2 = w.clone();
+                let _ = w.run_on_main_thread(move || hide_now(&w2));
+            }
         });
         return;
     }
@@ -279,50 +311,33 @@ fn hide(win: &WebviewWindow) {
 
 fn hide_now(win: &WebviewWindow) {
     win.state::<PanelState>().closing.store(false, Ordering::Relaxed);
+    win.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed);
     // Both: Tauri's hide does nothing when it didn't do the showing (the edge uses ShowWindow).
     let _ = win.hide();
     if let Ok(hwnd) = win.hwnd() {
         let _ = unsafe { ShowWindow(hwnd, SW_HIDE) };
     }
+    // Ready for the next open: the page waits with nothing showing ("pre"), because a message sent as
+    // the panel shows can reach the page a few frames late, and the tiles would flash first.
+    page_state(win, animations_on().then_some("pre"));
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
 }
 
-/// The edge drawer's slide: in, easing to a stop; out, speeding away.
-const SLIDE_IN_MS: u64 = 200;
-const SLIDE_OUT_MS: u64 = 150;
+/// How long the tiles take to come in (the last one starts about 0.5 s in), and to blur away.
+/// Shell/island.css has the same numbers.
+const IN_MS: Duration = Duration::from_millis(1000);
+const OUT_MS: Duration = Duration::from_millis(390);
 
-/// Where the panel sits just beyond the screen's right edge (it rests 12 px in from it).
-fn offscreen(r: &RECT) -> i32 {
-    r.right + 16
-}
-
-fn move_to(hwnd: HWND, x: i32, y: i32) {
-    let _ = unsafe { SetWindowPos(hwnd, None, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE) };
-}
-
-/// Moves the window from `from` to `to` (its left edge) over `ms`, once per screen refresh, on a
-/// thread of its own; `ease` shapes the motion. Then runs `done`.
-fn slide(hwnd: HWND, from: i32, to: i32, y: i32, ms: u64, ease: fn(f64) -> f64, done: impl FnOnce() + Send + 'static) {
-    let hwnd = hwnd.0 as isize;
-    std::thread::spawn(move || {
-        let start = Instant::now();
-        loop {
-            // From the time elapsed, not a frame count: a late frame doesn't slow the slide.
-            let t = (start.elapsed().as_secs_f64() * 1000.0 / ms as f64).min(1.0);
-            move_to(HWND(hwnd as _), from + (f64::from(to - from) * ease(t)).round() as i32, y);
-            if t >= 1.0 {
-                break;
-            }
-            // Wait for the screen's next frame, so each step lands on one (Sleep is too coarse).
-            if unsafe { DwmFlush() }.is_err() {
-                std::thread::sleep(Duration::from_millis(8));
-            }
-        }
-        done();
-    });
+/// Sets which part of the open/close animation the page is in (`html[data-island]`: "pre", "in" or
+/// "out"), or none.
+fn page_state(win: &WebviewWindow, state: Option<&str>) {
+    let _ = match state {
+        Some(s) => win.eval(format!("document.documentElement.dataset.island='{s}'")),
+        None => win.eval("delete document.documentElement.dataset.island"),
+    };
 }
 
 /// Windows' "Animation effects" setting (Accessibility › Visual effects): off means no slide.
@@ -377,7 +392,12 @@ fn place(win: &WebviewWindow, edge: bool) {
     let max_height = area.size.height as i32 - 2 * margin;
     let set = |width: i32, height: i32| {
         let height = height.min(max_height);
-        let x = area.position.x + area.size.width as i32 - width - margin;
+        // An edge-opened panel sits at the edge it opened from.
+        let x = if edge && win.state::<SettingsState>().get().edge_side == EdgeSide::Left {
+            area.position.x + margin
+        } else {
+            area.position.x + area.size.width as i32 - width - margin
+        };
         let y = if edge {
             area.position.y + (area.size.height as i32 - height) / 2
         } else {
@@ -401,9 +421,32 @@ fn place(win: &WebviewWindow, edge: bool) {
 /// Called after Settings are saved: the look or background may have changed.
 pub fn refresh_frame(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(LABEL) {
+        let state = app.state::<PanelState>();
+        // Changing the frame makes Windows drop the focus, which would hide the panel: the focus-loss
+        // handler ignores it for a moment (`just_reframed`), then we take the focus back (an
+        // edge-opened panel only had it if the user had clicked in; without it, clicking elsewhere
+        // wouldn't close the panel any more).
+        *state.reframed_at.lock().unwrap() = Some(Instant::now());
+        let was_open = is_open(&win);
+        let had_focus = win.is_focused().unwrap_or(false) || win.hwnd().is_ok_and(|h| unsafe { GetForegroundWindow() } == h);
         frame(&win, framed(&app.state::<SettingsState>().get()));
-        place(&win, app.state::<PanelState>().hover.load(Ordering::Relaxed));
+        place(&win, state.hover.load(Ordering::Relaxed));
+        // Tauri's frame change hides a window it didn't show itself (the edge shows it with
+        // ShowWindow, so Tauri thinks it's hidden): show it again, still without taking the keyboard.
+        if was_open && !is_open(&win) && let Ok(hwnd) = win.hwnd() {
+            let _ = unsafe { ShowWindow(hwnd, SW_SHOWNOACTIVATE) };
+        }
+        if is_open(&win) && (had_focus || !state.hover.load(Ordering::Relaxed)) {
+            let _ = win.set_focus();
+            // The page inside needs it too, or clicking elsewhere may not register as leaving.
+            let _ = tauri::Webview::set_focus(win.as_ref());
+        }
+        *state.reframed_at.lock().unwrap() = Some(Instant::now());
     }
+}
+
+fn just_reframed(win: &WebviewWindow) -> bool {
+    win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
 /// Whether the window gets Windows 11's frame: every look except transparent Liquid or Dot, whose cards
@@ -438,11 +481,16 @@ mod tests {
     fn beside_the_panel() {
         use windows::Win32::Foundation::{POINT, RECT};
         let panel = RECT { left: 1455, top: 227, right: 1905, bottom: 1027 };
-        let at = |x, y| super::beside(&panel, POINT { x, y });
+        use crate::settings::EdgeSide;
+        let at = |x, y| super::beside(&panel, POINT { x, y }, EdgeSide::Right);
         assert!(at(1919, 600), "on the screen's edge, level with it");
         assert!(at(1600, 600), "over it");
         assert!(!at(1400, 600), "to its left");
         assert!(!at(1919, 100), "on the edge, above it");
+        let at_left = |x, y| super::beside(&panel, POINT { x, y }, EdgeSide::Left);
+        assert!(at_left(0, 600), "on the left edge, level with it");
+        assert!(at_left(1600, 600), "over it");
+        assert!(!at_left(1919, 600), "to its right"); 
     }
 
     #[test]
@@ -452,3 +500,4 @@ mod tests {
         assert_eq!(super::brightness(&[0, 255, 0, 255, 0, 0, 0, 255].repeat(32)), 36); // half bright green
     }
 }
+

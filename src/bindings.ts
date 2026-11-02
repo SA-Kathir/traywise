@@ -33,11 +33,19 @@ export const commands = {
 	/**  Sets a volume, in percent (0 to 100). */
 	mixerSetVolume: (target: Target, volume: number) => typedError<null, string>(__TAURI_INVOKE("mixer_set_volume", { target, volume })),
 	mixerSetMute: (target: Target, muted: boolean) => typedError<null, string>(__TAURI_INVOKE("mixer_set_mute", { target, muted })),
+	/**  Sends an app to an output device (an id from `outputs`), or back to the default with null. */
+	mixerSetOutput: (pid: number, device: string | null) => typedError<null, string>(__TAURI_INVOKE("mixer_set_output", { pid, device })),
+	/**  Sends every app back to the default output device. */
+	mixerResetOutputs: () => typedError<null, string>(__TAURI_INVOKE("mixer_reset_outputs")),
 	/**  The latest state. Default (off) while the module is switched off. */
 	keepAwakeState: () => __TAURI_INVOKE<KeepAwakeState>("keep_awake_state"),
 	/**  Picking a timed mode (again) restarts its timer. */
 	keepAwakeSetMode: (mode: Mode) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_mode", { mode })),
 	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
+	/**  The latest state. Default (off, unavailable) while the module is switched off. */
+	focusState: () => __TAURI_INVOKE<FocusState>("focus_state"),
+	/**  Picking a timed mode (again) restarts its timer. */
+	focusSet: (mode: FocusMode) => typedError<null, string>(__TAURI_INVOKE("focus_set", { mode })),
 	/**  The latest snapshot. Empty while the module is off. */
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
@@ -46,6 +54,13 @@ export const commands = {
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
 	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
+	powerState: () => __TAURI_INVOKE<PowerState>("power_state"),
+	powerSetMode: (mode: PowerMode) => typedError<null, string>(__TAURI_INVOKE("power_set_mode", { mode })),
+	/**  The screens as last read. Empty while the module is off. */
+	displaysState: () => __TAURI_INVOKE<DisplaysState>("displays_state"),
+	/**  Percent. Sent as the slider moves; the worker keeps up by skipping to the latest value. */
+	displaysSetBrightness: (id: string, percent: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_brightness", { id, percent })),
+	displaysSetProject: (project: Project) => typedError<null, string>(__TAURI_INVOKE("displays_set_project", { project })),
 	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
 	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
@@ -77,10 +92,13 @@ export const commands = {
 export const events = {
 	audioDevicesChanged: makeEvent<AudioDevicesChanged>("audio-devices-changed"),
 	bluetoothChanged: makeEvent<BluetoothChanged>("bluetooth-changed"),
+	displaysChanged: makeEvent<DisplaysChanged>("displays-changed"),
+	focusChanged: makeEvent<FocusChanged>("focus-changed"),
 	keepAwakeChanged: makeEvent<KeepAwakeChanged>("keep-awake-changed"),
 	mixerChanged: makeEvent<MixerChanged>("mixer-changed"),
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
+	powerChanged: makeEvent<PowerChanged>("power-changed"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
@@ -100,7 +118,7 @@ export type Abilities = {
 /**  Accent colour preset (Dot look). The colours are in `src/shell/dot.css`. */
 export type Accent = "red" | "amber" | "violet" | "blue" | "green";
 
-/**  One app with audio on the default output device (all of its audio sessions together). */
+/**  One app playing sound, on any output device (all of its audio sessions together). */
 export type AppAudio = {
 	pid: number,
 	/**  Windows' own sounds (notifications, errors), not an app. */
@@ -111,6 +129,8 @@ export type AppAudio = {
 	/**  Percent, 0 to 100. */
 	volume: number,
 	muted: boolean,
+	/**  The device id it's set to play through. None: it follows the default. */
+	output: string | null,
 };
 
 /**  Sent to the UI whenever a device is plugged in, removed, or becomes the default. */
@@ -161,6 +181,60 @@ export type BoardTile = {
 	h: number,
 	x: number,
 	y: number,
+};
+
+/**  How the clock tile draws the time. */
+export type ClockStyle = 
+/**  Dot-matrix digits. */
+"digital" | 
+/**  A round face of dots, with dot hands. */
+"analogue";
+
+export type Display = {
+	/**  Stable while the screen stays connected. */
+	id: string,
+	name: string,
+	/**  The laptop's own screen. */
+	internal: boolean,
+	/**  Percent. None when it can't be changed from here (a monitor without DDC/CI, or with it off). */
+	brightness: number | null,
+};
+
+/**  Sent when the panel opens (once the screens have been read) and after the Project choice changes. */
+export type DisplaysChanged = DisplaysState;
+
+export type DisplaysState = {
+	/**
+	 *  The laptop's screen first. Screens that are off (like the laptop's in "Second screen only")
+	 *  aren't listed.
+	 */
+	displays: Display[],
+	/**  None while only one screen is connected: there's nothing to choose. */
+	project: Project | null,
+};
+
+/**  Which side of the screen the panel opens from, when it opens from an edge. */
+export type EdgeSide = "left" | "right";
+
+/**  Sent to the UI whenever the state changes. */
+export type FocusChanged = FocusState;
+
+export type FocusMode = "off" | 
+/**  Until turned off. */
+"on" | 
+/**  For this many minutes, then off. */
+{ minutes: number };
+
+/**  Everything the tiles show. */
+export type FocusState = {
+	/**  Do not disturb is on, however it was switched on. */
+	on: boolean,
+	/**  Switched on here for a while: when it turns off, in milliseconds since 1970 (like `Date.now()`). */
+	endsAt: number | null,
+	/**  How long that while is, in minutes, for the tile's ring. */
+	minutes: number | null,
+	/**  False if this Windows doesn't have what it needs; the tiles say so. */
+	available: boolean,
 };
 
 /**  Sent to the UI whenever the state changes. */
@@ -242,6 +316,8 @@ export type MixerState = {
 	/**  The output device's name, like "Headphones (Realtek(R) Audio)". */
 	device: string | null,
 	apps: AppAudio[],
+	/**  Devices an app can be sent to. Empty where Windows doesn't support per-app output. */
+	outputs: OutputDevice[],
 };
 
 export type Mode = "off" | 
@@ -253,7 +329,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -293,11 +369,31 @@ export type Point = {
 	upload: number,
 };
 
+/**  Sent whenever Windows reports a change while the module is on. */
+export type PowerChanged = PowerState;
+
+/**  The three choices in Settings › Power & battery › Power mode. */
+export type PowerMode = "efficiency" | "balanced" | "performance";
+
+export type PowerState = {
+	/**  None when Windows doesn't offer power modes: the active power plan isn't Balanced. */
+	mode: PowerMode | null,
+	/**  None on a PC without a battery. */
+	battery: Battery | null,
+	/**  Windows' Energy saver (battery saver before Windows 11 24H2). */
+	energySaver: boolean,
+	/**  The battery level it turns on at by itself: 0 never, 100 always. None if unknown. */
+	energySaverAt: number | null,
+};
+
 /**
  *  Background colour preset (Liquid look): one muted hue each. The colours are in `src/shell/liquid.css`.
  *  (An old file's `motion` field, from when the background moved, is ignored.)
  */
 export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
+
+/**  The four choices of Win+P. */
+export type Project = "pcOnly" | "duplicate" | "extend" | "secondOnly";
 
 /**  Sent after a toggle, and each time the panel opens. */
 export type QuickTogglesChanged = QuickTogglesState;
@@ -318,7 +414,7 @@ export type Settings = {
 	look: Look,
 	/**  Liquid and Dot: no panel background, so the cards float over the desktop. */
 	transparent: boolean,
-	/**  Liquid: cards in one even hue, instead of lighter at the top left fading darker. */
+	/**  Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker. */
 	singleHue: boolean,
 	preset: Preset,
 	/**  Dot: the accent colour. */
@@ -333,16 +429,26 @@ export type Settings = {
 	checkUpdates: boolean,
 	/**  Whether first-run setup (pick a look, then modules) is done. */
 	onboarded: boolean,
-	/**  The home board's tiles. None until it's first changed: the UI shows its default board. */
-	board: BoardTile[] | null,
+	/**
+	 *  The home board's pages, each with its own tiles. None until it's first changed: the UI shows
+	 *  its default board as one page. (A 0.2 file's single `board` becomes page 1 when read.)
+	 */
+	pages: BoardTile[][] | null,
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
 	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
 	monitorReadings: [Reading, Reading],
-	/**  Resting the mouse on the middle of the screen's right edge opens the panel. */
+	/**  Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel. */
 	edgeOpen: boolean,
 	/**  With `edge_open`, a small pill on the edge shows where. */
 	edgeHandle: boolean,
+	/**  With `edge_open`: which side of the screen it's on. */
+	edgeSide: EdgeSide,
+	/**  With `edge_handle`: the pill is in the accent colour, not grey. */
+	edgeHandleAccent: boolean,
+	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
+	clockZone: string | null,
+	clockStyle: ClockStyle,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
@@ -352,7 +458,9 @@ export type SettingsPage =
 /**  The Wi-Fi network list, for networks that need more than a password. */
 "wifi" | 
 /**  Bluetooth & devices, to pair a new device. */
-"bluetooth";
+"bluetooth" | 
+/**  Power & battery › Energy saver, which apps can read but not switch. */
+"energySaver";
 
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */
