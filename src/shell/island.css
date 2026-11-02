@@ -1,5 +1,5 @@
-/* How the panel comes in and goes out. Rust (shell/panel.rs) sets html[data-island] = "in" while the
-   panel is hidden, so the page waits with nothing showing; once the panel is shown, the title, the
+/* How the panel comes in and goes out. Rust (shell/panel.rs) sets html[data-island] = "pre" while the
+   panel is hidden, so the page waits with nothing showing; once the panel is shown ("in"), the title, the
    tabs and the tiles come in one after another, each rising out of a blur. About a second later
    Rust clears it. On the way out ("out") the page fades. Only transform, opacity and filter. */
 @media not (prefers-reduced-motion: reduce) {
@@ -16,6 +16,11 @@
       transform: scale(0.98);
       filter: blur(3px);
     }
+  }
+
+  /* Waiting for the panel to open: nothing showing. */
+  html[data-island="pre"] :is(.panel > header, .panel .tabs, .board > .board-slot, .page-dots) {
+    opacity: 0;
   }
 
   /* `backwards`: nothing is left holding the elements once an animation ends, so a tile can be

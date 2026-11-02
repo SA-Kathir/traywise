@@ -213,10 +213,11 @@ fn show(win: &WebviewWindow) {
         let _ = win.show();
         let _ = win.set_focus();
     }
-    // The page's tiles come in one after another (shell/island.css). It's been waiting in its start
-    // state since the panel last hid; once they're all in, the page goes back to normal.
+    // The page's tiles come in one after another (shell/island.css). Until now the page has been
+    // waiting with nothing showing; once they're all in, it goes back to normal.
     let id = win.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
     if animations_on() {
+        page_state(win, Some("in"));
         let w = win.clone();
         std::thread::spawn(move || {
             std::thread::sleep(IN_MS);
@@ -315,9 +316,9 @@ fn hide_now(win: &WebviewWindow) {
     if let Ok(hwnd) = win.hwnd() {
         let _ = unsafe { ShowWindow(hwnd, SW_HIDE) };
     }
-    // Ready for the next open: the page waits in its start state (tiles not yet in), because a message
-    // sent as the panel shows can reach the page a few frames late, and the tiles would flash first.
-    page_state(win, animations_on().then_some("in"));
+    // Ready for the next open: the page waits with nothing showing ("pre"), because a message sent as
+    // the panel shows can reach the page a few frames late, and the tiles would flash first.
+    page_state(win, animations_on().then_some("pre"));
     webview::set_active(win, false);
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
@@ -329,8 +330,8 @@ fn hide_now(win: &WebviewWindow) {
 const IN_MS: Duration = Duration::from_millis(1000);
 const OUT_MS: Duration = Duration::from_millis(140);
 
-/// Sets which part of the open/close animation the page is in (`html[data-island]`: "in" or "out"),
-/// or none.
+/// Sets which part of the open/close animation the page is in (`html[data-island]`: "pre", "in" or
+/// "out"), or none.
 fn page_state(win: &WebviewWindow, state: Option<&str>) {
     let _ = match state {
         Some(s) => win.eval(format!("document.documentElement.dataset.island='{s}'")),

@@ -31,8 +31,8 @@ const LEAVE_MS = 400;
 /** …and how long it stays if the mouse never comes in (it rested on the edge, then went elsewhere). */
 const NEVER_ENTERED_MS = 1500;
 
-// The tiles' entrance (island.css) waits for the first open; Rust clears it, and sets it again each time the panel hides.
-document.documentElement.dataset.island = "in";
+// The tiles' entrance (island.css) waits for the first open; Rust starts and clears it, and sets this again each time the panel hides.
+document.documentElement.dataset.island = "pre";
 
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
