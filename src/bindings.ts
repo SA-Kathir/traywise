@@ -438,7 +438,7 @@ export type Settings = {
 	autoArrange: boolean,
 	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
 	monitorReadings: [Reading, Reading],
-	/**  Resting the mouse on the middle of the screen's right edge opens the panel. */
+	/**  Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel. */
 	edgeOpen: boolean,
 	/**  With `edge_open`, a small pill on the edge shows where. */
 	edgeHandle: boolean,
