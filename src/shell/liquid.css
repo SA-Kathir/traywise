@@ -350,6 +350,14 @@ button.tile-title:hover {
     color-mix(in srgb, var(--c2) 28%, #0e0e10) 75%
   );
 }
+/* Single hue: the hover stays in the card's own hue, a little lighter than at rest. */
+.look-liquid.flat .stats:hover {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--c3) 62%, var(--base)),
+    color-mix(in srgb, var(--c1) 52%, var(--base))
+  );
+}
 .reading {
   flex: 1;
   min-width: 0;
