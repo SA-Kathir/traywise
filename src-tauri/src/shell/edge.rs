@@ -22,7 +22,7 @@ use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
-    SetWindowPos, ShowWindow, TranslateMessage, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
+    SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::w;
@@ -97,7 +97,7 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
             hbrBackground: CreateSolidBrush(COLORREF(colour)),
             ..Default::default()
         };
-        RegisterClassW(&wc); // fails harmlessly when already registered by an earlier start
+        RegisterClassW(&wc); // (the class is removed when the window ends, so a new start gets its own colour)
         let r = rect(monitor(), handle, side);
         CreateWindowExW(
             WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED,
@@ -127,6 +127,8 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
             DispatchMessageW(&msg);
         }
     }
+    // The class holds the handle's colour, so it goes with the window: the next start registers its own.
+    let _ = unsafe { UnregisterClassW(w!("TraywiseEdge"), GetModuleHandleW(None).ok().map(Into::into)) };
 }
 
 /// Nearly invisible (fully invisible windows get no mouse messages), or a translucent pill.
