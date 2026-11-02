@@ -25,7 +25,7 @@ use windows::core::BOOL;
 
 use super::webview;
 use crate::module::Modules;
-use crate::settings::{Look, Settings, SettingsState};
+use crate::settings::{EdgeSide, Look, Settings, SettingsState};
 
 const LABEL: &str = "panel";
 /// A tray click right after the panel lost focus is the same click that closed it, so ignore it.
@@ -141,7 +141,7 @@ pub fn hide_panel(app: AppHandle) -> bool {
     let mut r = RECT::default();
     if let Ok(hwnd) = win.hwnd()
         && unsafe { GetCursorPos(&mut pointer).is_ok() && GetWindowRect(hwnd, &mut r).is_ok() }
-        && beside(&r, pointer)
+        && beside(&r, pointer, app.state::<SettingsState>().get().edge_side)
     {
         return false;
     }
@@ -149,9 +149,10 @@ pub fn hide_panel(app: AppHandle) -> bool {
     true
 }
 
-/// Over the panel or to its right, level with it.
-fn beside(panel: &RECT, p: POINT) -> bool {
-    p.x >= panel.left && p.y >= panel.top && p.y < panel.bottom
+/// Over the panel or between it and the screen's edge it opened from, level with it.
+fn beside(panel: &RECT, p: POINT, side: EdgeSide) -> bool {
+    let across = if side == EdgeSide::Left { p.x <= panel.right } else { p.x >= panel.left };
+    across && p.y >= panel.top && p.y < panel.bottom
 }
 
 /// Registers the shortcut that opens or closes the panel, replacing the previous one. Fails (keeping
@@ -391,7 +392,12 @@ fn place(win: &WebviewWindow, edge: bool) {
     let max_height = area.size.height as i32 - 2 * margin;
     let set = |width: i32, height: i32| {
         let height = height.min(max_height);
-        let x = area.position.x + area.size.width as i32 - width - margin;
+        // An edge-opened panel sits at the edge it opened from.
+        let x = if edge && win.state::<SettingsState>().get().edge_side == EdgeSide::Left {
+            area.position.x + margin
+        } else {
+            area.position.x + area.size.width as i32 - width - margin
+        };
         let y = if edge {
             area.position.y + (area.size.height as i32 - height) / 2
         } else {
@@ -475,11 +481,16 @@ mod tests {
     fn beside_the_panel() {
         use windows::Win32::Foundation::{POINT, RECT};
         let panel = RECT { left: 1455, top: 227, right: 1905, bottom: 1027 };
-        let at = |x, y| super::beside(&panel, POINT { x, y });
+        use crate::settings::EdgeSide;
+        let at = |x, y| super::beside(&panel, POINT { x, y }, EdgeSide::Right);
         assert!(at(1919, 600), "on the screen's edge, level with it");
         assert!(at(1600, 600), "over it");
         assert!(!at(1400, 600), "to its left");
         assert!(!at(1919, 100), "on the edge, above it");
+        let at_left = |x, y| super::beside(&panel, POINT { x, y }, EdgeSide::Left);
+        assert!(at_left(0, 600), "on the left edge, level with it");
+        assert!(at_left(1600, 600), "over it");
+        assert!(!at_left(1919, 600), "to its right"); 
     }
 
     #[test]
