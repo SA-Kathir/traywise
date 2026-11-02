@@ -18,7 +18,7 @@ pub struct Settings {
     pub look: Look,
     /// Liquid and Dot: no panel background, so the cards float over the desktop.
     pub transparent: bool,
-    /// Liquid: cards in one even hue, instead of lighter at the top left fading darker.
+    /// Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker.
     pub single_hue: bool,
     pub preset: Preset,
     /// Dot: the accent colour.
@@ -90,7 +90,7 @@ impl Default for Settings {
             enabled_modules: vec![ModuleId::VolumeMixer],
             look: Look::Dot,
             transparent: false,
-            single_hue: false,
+            single_hue: true,
             preset: Preset::Ocean,
             accent: Accent::Red,
             plain_background: true,
@@ -269,7 +269,7 @@ mod tests {
             enabled_modules: vec![],
             look: Look::Windows,
             transparent: true,
-            single_hue: true,
+            single_hue: false,
             preset: Preset::Graphite,
             accent: Accent::Blue,
             plain_background: true,
@@ -311,6 +311,7 @@ mod tests {
                 enabled_modules: vec![ModuleId::VolumeMixer, ModuleId::KeepAwake, ModuleId::AudioDevices, ModuleId::SystemMonitor, ModuleId::QuickToggles],
                 look: Look::Liquid,
                 transparent: true,
+                single_hue: false,
                 preset: Preset::Plum,
                 onboarded: true,
                 ..Settings::default()
