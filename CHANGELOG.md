@@ -16,7 +16,7 @@
 - **A new open and close animation.** The title, tabs and tiles come in one after another, each rising out of a soft blur, and they blur away again when it closes (it replaces the edge slide). Every look's panel edge catches the accent along the top and bottom, and brighter where the pointer is; in Dot, hovered tiles get a thin accent ring. A new app icon: four tiles, one switched on.
 - **Settings** sections (Modules, Appearance, Opening, System) open and close the same way, with the module switches inside Settings. Dot's light mode is softer: charcoal and off-white instead of black and white.
 - **Open from the left or the right edge** (Settings › Opening), and the handle can be in your accent colour.
-- **The Liquid look is now called Tint**, since it's cards tinted in one colour and nothing liquid is left. Your saved look carries over.
+- **The Liquid look is now called Tint**, since it's cards tinted in one colour and nothing liquid is left. Your saved look carries over, and new installs start with Single hue tiles (the shaded style is still a Settings choice).
 - **Fixed:** in Tint with Single hue, hovering a System monitor tile no longer turns it into the shaded look; it stays in its own hue and gets a little lighter.
 - **Dot now starts on a plain background** (it used to start over a dot grid) for new installs. Existing installs keep their choice.
 
