@@ -30,6 +30,8 @@ struct Status {
     /// Which modules are switched on, so the menu only offers what works.
     mics_available: bool,
     awake_available: bool,
+    /// The icon's colour (0xRRGGBB): the look's accent.
+    accent: u32,
     mics_muted: bool,
     /// The tooltip line, like "Keeping awake until 3:40 PM". None when Keep awake is off.
     awake: Option<String>,
@@ -92,6 +94,7 @@ pub fn apply_settings(app: &AppHandle, settings: &Settings) {
     update(app, |status| {
         status.mics_available = settings.enabled_modules.contains(&ModuleId::AudioDevices);
         status.awake_available = settings.enabled_modules.contains(&ModuleId::KeepAwake);
+        status.accent = super::edge::accent_rgb(settings);
     });
 }
 
@@ -122,7 +125,27 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Status)) {
         tooltip += line;
     }
     let _ = tray.set_tooltip(Some(tooltip));
-    let _ = tray.set_icon(Some(badged(&tray_icon(), status.mics_muted, status.awake.is_some())));
+    let _ = tray.set_icon(Some(badged(&tinted(&tray_icon(), status.accent), status.mics_muted, status.awake.is_some())));
+}
+
+/// The icon with its light glyph in `accent` (0xRRGGBB): each pixel is mixed between the dark plate's colour
+/// and the accent by how light it is, so the glyph's grey parts stay a softer shade. A zero accent (not
+/// set yet) leaves the icon as it is.
+fn tinted(icon: &Image, accent: u32) -> Image<'static> {
+    const PLATE: [f32; 3] = [11.0, 11.0, 12.0];
+    const GLYPH: f32 = 244.0;
+    let mut rgba = icon.rgba().to_vec();
+    if accent != 0 {
+        let target = [(accent >> 16 & 0xff) as f32, (accent >> 8 & 0xff) as f32, (accent & 0xff) as f32];
+        for pixel in rgba.as_chunks_mut::<4>().0 {
+            let light = 0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32;
+            let t = ((light - PLATE[1]) / (GLYPH - PLATE[1])).clamp(0.0, 1.0);
+            for c in 0..3 {
+                pixel[c] = (PLATE[c] + (target[c] - PLATE[c]) * t).round() as u8;
+            }
+        }
+    }
+    Image::new_owned(rgba, icon.width(), icon.height())
 }
 
 /// The Traywise icon with a dot per state, each cut out with a clear ring so it reads as a mark on
@@ -154,6 +177,15 @@ fn badged(icon: &Image, muted: bool, awake: bool) -> Image<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_glyph_takes_the_accent_and_the_plate_stays_dark() {
+        let two = Image::new_owned(vec![244, 244, 242, 255, 11, 11, 12, 255], 2, 1);
+        let out = tinted(&two, 0xd9_2b_24);
+        assert_eq!(&out.rgba()[..4], [0xd9, 0x2b, 0x24, 255]);
+        assert_eq!(&out.rgba()[4..], [11, 11, 12, 255]);
+        assert_eq!(tinted(&two, 0).rgba(), two.rgba(), "no accent yet: unchanged");
+    }
 
     #[test]
     fn badges_sit_in_their_corners_with_a_clear_ring() {

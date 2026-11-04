@@ -300,31 +300,32 @@ fn rect(monitor: RECT, handle: bool, side: EdgeSide) -> RECT {
     RECT { left, top, right: left + w, bottom: top + h }
 }
 
-/// The handle's colour as Windows wants it (0x00BBGGRR): the accent of the current look, or grey.
-/// Dot's accent presets, Tint's preset accents and Windows' blue; the same colours as in the CSS.
+/// The accent of the current look as 0xRRGGBB: Dot's accent presets, Tint's preset accents and Windows'
+/// blue; the same colours as in the CSS.
+pub fn accent_rgb(settings: &Settings) -> u32 {
+    match settings.look {
+        Look::Dot => match settings.accent {
+            Accent::Red => 0xd9_2b_24,
+            Accent::Amber => 0xf2_a3_3a,
+            Accent::Violet => 0xa9_8b_ff,
+            Accent::Blue => 0x5a_a9_ff,
+            Accent::Green => 0x34_c7_7b,
+        },
+        Look::Liquid => match settings.preset {
+            Preset::Ocean => 0xa9_c8_ee,
+            Preset::Graphite => 0xd7_dc_e4,
+            Preset::Forest => 0xa8_d8_bd,
+            Preset::Plum => 0xd4_bd_e8,
+            Preset::Ember => 0xf0_c3_a6,
+            Preset::Rose => 0xf0_bf_d4,
+        },
+        Look::Windows => 0x4c_c2_ff,
+    }
+}
+
+/// The handle's colour as Windows wants it (0x00BBGGRR): the accent, or grey.
 fn handle_colour(settings: &Settings) -> u32 {
-    let rgb: u32 = if !settings.edge_handle_accent {
-        0x90_90_90
-    } else {
-        match settings.look {
-            Look::Dot => match settings.accent {
-                Accent::Red => 0xd9_2b_24,
-                Accent::Amber => 0xf2_a3_3a,
-                Accent::Violet => 0xa9_8b_ff,
-                Accent::Blue => 0x5a_a9_ff,
-                Accent::Green => 0x34_c7_7b,
-            },
-            Look::Liquid => match settings.preset {
-                Preset::Ocean => 0xa9_c8_ee,
-                Preset::Graphite => 0xd7_dc_e4,
-                Preset::Forest => 0xa8_d8_bd,
-                Preset::Plum => 0xd4_bd_e8,
-                Preset::Ember => 0xf0_c3_a6,
-                Preset::Rose => 0xf0_bf_d4,
-            },
-            Look::Windows => 0x4c_c2_ff,
-        }
-    };
+    let rgb = if settings.edge_handle_accent { accent_rgb(settings) } else { 0x90_90_90 };
     let (r, g, b) = (rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff);
     (b << 16) | (g << 8) | r
 }
