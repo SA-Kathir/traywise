@@ -59,6 +59,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         ])
         .events(collect_events![
             shell::panel::PanelShown,
+            shell::panel::ShowSettings,
             updater::UpdateAvailable,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
@@ -117,6 +118,7 @@ pub fn run() {
             let settings = settings::SettingsState::load(app.handle())?;
             let modules = module::Modules::new(app.handle());
             modules.apply(&settings.get());
+            shell::tray::apply_settings(app.handle(), &settings.get());
             app.manage(settings);
             app.manage(modules);
             app.manage(updater::UpdateState::default());

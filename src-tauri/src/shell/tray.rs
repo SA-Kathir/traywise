@@ -1,14 +1,18 @@
-//! The tray icon: left-click toggles the panel, right-click opens a menu with Quit. While microphones
+//! The tray icon: left-click toggles the panel, right-click opens a menu (Settings, the microphone mute and
+//! Keep awake when those modules run, Quit). While microphones
 //! are muted or Keep awake is on, it gets a dot in a corner and a line in its tooltip.
 
 use std::sync::Mutex;
 
 use tauri::image::Image;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager};
 
 use super::panel;
+use crate::modules::{audio_devices, keep_awake};
+use crate::settings::Settings;
+use crate::module::ModuleId;
 
 const ID: &str = "main";
 const MUTED: [u8; 3] = [0xe5, 0x48, 0x4d]; // red, bottom-right
@@ -21,8 +25,11 @@ fn tray_icon() -> Image<'static> {
 }
 
 /// What the icon shows besides Traywise itself. Modules set their part, and clear it when they stop.
-#[derive(Default, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 struct Status {
+    /// Which modules are switched on, so the menu only offers what works.
+    mics_available: bool,
+    awake_available: bool,
     mics_muted: bool,
     /// The tooltip line, like "Keeping awake until 3:40 PM". None when Keep awake is off.
     awake: Option<String>,
@@ -30,17 +37,23 @@ struct Status {
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(Mutex::new(Status::default()));
-    let quit = MenuItem::with_id(app, "quit", "Quit Traywise", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&quit])?;
     TrayIconBuilder::with_id(ID)
         .icon(tray_icon())
         .tooltip("Traywise")
-        .menu(&menu)
+        .menu(&menu(app.handle(), &Status::default())?)
         .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| {
-            if event.id == "quit" {
-                app.exit(0);
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "quit" => app.exit(0),
+            "settings" => panel::open_settings(app),
+            "mics" => {
+                let muted = app.state::<Mutex<Status>>().lock().unwrap().mics_muted;
+                let _ = audio_devices::audio_devices_mute_mics(app.state(), !muted);
             }
+            "awake" => {
+                let on = app.state::<Mutex<Status>>().lock().unwrap().awake.is_some();
+                let _ = keep_awake::keep_awake_set_mode(app.state(), if on { keep_awake::Mode::Off } else { keep_awake::Mode::On });
+            }
+            _ => {}
         })
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
@@ -56,6 +69,32 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+/// The right-click menu for the current state: the mute and Keep awake lines only when their modules run.
+fn menu(app: &AppHandle, status: &Status) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::new(app)?;
+    menu.append(&MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?)?;
+    if status.mics_available || status.awake_available {
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+    }
+    if status.mics_available {
+        menu.append(&CheckMenuItem::with_id(app, "mics", "Mute microphones", true, status.mics_muted, None::<&str>)?)?;
+    }
+    if status.awake_available {
+        menu.append(&CheckMenuItem::with_id(app, "awake", "Keep awake", true, status.awake.is_some(), None::<&str>)?)?;
+    }
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(app, "quit", "Quit Traywise", true, None::<&str>)?)?;
+    Ok(menu)
+}
+
+/// Which of the menu's lines apply: after each settings save, and at startup.
+pub fn apply_settings(app: &AppHandle, settings: &Settings) {
+    update(app, |status| {
+        status.mics_available = settings.enabled_modules.contains(&ModuleId::AudioDevices);
+        status.awake_available = settings.enabled_modules.contains(&ModuleId::KeepAwake);
+    });
+}
+
 pub fn set_mics_muted(app: &AppHandle, muted: bool) {
     update(app, |status| status.mics_muted = muted);
 }
@@ -68,11 +107,12 @@ pub fn set_keep_awake(app: &AppHandle, line: Option<String>) {
 fn update(app: &AppHandle, change: impl FnOnce(&mut Status)) {
     let (Some(state), Some(tray)) = (app.try_state::<Mutex<Status>>(), app.tray_by_id(ID)) else { return };
     let mut status = state.lock().unwrap();
-    let before = Status { mics_muted: status.mics_muted, awake: status.awake.clone() };
+    let before = status.clone();
     change(&mut status);
     if *status == before {
         return;
     }
+    let _ = tray.set_menu(menu(app, &status).ok());
     let mut tooltip = String::from("Traywise");
     if status.mics_muted {
         tooltip += "\nMicrophones muted";

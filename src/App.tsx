@@ -113,6 +113,14 @@ function App() {
     };
   }, []);
 
+  // The tray menu's Settings line: Rust opens the panel, then sends this.
+  useEffect(() => {
+    const unlisten = events.showSettings.listen(() => setView("settings"));
+    return () => {
+      unlisten.then((stop) => stop());
+    };
+  }, []);
+
   // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode.
   useEffect(() => {
     if (!editing) return;

@@ -100,6 +100,7 @@ export const events = {
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	powerChanged: makeEvent<PowerChanged>("power-changed"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
+	showSettings: makeEvent<ShowSettings>("show-settings"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
 	wifiChanged: makeEvent<WifiChanged>("wifi-changed"),
@@ -468,6 +469,9 @@ export type ShortcutStatus = {
 	/**  Why it couldn't be set up, for example another app already uses it. */
 	error: string | null,
 };
+
+/**  Sent to the UI to go to its Settings page. */
+export type ShowSettings = Record<string, never>;
 
 /**  Everything the panel shows. Sent whole every second while the panel is open. */
 export type SystemSample = {

@@ -224,6 +224,7 @@ pub fn set_settings(
     write(&state.path, &settings).map_err(|e| format!("couldn't save settings: {e}"))?;
     modules.apply(&settings);
     crate::shell::edge::apply(&app, &settings);
+    crate::shell::tray::apply_settings(&app, &settings);
     // Only the look decides the frame. Re-framing resizes the window, which visibly nudges the
     // panel, so don't do it for every other save (like each tile moved on the home board).
     let reframe = {

@@ -186,6 +186,18 @@ pub fn open(app: &AppHandle) {
     }
 }
 
+/// Opens the panel on its Settings page (the tray menu's Settings line).
+pub fn open_settings(app: &AppHandle) {
+    open(app);
+    if let Some(win) = app.get_webview_window(LABEL) {
+        let _ = ShowSettings {}.emit(&win);
+    }
+}
+
+/// Sent to the UI to go to its Settings page.
+#[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct ShowSettings {}
+
 /// Shown and not minimised (a minimised window still counts as visible to Windows). Asked of
 /// Windows itself: the edge shows the panel with ShowWindow, which Tauri doesn't track.
 fn is_open(win: &WebviewWindow) -> bool {
