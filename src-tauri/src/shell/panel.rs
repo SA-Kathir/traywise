@@ -449,10 +449,11 @@ fn just_reframed(win: &WebviewWindow) -> bool {
     win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
-/// Whether the window gets Windows 11's frame: every look except transparent Liquid or Dot, whose cards
-/// float over the desktop, where a frame would outline empty space.
+/// Whether the window gets Windows 11's frame: every look except transparent Dot, whose cards
+/// float over the desktop, where a frame would outline empty space. (Only Dot can be transparent;
+/// an old Tint file may still say so.)
 fn framed(settings: &Settings) -> bool {
-    settings.look == Look::Windows || !settings.transparent
+    settings.look != Look::Dot || !settings.transparent
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none

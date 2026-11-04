@@ -152,14 +152,6 @@ export function SettingsPage(props: Props) {
                 ))}
               </div>
             </Row>
-            <Row label="Background" stacked>
-              <Choice
-                label="Background"
-                options={["Tinted", "Transparent"]}
-                value={settings.transparent}
-                onChange={(transparent) => save({ ...settings, transparent })}
-              />
-            </Row>
             <Row label="Tiles" stacked>
               <Choice label="Tiles" options={["Shaded", "Single hue"]} value={settings.singleHue} onChange={(singleHue) => save({ ...settings, singleHue })} />
             </Row>

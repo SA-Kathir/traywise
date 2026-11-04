@@ -41,6 +41,5 @@ Nothing. Work goes on a `feature/<name>` or `fix/<name>` branch from `dev` and i
 
 ## Open owner decisions
 
-- Tint look (the old Liquid): **Background** Tinted or Transparent is still undecided (both are Settings options). **Tiles** is decided: Single hue is the default, Shaded stays a choice.
 - Clean-machine test in Windows Sandbox (`docs/testing-release.md`) still hasn't been run: 0.3.0 shipped after a friend tried it on another laptop instead.
 - Opening from the edge with only the desktop in front: fixed in 0.3.0 (the desktop counted as a full-screen app), but not yet confirmed on a bare desktop.

@@ -114,41 +114,9 @@ body {
     color-mix(in srgb, var(--c1) 45%, var(--base))
   );
 }
-/* A deep shade of the preset behind the cards, unless transparent (.clear). */
-.look-liquid:not(.clear) {
+/* A deep shade of the preset behind the cards. */
+.look-liquid {
   background: color-mix(in srgb, var(--c2) 30%, var(--base));
-}
-/* Transparent: the cards float over the desktop (shown through the window, never read). Anything
-   not already in a card gets one, so it reads over any wallpaper. The header (title and its icon
-   buttons, or Back and the page's name) is one card, like Dot's. */
-.look-liquid.clear header {
-  padding: 6px 8px 6px 16px;
-  border-radius: 14px;
-  background: var(--tint);
-  border: 1px solid var(--tint-edge);
-}
-.look-liquid.clear header :is(h1, .icon-button) {
-  background: none;
-  border: none;
-  box-shadow: none;
-}
-.look-liquid.clear header h1 {
-  flex: none;
-  padding: 0;
-  margin-right: auto;
-}
-.look-liquid.clear :is(.welcome, .setup-intro) {
-  border-radius: 14px;
-  background: var(--tint);
-  border: 1px solid var(--tint-edge);
-}
-
-/* No drop shadows: they pile up between tiles and the page row clips them into a faint box. */
-.look-liquid.clear :is(section, .tile, .stats) {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.look-liquid.clear :is(.welcome, .setup-intro) {
-  padding: 24px 16px;
 }
 .look-liquid h1 {
   color: var(--accent);
@@ -2075,10 +2043,6 @@ section > .setting:last-child {
   align-self: center;
   padding: 0 6px;
   border-radius: 999px;
-}
-.look-liquid.clear .page-dots {
-  background: var(--tint);
-  border: 1px solid var(--tint-edge);
 }
 .look-dot.clear .page-dots {
   background: var(--tw-glass-float);

@@ -16,7 +16,7 @@ pub struct Settings {
     // invalid, so it falls back to defaults; skip unknown ids instead once modules get removed.
     pub enabled_modules: Vec<ModuleId>,
     pub look: Look,
-    /// Liquid and Dot: no panel background, so the cards float over the desktop.
+    /// Dot only: no panel background, so the cards float over the desktop. (Tint had this too until 0.4; an old file may still say true.)
     pub transparent: bool,
     /// Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker.
     pub single_hue: bool,
