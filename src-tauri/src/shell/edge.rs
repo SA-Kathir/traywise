@@ -22,10 +22,10 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetCursorPos, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
     SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
-    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TRANSPARENT, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 use windows::core::w;
 
@@ -51,9 +51,9 @@ const FRAME_MS: u32 = 16;
 thread_local! {
     /// When the mouse arrived on the handle, while it swells.
     static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
-    /// Where the pointer was at the last mouse message: resizing the window under a resting pointer
-    /// makes Windows send a "move" from the same spot, which must not count as the mouse arriving.
-    static LAST_AT: Cell<(i32, i32)> = const { Cell::new((-1, -1)) };
+    /// The window you see (the handle). The edge window itself never changes size, so the pointer's target
+    /// holds still while the handle swells (resizing the target under the pointer made the handle flicker).
+    static VISIBLE: Cell<isize> = const { Cell::new(0) };
 }
 
 /// The running edge window, and which settings it was made for.
@@ -117,27 +117,35 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
             ..Default::default()
         };
         RegisterClassW(&wc); // (the class is removed when the window ends, so a new start gets its own colour)
-        let r = rect(monitor(), handle, side);
-        CreateWindowExW(
-            WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED,
-            class,
-            w!(""),
-            WS_POPUP,
-            r.left,
-            r.top,
-            r.right - r.left,
-            r.bottom - r.top,
-            None,
-            None,
-            instance.map(Into::into),
-            None,
-        )
+        let create = |extra, r: RECT| {
+            CreateWindowExW(
+                WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED | extra,
+                class,
+                w!(""),
+                WS_POPUP,
+                r.left,
+                r.top,
+                r.right - r.left,
+                r.bottom - r.top,
+                None,
+                None,
+                instance.map(Into::into),
+                None,
+            )
+        };
+        let hit = create(Default::default(), rect(monitor(), handle, side));
+        if handle && let Ok(visible) = create(WS_EX_TRANSPARENT, rect(monitor(), handle, side)) {
+            VISIBLE.set(visible.0 as isize); // click-through: the mouse messages go to the window under it
+            pose(0.0);
+            let _ = ShowWindow(visible, SW_SHOWNOACTIVATE);
+        }
+        hit
     };
     let Ok(hwnd) = made else {
         eprintln!("edge: couldn't create the edge window");
         return;
     };
-    style(hwnd, handle);
+    style(hwnd);
     let _ = tx.send(hwnd.0 as isize);
     let mut msg = MSG::default();
     while unsafe { GetMessageW(&mut msg, None, 0, 0) }.as_bool() {
@@ -150,12 +158,13 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
     let _ = unsafe { UnregisterClassW(w!("TraywiseEdge"), GetModuleHandleW(None).ok().map(Into::into)) };
 }
 
-/// Nearly invisible (fully invisible windows get no mouse messages), or a translucent pill.
-fn style(hwnd: HWND, handle: bool) {
+/// Nearly invisible (fully invisible windows get no mouse messages). With a handle, it's the handle's
+/// largest size, so the target is steady.
+fn style(hwnd: HWND) {
     unsafe {
-        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), if handle { HANDLE_ALPHA } else { 1 }, LWA_ALPHA);
-        if handle {
-            let (w, h) = HANDLE;
+        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), 1, LWA_ALPHA);
+        if SHOW_HANDLE.load(Ordering::Relaxed) {
+            let (w, h) = SWOLLEN;
             SetWindowRgn(hwnd, Some(CreateRoundRectRgn(0, 0, w + 1, h + 1, w, w)), true);
         }
         let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
@@ -167,11 +176,6 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         match msg {
             // Ask Windows to say when the mouse has rested here for HOVER_MS (once per arrival).
             WM_MOUSEMOVE => {
-                let mut at = POINT::default();
-                let _ = GetCursorPos(&mut at);
-                if LAST_AT.replace((at.x, at.y)) == (at.x, at.y) {
-                    return LRESULT(0);
-                }
                 // The handle starts swelling as soon as the mouse arrives (the strip has nothing to show).
                 if SHOW_HANDLE.load(Ordering::Relaxed) && ARRIVED.get().is_none() {
                     ARRIVED.set(Some(Instant::now()));
@@ -195,7 +199,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             }
             WM_TIMER => {
                 let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / HOVER_MS as f32).min(1.0));
-                pose(hwnd, t);
+                pose(t);
                 if t >= 1.0 {
                     let _ = KillTimer(Some(hwnd), ANIMATION_TIMER); // it stays swollen until the mouse leaves
                 }
@@ -205,8 +209,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             WM_MOUSELEAVE => {
                 let _ = KillTimer(Some(hwnd), ANIMATION_TIMER);
                 ARRIVED.set(None);
-                LAST_AT.set((-1, -1));
-                pose(hwnd, 0.0);
+                pose(0.0);
                 LRESULT(0)
             }
             // A monitor added, removed or rescaled: move to the new edge.
@@ -214,6 +217,9 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
                 let r = rect(monitor(), SHOW_HANDLE.load(Ordering::Relaxed), side);
                 let _ = SetWindowPos(hwnd, None, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                if SHOW_HANDLE.load(Ordering::Relaxed) {
+                    pose(0.0);
+                }
                 LRESULT(0)
             }
             WM_CLOSE => {
@@ -221,6 +227,9 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 LRESULT(0)
             }
             WM_DESTROY => {
+                if VISIBLE.get() != 0 {
+                    let _ = DestroyWindow(HWND(VISIBLE.replace(0) as _));
+                }
                 PostQuitMessage(0);
                 LRESULT(0)
             }
@@ -230,7 +239,8 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
 }
 
 /// The handle `t` of the way (0 to 1) from resting to swollen: its size, shape and brightness.
-fn pose(hwnd: HWND, t: f32) {
+fn pose(t: f32) {
+    let hwnd = HWND(VISIBLE.get() as _);
     let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
     let (r, alpha) = swell(monitor(), side, t);
     let (w, h) = (r.right - r.left, r.bottom - r.top);
@@ -284,7 +294,7 @@ fn monitor() -> RECT {
 /// The edge window: the middle third of the chosen edge, 1 px wide; or the handle, centred on it.
 fn rect(monitor: RECT, handle: bool, side: EdgeSide) -> RECT {
     let height = monitor.bottom - monitor.top;
-    let (w, h) = if handle { HANDLE } else { (1, height / 3) };
+    let (w, h) = if handle { SWOLLEN } else { (1, height / 3) };
     let top = monitor.top + (height - h) / 2;
     let left = if side == EdgeSide::Left { monitor.left } else { monitor.right - w };
     RECT { left, top, right: left + w, bottom: top + h }
@@ -331,7 +341,7 @@ mod tests {
         let left = rect(screen, false, EdgeSide::Left);
         assert_eq!((left.left, left.top, left.right, left.bottom), (0, 480, 1, 960));
         let pill = rect(screen, true, EdgeSide::Right);
-        assert_eq!((pill.left, pill.top, pill.right, pill.bottom), (2552, 680, 2560, 760));
+        assert_eq!((pill.left, pill.top, pill.right, pill.bottom), (2546, 668, 2560, 772));
         // Swelling starts from the resting handle, ends bigger, and stays on the edge, centred.
         let (start, a0) = swell(screen, EdgeSide::Right, 0.0);
         assert_eq!((start.left, start.top, start.right, start.bottom, a0), (2552, 680, 2560, 760, HANDLE_ALPHA));
