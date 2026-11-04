@@ -412,7 +412,7 @@ export type Repeat = "off" | "track" | "list";
 export type Settings = {
 	enabledModules: ModuleId[],
 	look: Look,
-	/**  Liquid and Dot: no panel background, so the cards float over the desktop. */
+	/**  Dot only: no panel background, so the cards float over the desktop. (Tint had this too until 0.4; an old file may still say true.) */
 	transparent: boolean,
 	/**  Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker. */
 	singleHue: boolean,
