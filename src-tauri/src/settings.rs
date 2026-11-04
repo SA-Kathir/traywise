@@ -27,6 +27,9 @@ pub struct Settings {
     pub plain_background: bool,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
     pub mic_shortcut: String,
+    /// Audio devices: when the output you were using is unplugged or disconnects and Windows falls back to
+    /// another (headphones out, speakers on), lower that one's volume to a quiet level if it's louder.
+    pub lower_volume_on_unplug: bool,
     /// Global shortcut that opens or closes the panel, like "Ctrl+Alt+T".
     pub panel_shortcut: String,
     /// Whether Traywise asks GitHub for a newer version (at startup and about once a day).
@@ -95,6 +98,7 @@ impl Default for Settings {
             accent: Accent::Red,
             plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
+            lower_volume_on_unplug: false,
             panel_shortcut: "Ctrl+Alt+T".into(),
             check_updates: true,
             onboarded: false,
@@ -274,6 +278,7 @@ mod tests {
             accent: Accent::Blue,
             plain_background: true,
             mic_shortcut: "Ctrl+Shift+F9".into(),
+            lower_volume_on_unplug: true,
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,

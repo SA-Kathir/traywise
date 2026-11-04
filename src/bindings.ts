@@ -423,6 +423,11 @@ export type Settings = {
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
+	/**
+	 *  Audio devices: when the output you were using is unplugged or disconnects and Windows falls back to
+	 *  another (headphones out, speakers on), lower that one's volume to a quiet level if it's louder.
+	 */
+	lowerVolumeOnUnplug: boolean,
 	/**  Global shortcut that opens or closes the panel, like "Ctrl+Alt+T". */
 	panelShortcut: string,
 	/**  Whether Traywise asks GitHub for a newer version (at startup and about once a day). */

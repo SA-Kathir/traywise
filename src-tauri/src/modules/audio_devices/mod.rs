@@ -56,6 +56,8 @@ enum Msg {
     MuteMics(bool),
     ToggleMics,
     Shortcut(ShortcutStatus),
+    /// The "lower the volume when headphones disconnect" setting.
+    LowerOnUnplug(bool),
     /// Something changed in Windows: re-read and publish.
     Refresh,
     Stop,
@@ -121,6 +123,7 @@ impl Module for AudioDevices {
     }
 
     fn apply_settings(&mut self, settings: &Settings) {
+        let _ = send(&self.app.state::<Shared>(), Msg::LowerOnUnplug(settings.lower_volume_on_unplug));
         let keys = &settings.mic_shortcut;
         if self.shortcut.as_ref() == Some(keys) {
             return;

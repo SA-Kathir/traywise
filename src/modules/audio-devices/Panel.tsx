@@ -1,6 +1,6 @@
 import { commands, events, type AudioDevicesState } from "../../bindings";
 import { Tile, TileCard } from "../../shell/Tile";
-import { Row, ShortcutPicker } from "../../shell/Settings";
+import { Row, ShortcutPicker, SwitchRow } from "../../shell/Settings";
 import { useSettings } from "../../shell/SettingsContext";
 import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
@@ -62,6 +62,7 @@ export default function Panel() {
   return (
     <>
       <Outputs state={state} />
+      <LowerOnUnplug />
       <Mics state={state} />
     </>
   );
@@ -89,6 +90,19 @@ function Outputs({ state }: { state: AudioDevicesState }) {
         </button>
       ))}
     </div>
+  );
+}
+
+/** A safety net for headphones that disconnect: the speakers they fall back to start quiet. */
+function LowerOnUnplug() {
+  const { settings, save } = useSettings();
+  return (
+    <SwitchRow
+      label="Quiet on disconnect"
+      desc="When headphones disconnect, lower the speakers to 30% if they're louder"
+      checked={settings.lowerVolumeOnUnplug}
+      onChange={(lowerVolumeOnUnplug) => save({ ...settings, lowerVolumeOnUnplug })}
+    />
   );
 }
 
