@@ -2175,13 +2175,18 @@ html:not(.clear) body::after {
   mask-composite: exclude;
 }
 
-/* System monitor: the local IP is a plain line of text that is also a button (click to show, then copy). */
-.hint.ip {
-  display: block;
+/* System monitor: the extra network lines sit in the same rows as the other readings; the local IP is
+   a button that looks like text (click to show, then copy). */
+.stat-extra {
+  margin-top: 0;
+}
+.stat-value.ip {
   padding: 0;
   border: none;
   background: none;
   font: inherit;
-  text-align: left;
+  color: inherit;
+  line-height: inherit;
+  min-height: 0;
   cursor: pointer;
 }

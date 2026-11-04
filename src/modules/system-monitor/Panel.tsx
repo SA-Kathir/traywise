@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
-import { commands, events, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
+import {
+  commands,
+  events,
+  type Point,
+  type Reading as ReadingId,
+  type SystemSample,
+} from "../../bindings";
 import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
 import { battery } from "./battery";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
-const useSample = () => useLive(commands.systemMonitorState, events.systemSampled);
+const useSample = () =>
+  useLive(commands.systemMonitorState, events.systemSampled);
 
 /** The graphs zoom in to the highest reading shown, but never further than this (CPU %, network
  *  bytes a second), so a quiet PC's jitter doesn't look like a spike. */
@@ -37,8 +44,14 @@ export function Tiles({ kind, size, open }: TileProps) {
     );
   };
   return (
-    <button className={`tile stats size-${size}`} onClick={open} title="Show details">
-      {kind === "monitor" ? settings.monitorReadings.map(reading) : reading(kind as ReadingId)}
+    <button
+      className={`tile stats size-${size}`}
+      onClick={open}
+      title="Show details"
+    >
+      {kind === "monitor"
+        ? settings.monitorReadings.map(reading)
+        : reading(kind as ReadingId)}
     </button>
   );
 }
@@ -47,14 +60,23 @@ export function Tiles({ kind, size, open }: TileProps) {
  *  unit, apart for the dot type) and its history for the graph. */
 const READINGS: Record<
   ReadingId,
-  { label: string; short: string; unit: string; floor: number; sub: (s: SystemSample) => string; value: (s: SystemSample) => string; history: (p: Point) => number }
+  {
+    label: string;
+    short: string;
+    unit: string;
+    floor: number;
+    sub: (s: SystemSample) => string;
+    value: (s: SystemSample) => string;
+    history: (p: Point) => number;
+  }
 > = {
   cpu: {
     label: "CPU",
     short: "CPU",
     unit: "%",
     floor: CPU_FLOOR,
-    sub: (s) => (s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`),
+    sub: (s) =>
+      s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`,
     value: (s) => (s.cpu === null ? "–" : String(s.cpu)),
     history: (p) => p.cpu,
   },
@@ -89,7 +111,15 @@ const READINGS: Record<
 
 /** One reading on a tile: its name (and at 2×2 and 4×2 a detail, like the clock speed), the number
  *  in dot type with its unit, and from 2×1 up its graph. */
-function Reading(props: { label: string; sub: string; value: string; unit: string; values: number[]; floor: number; size: Size }) {
+function Reading(props: {
+  label: string;
+  sub: string;
+  value: string;
+  unit: string;
+  values: number[];
+  floor: number;
+  size: Size;
+}) {
   const tall = props.size === "2x2" || props.size === "4x2";
   return (
     <span className="reading">
@@ -105,7 +135,12 @@ function Reading(props: { label: string; sub: string; value: string; unit: strin
       </span>
       {props.size !== "1x1" && (
         <span className="reading-graph">
-          <Graph values={props.values} floor={props.floor} cols={tall ? 19 : 7} rows={tall ? 5 : 6} />
+          <Graph
+            values={props.values}
+            floor={props.floor}
+            cols={tall ? 19 : 7}
+            rows={tall ? 5 : 6}
+          />
         </span>
       )}
     </span>
@@ -123,17 +158,35 @@ export default function Panel() {
       <Stat label="CPU" value={s.cpu === null ? "–" : `${s.cpu}%`}>
         <Graph values={s.history.map((p) => p.cpu)} floor={CPU_FLOOR} />
       </Stat>
-      <Stat label="Memory" value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`} />
+      <Stat
+        label="Memory"
+        value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`}
+      />
       <Stat
         label="Network"
-        value={s.download === null || s.upload === null ? "–" : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`}
+        value={
+          s.download === null || s.upload === null
+            ? "–"
+            : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`
+        }
       >
-        <Graph values={s.history.map((p) => p.download + p.upload)} floor={NET_FLOOR} />
-        <p className="hint">Since boot  ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}</p>
+        <Graph
+          values={s.history.map((p) => p.download + p.upload)}
+          floor={NET_FLOOR}
+        />
+        <div className="row stat-extra">
+          <span className="grow hint">Since boot</span>
+          <span className="stat-value">
+            ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}
+          </span>
+        </div>
         {s.localIp && <LocalIp ip={s.localIp} />}
       </Stat>
       {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
-      <Stat label="Disk" value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`} />
+      <Stat
+        label="Disk"
+        value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`}
+      />
       <TilePicker />
     </>
   );
@@ -148,7 +201,11 @@ function TilePicker() {
       {([0, 1] as const).map((slot) => (
         <div key={slot} className="row">
           <span className="picker-side">{slot === 0 ? "Left" : "Right"}</span>
-          <div className="segmented grow" role="radiogroup" aria-label={slot === 0 ? "Left reading" : "Right reading"}>
+          <div
+            className="segmented grow"
+            role="radiogroup"
+            aria-label={slot === 0 ? "Left reading" : "Right reading"}
+          >
             {(Object.keys(READINGS) as ReadingId[]).map((id) => {
               const on = settings.monitorReadings[slot] === id;
               return (
@@ -159,7 +216,9 @@ function TilePicker() {
                   aria-label={READINGS[id].label}
                   className={on ? "on" : ""}
                   onClick={() => {
-                    const readings: [ReadingId, ReadingId] = [...settings.monitorReadings];
+                    const readings: [ReadingId, ReadingId] = [
+                      ...settings.monitorReadings,
+                    ];
                     readings[slot] = id;
                     save({ ...settings, monitorReadings: readings });
                   }}
@@ -187,23 +246,34 @@ function LocalIp({ ip }: { ip: string }) {
     return () => clearTimeout(timer);
   }, [shown]);
   return (
-    <button
-      className="hint ip"
-      title={shown ? "Click to copy" : "Click to show"}
-      onClick={() => {
-        if (!shown) return setShown(true);
-        navigator.clipboard.writeText(ip).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-    >
-      Local IP: {shown ? (copied ? "copied" : ip) : "•••.•••.•••.•••"}
-    </button>
+    <div className="row stat-extra">
+      <span className="grow hint">Local IP</span>
+      <button
+        className="stat-value ip"
+        title={shown ? "Click to copy" : "Click to show"}
+        onClick={() => {
+          if (!shown) return setShown(true);
+          navigator.clipboard.writeText(ip).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+      >
+        {shown ? (copied ? "copied" : ip) : "•••.•••.•••.•••"}
+      </button>
+    </div>
   );
 }
 
-function Stat({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) {
+function Stat({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="stat">
       <div className="row">
@@ -215,19 +285,36 @@ function Stat({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-
 /** The last 60 seconds, newest on the right, scaled to the highest reading (or `floor`): a line,
  *  and for the Dot look a dot matrix of `cols` × `rows` (each style hides the other). */
-function Graph({ values, floor, cols = 40, rows = 5 }: { values: number[]; floor: number; cols?: number; rows?: number }) {
+function Graph({
+  values,
+  floor,
+  cols = 40,
+  rows = 5,
+}: {
+  values: number[];
+  floor: number;
+  cols?: number;
+  rows?: number;
+}) {
   if (values.length < 2) return <svg className="graph" aria-hidden />;
   const top = Math.max(floor, ...values) * 1.1; // a little headroom above the peak
   // 60 seconds across 59 steps, newest on the right.
-  const points = values.map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`).join(" ");
+  const points = values
+    .map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`)
+    .join(" ");
   // Each column is the highest reading in its slice of the minute; columns before the first reading stay dark.
   const per = 60 / cols;
   const dots = Array.from({ length: cols }, (_, c) => {
-    const slice = values.slice(Math.max(0, values.length - (cols - c) * per), values.length - (cols - 1 - c) * per);
-    const lit = slice.length === 0 ? 0 : Math.max(1, Math.round((Math.max(...slice) / top) * rows));
+    const slice = values.slice(
+      Math.max(0, values.length - (cols - c) * per),
+      values.length - (cols - 1 - c) * per,
+    );
+    const lit =
+      slice.length === 0
+        ? 0
+        : Math.max(1, Math.round((Math.max(...slice) / top) * rows));
     return Array.from({ length: rows }, (_, r) => (
       <circle
         key={r}
@@ -240,10 +327,19 @@ function Graph({ values, floor, cols = 40, rows = 5 }: { values: number[]; floor
   });
   return (
     <>
-      <svg className="graph" viewBox="0 0 59 20" preserveAspectRatio="none" aria-hidden>
+      <svg
+        className="graph"
+        viewBox="0 0 59 20"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
         <polyline points={points} />
       </svg>
-      <svg className="graph-dots" viewBox={`0 0 ${cols * PITCH} ${rows * PITCH}`} aria-hidden>
+      <svg
+        className="graph-dots"
+        viewBox={`0 0 ${cols * PITCH} ${rows * PITCH}`}
+        aria-hidden
+      >
         {dots}
       </svg>
     </>
@@ -254,6 +350,7 @@ const gib = (mib: number) => `${(mib / 1024).toFixed(1)} GB`;
 
 function rate(bytesPerSecond: number) {
   if (bytesPerSecond < 1024) return `${bytesPerSecond} B/s`;
-  if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(0)} KB/s`;
+  if (bytesPerSecond < 1024 * 1024)
+    return `${(bytesPerSecond / 1024).toFixed(0)} KB/s`;
   return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
 }
