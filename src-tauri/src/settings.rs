@@ -51,6 +51,8 @@ pub struct Settings {
     /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
     pub clock_zone: Option<String>,
     pub clock_style: ClockStyle,
+    /// The version whose "What's new" note was last shown (or that was first installed). None on a fresh install.
+    pub last_seen_version: Option<String>,
 }
 
 /// A reading the system monitor graphs.
@@ -107,6 +109,7 @@ impl Default for Settings {
             edge_handle_accent: false,
             clock_zone: None,
             clock_style: ClockStyle::Digital,
+            last_seen_version: None,
         }
     }
 }
@@ -286,6 +289,7 @@ mod tests {
             edge_handle_accent: true,
             clock_zone: Some("Asia/Tokyo".into()),
             clock_style: ClockStyle::Analogue,
+            last_seen_version: Some("0.3.0".into()),
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

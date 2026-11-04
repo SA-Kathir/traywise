@@ -8,6 +8,9 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tauri_specta::Event;
+use windows::Win32::UI::Shell::ShellExecuteW;
+use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+use windows::core::{HSTRING, PCWSTR};
 
 use crate::settings::SettingsState;
 
@@ -62,6 +65,19 @@ pub fn check(app: &AppHandle) {
 #[specta::specta]
 pub fn update_available(state: State<UpdateState>) -> Option<String> {
     state.found.lock().unwrap().as_ref().map(|u| u.version.clone())
+}
+
+/// Opens a version's release page on GitHub in the browser. Nothing is fetched by Traywise itself.
+#[tauri::command]
+#[specta::specta]
+pub fn open_release_notes(version: String) -> Result<(), String> {
+    // The version ends up in a URL that Windows opens, so allow only what a version contains.
+    if version.is_empty() || !version.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-') {
+        return Err("not a version".into());
+    }
+    let url = format!("https://github.com/SA-Kathir/traywise/releases/tag/v{version}");
+    unsafe { ShellExecuteW(None, &HSTRING::from("open"), &HSTRING::from(url), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+    Ok(())
 }
 
 /// Downloads and runs the new installer. On success Traywise exits, and the installer restarts it.

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { commands, events } from "../bindings";
+import { useSettings } from "./SettingsContext";
 import { useLive } from "./useLive";
 
 /** "Version X is available" with an Install button. Renders nothing until Rust has found an update. */
@@ -27,6 +28,23 @@ export function UpdateNotice() {
         </button>
       </div>
       {error && <p className="error">{error}</p>}
+    </section>
+  );
+}
+
+/** Once after an update: "Traywise updated to X", with a link to that release's notes. */
+export function WhatsNew({ version }: { version: string }) {
+  const { settings, save } = useSettings();
+  if (!version || settings.lastSeenVersion === version || !settings.onboarded) return null;
+  return (
+    <section>
+      <div className="row">
+        <span className="grow">Traywise updated to {version}</span>
+        <button onClick={() => commands.openReleaseNotes(version)}>See what's new</button>
+        <button aria-label="Dismiss" title="Dismiss" onClick={() => save({ ...settings, lastSeenVersion: version })}>
+          ✕
+        </button>
+      </div>
     </section>
   );
 }
