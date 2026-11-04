@@ -21,10 +21,12 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 use tauri_specta::Event;
+use windows::Win32::Media::Audio::{PlaySoundW, SND_ASYNC, SND_MEMORY, SND_NODEFAULT};
 use windows::Win32::System::Com::{CLSCTX_ALL, CoCreateInstance};
 use windows::core::{GUID, HRESULT, HSTRING, IUnknown, IUnknown_Vtbl, PCWSTR, PWSTR, interface};
 
 use crate::module::{Module, ModuleId};
+use crate::settings::SettingsState;
 
 /// WNF_SHEL_QUIETHOURS_ACTIVE_PROFILE_CHANGED: 0 when Do not disturb is off, 1 (priority only) or
 /// 2 (alarms only) when it's on.
@@ -93,10 +95,13 @@ pub struct FocusState {
 #[derive(Clone, Serialize, specta::Type, tauri_specta::Event)]
 pub struct FocusChanged(pub FocusState);
 
+#[derive(Clone, Copy)]
 enum Msg {
     Set(FocusMode),
     /// Windows says Do not disturb changed (here or anywhere else).
     Changed,
+    /// The timer ran out by itself.
+    Ended,
     Stop,
 }
 
@@ -187,13 +192,14 @@ fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
 
         let msg = match timer {
             Some(t) => rx.recv_timeout(t.ends.saturating_duration_since(Instant::now())).unwrap_or_else(|e| match e {
-                RecvTimeoutError::Timeout => Msg::Set(FocusMode::Off),
+                RecvTimeoutError::Timeout => Msg::Ended,
                 RecvTimeoutError::Disconnected => Msg::Stop,
             }),
             None => rx.recv().unwrap_or(Msg::Stop),
         };
         match msg {
-            Msg::Set(mode) => {
+            Msg::Set(_) | Msg::Ended => {
+                let mode = if let Msg::Set(mode) = msg { mode } else { FocusMode::Off };
                 if let Some(settings) = &settings {
                     let id = HSTRING::from(if mode == FocusMode::Off { OFF } else { ON });
                     if let Err(e) = unsafe { settings.put_UserSelectedProfile(PCWSTR(id.as_ptr())) }.ok() {
@@ -201,12 +207,23 @@ fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
                     }
                 }
                 timer = Timer::new(mode, Instant::now());
+                if matches!(msg, Msg::Ended) && app.state::<SettingsState>().get().focus_chime {
+                    chime();
+                }
             }
             Msg::Changed => timer = Timer::keep(timer, read() == Some(true)),
             Msg::Stop => break,
         }
     }
     drop(watch);
+}
+
+static CHIME: &[u8] = include_bytes!("../../assets/focus-chime.wav");
+
+/// A soft two-note sound, played by Windows in the background (no audio library, no thread).
+fn chime() {
+    // The bytes are 'static, so Windows can keep reading them after this returns.
+    let _ = unsafe { PlaySoundW(PCWSTR(CHIME.as_ptr().cast()), None, SND_MEMORY | SND_ASYNC | SND_NODEFAULT) };
 }
 
 /// Whether Do not disturb is on. None if Windows doesn't have the state.
