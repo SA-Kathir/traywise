@@ -15,6 +15,7 @@ import { UpdateNotice } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
 import "./shell/island.css";
+import { Pending, settled } from "./shell/useLive";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
@@ -107,6 +108,8 @@ function App() {
       setOverview(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
       requestAnimationFrame(() => requestAnimationFrame(() => commands.panelPainted()));
+      // The tiles come in once they all have their data (Rust waits for this, but not for long).
+      settled().then(() => commands.panelReady());
     });
     return () => {
       unlisten.then((stop) => stop());
@@ -366,7 +369,7 @@ function CategoryPage({ ids }: { ids: ModuleId[] }) {
     return (
       <section key={id}>
         <h2>{name}</h2>
-        <Suspense fallback={null}>
+        <Suspense fallback={<Pending />}>
           <Panel />
         </Suspense>
       </section>

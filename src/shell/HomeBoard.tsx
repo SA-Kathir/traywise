@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
 import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
+import { Pending } from "./useLive";
 
 // Segoe Fluent Icons glyphs.
 const MINUS = String.fromCodePoint(0xe738);
@@ -390,7 +391,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
             onKeyDown={editing ? (e) => keyDown(e, t) : undefined}
           >
             <div className="board-tile" inert={editing}>
-              <Suspense fallback={null}>
+              <Suspense fallback={<Pending />}>
                 <Tiles kind={kindOf(t.id)} size={size} open={() => open(module)} />
               </Suspense>
             </div>

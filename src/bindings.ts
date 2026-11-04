@@ -10,6 +10,8 @@ export const commands = {
 	 *  visible when traywise.exe is started from a terminal.
 	 */
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
+	/**  Called by the UI when every tile on the page has its data, so the tiles can come in. */
+	panelReady: () => __TAURI_INVOKE<void>("panel_ready"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
 	/**

@@ -46,6 +46,9 @@ const HANDLE_ALPHA: u8 = 140;
 /// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
 const WM_MOUSELEAVE: u32 = 0x02A3;
 const ANIMATION_TIMER: usize = 1;
+/// Warming the panel up starts this long after the mouse lands (so passing by costs nothing), and its timer.
+const WARM_MS: u32 = 120;
+const WARM_TIMER: usize = 2;
 const FRAME_MS: u32 = 16;
 
 thread_local! {
@@ -53,6 +56,8 @@ thread_local! {
     static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
     /// The window you see (the handle). The edge window itself never changes size, so the pointer's target
     /// holds still while the handle swells (resizing the target under the pointer made the handle flicker).
+    /// The panel has been warmed up for this visit (and must be put back if the mouse leaves).
+    static WARMED: Cell<bool> = const { Cell::new(false) };
     static VISIBLE: Cell<isize> = const { Cell::new(0) };
 }
 
@@ -177,9 +182,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             // Ask Windows to say when the mouse has rested here for HOVER_MS (once per arrival).
             WM_MOUSEMOVE => {
                 // The handle starts swelling as soon as the mouse arrives (the strip has nothing to show).
-                if SHOW_HANDLE.load(Ordering::Relaxed) && ARRIVED.get().is_none() {
+                if ARRIVED.get().is_none() {
                     ARRIVED.set(Some(Instant::now()));
-                    SetTimer(Some(hwnd), ANIMATION_TIMER, FRAME_MS, None);
+                    if SHOW_HANDLE.load(Ordering::Relaxed) {
+                        SetTimer(Some(hwnd), ANIMATION_TIMER, FRAME_MS, None);
+                    }
+                    SetTimer(Some(hwnd), WARM_TIMER, WARM_MS, None);
                 }
                 let mut track = TRACKMOUSEEVENT {
                     cbSize: size_of::<TRACKMOUSEEVENT>() as u32,
@@ -197,6 +205,15 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 }
                 LRESULT(0)
             }
+            WM_TIMER if wparam.0 == WARM_TIMER => {
+                // Resting here: the panel is likely to open, so start getting its data ready.
+                let _ = KillTimer(Some(hwnd), WARM_TIMER);
+                if let Some(app) = APP.get() {
+                    WARMED.set(true);
+                    super::panel::warm_up(app, true);
+                }
+                LRESULT(0)
+            }
             WM_TIMER => {
                 let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / HOVER_MS as f32).min(1.0));
                 pose(t);
@@ -208,7 +225,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             // The mouse left: back to the resting handle.
             WM_MOUSELEAVE => {
                 let _ = KillTimer(Some(hwnd), ANIMATION_TIMER);
+                // (Does nothing if the panel did open.)
+                let _ = KillTimer(Some(hwnd), WARM_TIMER);
                 ARRIVED.set(None);
+                if WARMED.replace(false) && let Some(app) = APP.get() {
+                    super::panel::warm_up(app, false);
+                }
                 pose(0.0);
                 LRESULT(0)
             }
