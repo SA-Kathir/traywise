@@ -2130,6 +2130,11 @@ section > .setting:last-child {
   min-width: 0;
   padding: 0 4px;
 }
+/* Project's icons are a little smaller there, so four fit with room between them. */
+.segmented.icons .project-icon {
+  width: 18px;
+  height: 11px;
+}
 /* A card's title stays on one line; its detail gives way (ellipsis) instead. */
 .tile-card .tile-title .tile-label {
   white-space: nowrap;

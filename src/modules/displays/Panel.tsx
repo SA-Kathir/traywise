@@ -136,7 +136,7 @@ function ProjectTile({ project, size, open }: { project: Project | null; size: T
   const current = PROJECTS.find((p) => p.project === project);
   if (size === "2x1")
     return (
-      <TileCard size={size} label="Project" onOpen={open}>
+      <TileCard size={size} label="Project" detail={current?.page ?? "One screen"} onOpen={open}>
         <Choices project={current?.project ?? null} icons />
       </TileCard>
     );
