@@ -681,6 +681,13 @@ label.row + .hint,
   color: #ffb4b4;
 }
 
+/* Update download progress: the browser's own thin bar, in the look's accent. */
+.update-progress {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent, currentColor);
+}
+
 /* ---- Controls -------------------------------------------------------------------------- */
 
 button {

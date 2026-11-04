@@ -60,6 +60,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         .events(collect_events![
             shell::panel::PanelShown,
             updater::UpdateAvailable,
+            updater::UpdateProgress,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
             modules::focus::FocusChanged,

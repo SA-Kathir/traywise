@@ -37,7 +37,7 @@ Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You
 2. Run it. It installs for your user only, so it doesn't ask for admin rights.
 3. **Windows SmartScreen will warn you** ("Windows protected your PC"), because Traywise isn't code-signed yet. Click **More info**, then **Run anyway**. Signing is planned.
 
-Traywise updates itself: it checks for a new version when it starts and once a day, and asks before installing. You can turn the checks off in Settings.
+Traywise updates itself: it checks for a new version when it starts and once a day, and asks before installing. When you click Install, the download and install happen inside Traywise (a progress bar, no installer window) and it restarts by itself. You can turn the checks off in Settings.
 
 To uninstall, use **Settings → Apps → Installed apps → Traywise**.
 
