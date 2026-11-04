@@ -105,6 +105,9 @@ enum Msg {
     Stop,
 }
 
+/// The longest timer, in minutes (8 hours).
+const MAX_MINUTES: u32 = 480;
+
 /// A timer Traywise started. Kept apart from the Windows calls so it can be tested.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Timer {
@@ -115,7 +118,10 @@ struct Timer {
 impl Timer {
     fn new(mode: FocusMode, now: Instant) -> Option<Self> {
         match mode {
-            FocusMode::Minutes(minutes) => Some(Self { minutes, ends: now + Duration::from_secs(u64::from(minutes) * 60) }),
+            FocusMode::Minutes(minutes) => {
+                let minutes = minutes.clamp(1, MAX_MINUTES);
+                Some(Self { minutes, ends: now + Duration::from_secs(u64::from(minutes) * 60) })
+            }
             _ => None,
         }
     }
@@ -317,6 +323,8 @@ mod tests {
     fn only_timed_modes_end() {
         let now = Instant::now();
         assert_eq!(Timer::new(FocusMode::Minutes(25), now), Some(Timer { minutes: 25, ends: now + Duration::from_secs(25 * 60) }));
+        assert_eq!(Timer::new(FocusMode::Minutes(0), now).map(|t| t.minutes), Some(1));
+        assert_eq!(Timer::new(FocusMode::Minutes(9999), now).map(|t| t.minutes), Some(480));
         assert_eq!(Timer::new(FocusMode::On, now), None);
         assert_eq!(Timer::new(FocusMode::Off, now), None);
     }
