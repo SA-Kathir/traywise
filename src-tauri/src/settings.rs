@@ -38,7 +38,7 @@ pub struct Settings {
     pub pages: Option<Vec<Vec<BoardTile>>>,
     /// Home board: tiles fill gaps (true), or stay where they're put (false).
     pub auto_arrange: bool,
-    /// System monitor: the two readings its 4×1 and 4×2 tile shows, left then right.
+    /// System monitor: the readings a 4×1 or 4×2 tile shows (left then right) until it's given its own.
     pub monitor_readings: [Reading; 2],
     /// Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel.
     pub edge_open: bool,
@@ -82,6 +82,9 @@ pub struct BoardTile {
     pub h: u32,
     pub x: u32,
     pub y: u32,
+    /// Only for the system monitor's wide tile: what its left and right sides show. None uses `monitor_readings`.
+    #[serde(default)]
+    pub readings: Option<[Reading; 2]>,
 }
 
 impl Default for Settings {
@@ -277,7 +280,7 @@ mod tests {
             panel_shortcut: "Ctrl+Shift+F10".into(),
             check_updates: false,
             onboarded: true,
-            pages: Some(vec![vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0 }], vec![]]),
+            pages: Some(vec![vec![BoardTile { id: "quick-toggles/dark".into(), w: 2, h: 1, x: 2, y: 0, readings: None }], vec![]]),
             auto_arrange: false,
             monitor_readings: [Reading::Upload, Reading::Cpu],
             edge_open: true,
@@ -328,8 +331,8 @@ mod tests {
         assert_eq!(
             read(&path).pages,
             Some(vec![vec![
-                BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0 },
-                BoardTile { id: "clock/clock".into(), w: 2, h: 1, x: 0, y: 1 },
+                BoardTile { id: "wifi/wifi".into(), w: 1, h: 1, x: 3, y: 0, readings: None },
+                BoardTile { id: "clock/clock".into(), w: 2, h: 1, x: 0, y: 1, readings: None },
             ]]),
             "0.2 board"
         );

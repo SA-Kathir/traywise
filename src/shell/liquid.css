@@ -458,6 +458,23 @@ button.tile-title:hover {
   top: 4px;
   left: 4px;
 }
+/* The wide system monitor tile's pills: one under each half, showing what that side reads. */
+.board .tile-reading {
+  bottom: -8px;
+  width: auto;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 10px;
+}
+.board .tile-reading.left {
+  left: 25%;
+  transform: translateX(-50%);
+}
+.board .tile-reading.right {
+  left: 75%;
+  transform: translateX(-50%);
+}
 .tile-resize {
   right: 4px;
   bottom: 4px;
@@ -1747,27 +1764,6 @@ input.text {
 }
 button.net-row {
   width: 100%;
-}
-
-/* The system monitor page's picker for its wide tile: a heading, then a row each for left and right. */
-.tile-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgb(var(--ink) / 0.08);
-}
-.tile-picker h2 {
-  margin: 0;
-}
-.tile-picker .row + .row {
-  margin-top: 0;
-}
-.picker-side {
-  width: 44px;
-  flex: none;
-  color: rgb(var(--ink) / 0.6);
 }
 
 /* ---- Settings rows (Settings, Modules, module options) ---------------------------------- */
