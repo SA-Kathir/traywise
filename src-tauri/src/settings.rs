@@ -56,6 +56,8 @@ pub struct Settings {
     pub clock_style: ClockStyle,
     /// Focus: play a soft chime when a timed Do not disturb runs out.
     pub focus_chime: bool,
+    /// The version whose "What's new" note was last shown (or that was first installed). None on a fresh install.
+    pub last_seen_version: Option<String>,
 }
 
 /// A reading the system monitor graphs.
@@ -114,6 +116,7 @@ impl Default for Settings {
             clock_zone: None,
             clock_style: ClockStyle::Digital,
             focus_chime: true,
+            last_seen_version: None,
         }
     }
 }
@@ -296,6 +299,7 @@ mod tests {
             clock_zone: Some("Asia/Tokyo".into()),
             clock_style: ClockStyle::Analogue,
             focus_chime: false,
+            last_seen_version: Some("0.3.0".into()),
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

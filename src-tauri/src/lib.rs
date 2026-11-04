@@ -23,6 +23,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             settings::set_autostart,
             updater::update_available,
             updater::update_install,
+            updater::open_release_notes,
             modules::volume_mixer::mixer_state,
             modules::volume_mixer::mixer_set_volume,
             modules::volume_mixer::mixer_set_mute,

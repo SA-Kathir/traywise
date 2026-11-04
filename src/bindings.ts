@@ -30,6 +30,8 @@ export const commands = {
 	updateAvailable: () => __TAURI_INVOKE<string | null>("update_available"),
 	/**  Downloads and runs the new installer. On success Traywise exits, and the installer restarts it. */
 	updateInstall: () => typedError<null, string>(__TAURI_INVOKE("update_install")),
+	/**  Opens a version's release page on GitHub in the browser. Nothing is fetched by Traywise itself. */
+	openReleaseNotes: (version: string) => typedError<null, string>(__TAURI_INVOKE("open_release_notes", { version })),
 	/**  The latest snapshot. Empty while the module is off. */
 	mixerState: () => __TAURI_INVOKE<MixerState>("mixer_state"),
 	/**  Sets a volume, in percent (0 to 100). */
@@ -459,6 +461,8 @@ export type Settings = {
 	clockStyle: ClockStyle,
 	/**  Focus: play a soft chime when a timed Do not disturb runs out. */
 	focusChime: boolean,
+	/**  The version whose "What's new" note was last shown (or that was first installed). None on a fresh install. */
+	lastSeenVersion: string | null,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */

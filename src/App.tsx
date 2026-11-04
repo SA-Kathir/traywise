@@ -1,3 +1,4 @@
+import { getVersion } from "@tauri-apps/api/app";
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
@@ -11,7 +12,7 @@ import { Num } from "./shell/Tile";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { SettingsContext } from "./shell/SettingsContext";
 import { Setup } from "./shell/Setup";
-import { UpdateNotice } from "./shell/UpdateNotice";
+import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
 import "./shell/island.css";
@@ -48,8 +49,11 @@ function App() {
   // The home board's page on screen.
   const [page, setPage] = useState(0);
 
+  const [version, setVersion] = useState("");
+
   useEffect(() => {
     commands.getSettings().then(setSettings);
+    getVersion().then(setVersion);
   }, []);
 
   // The panel's accent edge (dot.css) brightens where the pointer is.
@@ -148,6 +152,13 @@ function App() {
   }, [lookClass]);
 
   const { save, error } = useSave({ settings: settings!, onChange: setSettings });
+
+  // A fresh install (setup not done yet) has nothing new to read about: note the version silently.
+  // (A 0.3.0 file has no version yet but is onboarded, so its first update still shows the note.)
+  const fresh = settings && !settings.onboarded && settings.lastSeenVersion !== version && version !== "";
+  useEffect(() => {
+    if (fresh) save({ ...settings, lastSeenVersion: version });
+  }, [fresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
@@ -289,6 +300,7 @@ function App() {
 
       <div className="scroll">
       <UpdateNotice />
+      {view === "home" && <WhatsNew version={version} />}
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} />
       ) : view === "modules" ? (
