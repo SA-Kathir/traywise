@@ -51,6 +51,8 @@ pub struct Settings {
     /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
     pub clock_zone: Option<String>,
     pub clock_style: ClockStyle,
+    /// Focus: play a soft chime when a timed Do not disturb runs out.
+    pub focus_chime: bool,
 }
 
 /// A reading the system monitor graphs.
@@ -107,6 +109,7 @@ impl Default for Settings {
             edge_handle_accent: false,
             clock_zone: None,
             clock_style: ClockStyle::Digital,
+            focus_chime: true,
         }
     }
 }
@@ -286,6 +289,7 @@ mod tests {
             edge_handle_accent: true,
             clock_zone: Some("Asia/Tokyo".into()),
             clock_style: ClockStyle::Analogue,
+            focus_chime: false,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");

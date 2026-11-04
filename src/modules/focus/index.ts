@@ -12,6 +12,7 @@ const focus: ModuleUi = {
     dnd: { name: "Do not disturb", sizes: ["1x1", "2x1"] },
   },
   Tiles: lazy(() => import("./Tiles")),
+  Panel: lazy(() => import("./Panel")),
 };
 
 export default focus;

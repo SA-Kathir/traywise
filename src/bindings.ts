@@ -449,6 +449,8 @@ export type Settings = {
 	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
 	clockZone: string | null,
 	clockStyle: ClockStyle,
+	/**  Focus: play a soft chime when a timed Do not disturb runs out. */
+	focusChime: boolean,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
