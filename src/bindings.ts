@@ -492,6 +492,14 @@ export type SystemSample = {
 	/**  Bytes a second, all network adapters together. None for the first second after opening. */
 	download: number | null,
 	upload: number | null,
+	/**
+	 *  MiB received and sent since the PC started (Windows' own counters, so nothing is counted while the
+	 *  panel is closed), over the adapters that have an address.
+	 */
+	downloadTotal: number,
+	uploadTotal: number,
+	/**  The IPv4 address of the busiest adapter. Only for the System page, which hides it until asked. */
+	localIp: string | null,
 	/**  None on a PC without a battery. */
 	battery: Battery | null,
 	/**  The drive Windows is on, usually C:. MiB. */
