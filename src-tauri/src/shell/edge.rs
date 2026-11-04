@@ -5,10 +5,12 @@
 //! so nothing watches the mouse anywhere else and it costs nothing while idle. It runs on its own
 //! thread, which sleeps in Windows' message loop between those messages.
 
+use std::cell::Cell;
 use std::sync::mpsc::{Sender, channel};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::thread::JoinHandle;
+use std::time::Instant;
 
 use tauri::{AppHandle, Manager};
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
@@ -17,10 +19,10 @@ use windows::Win32::Graphics::Gdi::{
     SetWindowRgn,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
+use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, LWA_ALPHA, LoadCursorW, MSG,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
     SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
@@ -36,6 +38,20 @@ const WM_MOUSEHOVER: u32 = 0x02A1;
 const HOVER_MS: u32 = 250;
 /// The handle: a pill this many physical pixels wide and tall.
 const HANDLE: (i32, i32) = (8, 80);
+/// While the mouse rests on the handle it swells to this size and brightens, so you can see the
+/// panel is about to open (like a Dynamic Island stretching before it opens). It reaches it as the hover fires.
+const SWOLLEN: (i32, i32) = (14, 104);
+const SWOLLEN_ALPHA: u8 = 255;
+const HANDLE_ALPHA: u8 = 140;
+/// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
+const WM_MOUSELEAVE: u32 = 0x02A3;
+const ANIMATION_TIMER: usize = 1;
+const FRAME_MS: u32 = 16;
+
+thread_local! {
+    /// When the mouse arrived on the handle, while it swells.
+    static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
+}
 
 /// The running edge window, and which settings it was made for.
 #[derive(Default)]
@@ -134,7 +150,7 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
 /// Nearly invisible (fully invisible windows get no mouse messages), or a translucent pill.
 fn style(hwnd: HWND, handle: bool) {
     unsafe {
-        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), if handle { 140 } else { 1 }, LWA_ALPHA);
+        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), if handle { HANDLE_ALPHA } else { 1 }, LWA_ALPHA);
         if handle {
             let (w, h) = HANDLE;
             SetWindowRgn(hwnd, Some(CreateRoundRectRgn(0, 0, w + 1, h + 1, w, w)), true);
@@ -148,9 +164,14 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         match msg {
             // Ask Windows to say when the mouse has rested here for HOVER_MS (once per arrival).
             WM_MOUSEMOVE => {
+                // The handle starts swelling as soon as the mouse arrives (the strip has nothing to show).
+                if SHOW_HANDLE.load(Ordering::Relaxed) && ARRIVED.get().is_none() {
+                    ARRIVED.set(Some(Instant::now()));
+                    SetTimer(Some(hwnd), ANIMATION_TIMER, FRAME_MS, None);
+                }
                 let mut track = TRACKMOUSEEVENT {
                     cbSize: size_of::<TRACKMOUSEEVENT>() as u32,
-                    dwFlags: TME_HOVER,
+                    dwFlags: TME_HOVER | TME_LEAVE,
                     hwndTrack: hwnd,
                     dwHoverTime: HOVER_MS,
                 };
@@ -162,6 +183,21 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                     let app2 = app.clone();
                     let _ = app.run_on_main_thread(move || super::panel::hover_open(&app2));
                 }
+                LRESULT(0)
+            }
+            WM_TIMER => {
+                let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / HOVER_MS as f32).min(1.0));
+                pose(hwnd, t);
+                if t >= 1.0 {
+                    let _ = KillTimer(Some(hwnd), ANIMATION_TIMER); // it stays swollen until the mouse leaves
+                }
+                LRESULT(0)
+            }
+            // The mouse left: back to the resting handle.
+            WM_MOUSELEAVE => {
+                let _ = KillTimer(Some(hwnd), ANIMATION_TIMER);
+                ARRIVED.set(None);
+                pose(hwnd, 0.0);
                 LRESULT(0)
             }
             // A monitor added, removed or rescaled: move to the new edge.
@@ -182,6 +218,28 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             _ => DefWindowProcW(hwnd, msg, wparam, lparam),
         }
     }
+}
+
+/// The handle `t` of the way (0 to 1) from resting to swollen: its size, shape and brightness.
+fn pose(hwnd: HWND, t: f32) {
+    let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
+    let (r, alpha) = swell(monitor(), side, t);
+    let (w, h) = (r.right - r.left, r.bottom - r.top);
+    unsafe {
+        let _ = SetWindowPos(hwnd, None, r.left, r.top, w, h, SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowRgn(hwnd, Some(CreateRoundRectRgn(0, 0, w + 1, h + 1, w, w)), true);
+        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), alpha, LWA_ALPHA);
+    }
+}
+
+/// The handle's rectangle and opacity at `t`, easing out: quick at first, then settling.
+fn swell(monitor: RECT, side: EdgeSide, t: f32) -> (RECT, u8) {
+    let e = 1.0 - (1.0 - t).powi(3);
+    let mix = |a: i32, b: i32| a + ((b - a) as f32 * e).round() as i32;
+    let (w, h) = (mix(HANDLE.0, SWOLLEN.0), mix(HANDLE.1, SWOLLEN.1));
+    let top = monitor.top + (monitor.bottom - monitor.top - h) / 2;
+    let left = if side == EdgeSide::Left { monitor.left } else { monitor.right - w };
+    (RECT { left, top, right: left + w, bottom: top + h }, mix(HANDLE_ALPHA as i32, SWOLLEN_ALPHA as i32) as u8)
 }
 
 /// Dragging (a scrollbar, say) along the edge shouldn't open the panel.
@@ -265,5 +323,10 @@ mod tests {
         assert_eq!((left.left, left.top, left.right, left.bottom), (0, 480, 1, 960));
         let pill = rect(screen, true, EdgeSide::Right);
         assert_eq!((pill.left, pill.top, pill.right, pill.bottom), (2552, 680, 2560, 760));
+        // Swelling starts from the resting handle, ends bigger, and stays on the edge, centred.
+        let (start, a0) = swell(screen, EdgeSide::Right, 0.0);
+        assert_eq!((start.left, start.top, start.right, start.bottom, a0), (2552, 680, 2560, 760, HANDLE_ALPHA));
+        let (end, a1) = swell(screen, EdgeSide::Right, 1.0);
+        assert_eq!((end.left, end.top, end.right, end.bottom, a1), (2546, 668, 2560, 772, SWOLLEN_ALPHA));
     }
 }
