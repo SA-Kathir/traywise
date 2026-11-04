@@ -36,6 +36,8 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
     let mut mics = Mics { list: HashMap::new(), follow: false, tx: tx.clone() };
     let mut shortcut: Option<ShortcutStatus> = None;
     publish(app, &enumerator, &mut mics, &shortcut);
+    let mut lower_on_unplug = false;
+    let mut default = default_output(&enumerator);
 
     // Sleeps until a message arrives. Bursts (one default change sends one per role) are handled together.
     'serve: while let Ok(first) = rx.recv() {
@@ -51,6 +53,7 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
                     let muted = mics.all_muted().unwrap_or(false);
                     report(mics.set_muted(!muted));
                 }
+                Msg::LowerOnUnplug(on) => lower_on_unplug = on,
                 Msg::Shortcut(status) => {
                     shortcut = Some(status);
                     refresh = true;
@@ -59,11 +62,37 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
         }
         if refresh {
             publish(app, &enumerator, &mut mics, &shortcut);
+            // The output in use is gone and Windows picked another (not you choosing one): protect your ears.
+            let now = default_output(&enumerator);
+            if lower_on_unplug && let (Some((old, _)), Some((_, ids))) = (&default, &now) && !ids.contains(old) {
+                report(lower_volume(&enumerator));
+            }
+            default = now;
         }
     }
 
     drop(mics); // unregisters from every microphone
     unsafe { enumerator.UnregisterEndpointNotificationCallback(&device_events)? };
+    Ok(())
+}
+
+/// How loud the output you fall back to may be right after the other one disconnects (a fraction of full).
+const QUIET: f32 = 0.30;
+
+/// The default output's id and the ids of every active output. None when there's no output at all.
+fn default_output(enumerator: &IMMDeviceEnumerator) -> Option<(String, Vec<String>)> {
+    let outputs = outputs(enumerator).ok()?;
+    let id = outputs.iter().find(|d| d.is_default)?.id.clone();
+    Some((id, outputs.into_iter().map(|d| d.id).collect()))
+}
+
+/// Lowers the default output's volume to QUIET if it's louder.
+fn lower_volume(enumerator: &IMMDeviceEnumerator) -> Result<()> {
+    let device = unsafe { enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia)? };
+    let endpoint: IAudioEndpointVolume = unsafe { device.Activate(CLSCTX_ALL, None)? };
+    if unsafe { endpoint.GetMasterVolumeLevelScalar()? } > QUIET {
+        unsafe { endpoint.SetMasterVolumeLevelScalar(QUIET, ptr::null())? };
+    }
     Ok(())
 }
 
