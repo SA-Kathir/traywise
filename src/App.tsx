@@ -121,15 +121,19 @@ function App() {
     };
   }, []);
 
-  // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode.
+  // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode, then from a page
+  // back to Home, and from Home it closes the panel. (A control that used Esc itself, like cancelling a
+  // shortcut or closing a list, has already handled it.)
   useEffect(() => {
-    if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") (adding ? setAdding : overview ? setOverview : setEditing)(false);
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (editing) (adding ? setAdding : overview ? setOverview : setEditing)(false);
+      else if (view !== "home") setView("home");
+      else commands.hidePanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, adding, overview]);
+  }, [editing, adding, overview, view]);
 
   // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
