@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { commands, events, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
 import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
@@ -128,6 +129,8 @@ export default function Panel() {
         value={s.download === null || s.upload === null ? "–" : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`}
       >
         <Graph values={s.history.map((p) => p.download + p.upload)} floor={NET_FLOOR} />
+        <p className="hint">Since boot  ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}</p>
+        {s.localIp && <LocalIp ip={s.localIp} />}
       </Stat>
       {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
       <Stat label="Disk" value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`} />
@@ -169,6 +172,34 @@ function TilePicker() {
         </div>
       ))}
     </div>
+  );
+}
+
+/** The PC's address on the network, hidden until asked for (the panel may be on a shared screen): click to
+ *  show it, click again to copy it. */
+function LocalIp({ ip }: { ip: string }) {
+  const [shown, setShown] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // Hides itself again after a while (the page stays mounted while the panel is closed).
+  useEffect(() => {
+    if (!shown) return;
+    const timer = setTimeout(() => setShown(false), 15000);
+    return () => clearTimeout(timer);
+  }, [shown]);
+  return (
+    <button
+      className="hint ip"
+      title={shown ? "Click to copy" : "Click to show"}
+      onClick={() => {
+        if (!shown) return setShown(true);
+        navigator.clipboard.writeText(ip).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+    >
+      Local IP: {shown ? (copied ? "copied" : ip) : "•••.•••.•••.•••"}
+    </button>
   );
 }
 

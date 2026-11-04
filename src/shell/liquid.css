@@ -2174,3 +2174,14 @@ html:not(.clear) body::after {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+
+/* System monitor: the local IP is a plain line of text that is also a button (click to show, then copy). */
+.hint.ip {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
