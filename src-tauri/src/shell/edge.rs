@@ -22,7 +22,7 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetCursorPos, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
     PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
     SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
@@ -51,6 +51,9 @@ const FRAME_MS: u32 = 16;
 thread_local! {
     /// When the mouse arrived on the handle, while it swells.
     static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
+    /// Where the pointer was at the last mouse message: resizing the window under a resting pointer
+    /// makes Windows send a "move" from the same spot, which must not count as the mouse arriving.
+    static LAST_AT: Cell<(i32, i32)> = const { Cell::new((-1, -1)) };
 }
 
 /// The running edge window, and which settings it was made for.
@@ -164,6 +167,11 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
         match msg {
             // Ask Windows to say when the mouse has rested here for HOVER_MS (once per arrival).
             WM_MOUSEMOVE => {
+                let mut at = POINT::default();
+                let _ = GetCursorPos(&mut at);
+                if LAST_AT.replace((at.x, at.y)) == (at.x, at.y) {
+                    return LRESULT(0);
+                }
                 // The handle starts swelling as soon as the mouse arrives (the strip has nothing to show).
                 if SHOW_HANDLE.load(Ordering::Relaxed) && ARRIVED.get().is_none() {
                     ARRIVED.set(Some(Instant::now()));
@@ -197,6 +205,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             WM_MOUSELEAVE => {
                 let _ = KillTimer(Some(hwnd), ANIMATION_TIMER);
                 ARRIVED.set(None);
+                LAST_AT.set((-1, -1));
                 pose(hwnd, 0.0);
                 LRESULT(0)
             }
