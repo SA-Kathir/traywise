@@ -15,8 +15,8 @@ use crate::settings::Settings;
 use crate::module::ModuleId;
 
 const ID: &str = "main";
-const MUTED: [u8; 3] = [0xe5, 0x48, 0x4d]; // red, bottom-right
-const AWAKE: [u8; 3] = [0x3d, 0xd6, 0x8c]; // green, top-right
+const MUTED: [u8; 3] = [0xe5, 0x48, 0x4d]; // the muted badge's red disc, bottom right
+const AWAKE: [u8; 3] = [0xff, 0xff, 0xff]; // the Keep awake sun, top right
 
 /// The tray's own image: the small-size variant of the app icon (no glass plate, bolder glyph),
 /// which stays legible at tray size. Made from icons/source/app-icon-small.svg.
@@ -152,26 +152,69 @@ fn tinted(icon: &Image, accent: u32) -> Image<'static> {
     Image::new_owned(rgba, icon.width(), icon.height())
 }
 
-/// The Traywise icon with a dot per state, each cut out with a clear ring so it reads as a mark on
-/// Traywise's icon rather than a separate (Windows) mute icon.
+/// Distance from (px, py) to the segment a-b.
+fn segment(px: f32, py: f32, a: (f32, f32), b: (f32, f32)) -> f32 {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let t = (((px - a.0) * dx + (py - a.1) * dy) / (dx * dx + dy * dy)).clamp(0.0, 1.0);
+    (px - a.0 - t * dx).hypot(py - a.1 - t * dy)
+}
+
+/// Anti-aliased coverage of a pixel at signed distance `d` (negative inside the shape).
+fn cover(d: f32) -> f32 {
+    (0.5 - d).clamp(0.0, 1.0)
+}
+
+/// Signed distance to a sun (a disc with eight rays) of overall radius `r`, centred on the origin.
+fn sun(u: f32, v: f32, r: f32) -> f32 {
+    (0..8).fold(u.hypot(v) - 0.36 * r, |d, k| {
+        let (sin, cos) = (k as f32 * std::f32::consts::FRAC_PI_4).sin_cos();
+        d.min(segment(u, v, (cos * 0.64 * r, sin * 0.64 * r), (cos * 0.9 * r, sin * 0.9 * r)) - 0.09 * r)
+    })
+}
+
+/// How much of a white microphone with a slash through it covers (u, v), inside a disc of radius `r`.
+fn muted_mic(u: f32, v: f32, r: f32) -> f32 {
+    let mic = cover(segment(u, v, (0.0, -0.3 * r), (0.0, 0.2 * r)) - 0.3 * r);
+    let slash = segment(u, v, (-0.5 * r, -0.55 * r), (0.5 * r, 0.55 * r));
+    // The slash is cut out of the microphone with a thin gap, so the two stay apart at 16 px.
+    (mic * (1.0 - cover(slash - 0.16 * r))).max(cover(slash - 0.07 * r))
+}
+
+/// Mixes `colour` into the pixel by `amount` and keeps the pixel's alpha at least that opaque.
+fn paint(pixel: &mut [u8], colour: [u8; 3], amount: f32) {
+    for c in 0..3 {
+        pixel[c] = (pixel[c] as f32 + (colour[c] as f32 - pixel[c] as f32) * amount).round() as u8;
+    }
+    pixel[3] = (pixel[3] as f32 + (255.0 - pixel[3] as f32) * amount).round() as u8;
+}
+
+/// The Traywise icon with a badge per state, each cut out with a clear ring so it reads as a mark on
+/// Traywise's icon rather than a separate (Windows) mute icon: a red disc with a slashed microphone
+/// (bottom right) for muted microphones, and a white sun (top right) for Keep awake. Shapes are sized
+/// from the icon's width, drawn from distances to circles and line segments.
 fn badged(icon: &Image, muted: bool, awake: bool) -> Image<'static> {
     let (width, height) = (icon.width(), icon.height());
     let mut rgba = icon.rgba().to_vec();
     let size = width as f32;
-    let radius = size * 0.2;
-    let ring = size * 0.07;
-    let centre = size - radius - ring;
-    let dots = [(muted, (centre, centre), MUTED), (awake, (centre, radius + ring), AWAKE)];
-    for (_, (cx, cy), colour) in dots.into_iter().filter(|dot| dot.0) {
-        for y in 0..height {
-            for x in 0..width {
-                let distance = (x as f32 + 0.5 - cx).hypot(y as f32 + 0.5 - cy);
-                let pixel = &mut rgba[((y * width + x) * 4) as usize..][..4];
-                if distance <= radius {
-                    pixel.copy_from_slice(&[colour[0], colour[1], colour[2], 255]);
-                } else if distance <= radius + ring {
-                    pixel[3] = 0;
-                }
+    let disc = size * 0.234; // the muted disc's radius
+    let ray = size * 0.266; // the sun's overall radius
+    let ring = size * 0.047;
+    let disc_at = size - disc - ring;
+    let sun_at = size - ray;
+    for y in 0..height {
+        for x in 0..width {
+            let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+            let pixel = &mut rgba[((y * width + x) * 4) as usize..][..4];
+            if awake {
+                let d = sun(px - sun_at, py - sun_at.min(ray), ray);
+                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - ring * 0.8))).round() as u8;
+                paint(pixel, AWAKE, cover(d));
+            }
+            if muted {
+                let d = (px - disc_at).hypot(py - disc_at);
+                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - disc - ring))).round() as u8;
+                let colour = MUTED.map(|c| c as f32 + (255.0 - c as f32) * muted_mic(px - disc_at, py - disc_at, disc));
+                paint(pixel, colour.map(|c| c as u8), cover(d - disc));
             }
         }
     }
@@ -194,14 +237,23 @@ mod tests {
 
     #[test]
     fn badges_sit_in_their_corners_with_a_clear_ring() {
-        let white = Image::new_owned(vec![255; 64 * 64 * 4], 64, 64);
+        // A black 64 x 64 icon, so white badge parts show up against it.
+        let black = Image::new_owned([0, 0, 0, 255].repeat(64 * 64), 64, 64);
         let pixel = |image: &Image, x: u32, y: u32| image.rgba()[((y * 64 + x) * 4) as usize..][..4].to_vec();
-        let both = badged(&white, true, true);
-        assert_eq!(pixel(&both, 51, 51), [MUTED[0], MUTED[1], MUTED[2], 255]);
-        assert_eq!(pixel(&both, 51, 12), [AWAKE[0], AWAKE[1], AWAKE[2], 255]);
-        assert_eq!(pixel(&both, 46, 32)[3], 0, "ring above the muted dot is see-through");
-        assert_eq!(pixel(&both, 10, 10), [255; 4], "the icon itself is untouched");
-        let muted = badged(&white, true, false);
-        assert_eq!(pixel(&muted, 51, 12), [255; 4], "no keep-awake dot when it's off");
+        let (red, white, black_px) = ([MUTED[0], MUTED[1], MUTED[2], 255], [255; 4], [0, 0, 0, 255]);
+        let both = badged(&black, true, true);
+        assert_eq!(pixel(&both, 53, 46), red, "red disc, bottom right");
+        assert_eq!(pixel(&both, 45, 40), white, "the microphone is white");
+        assert_eq!(pixel(&both, 47, 17), white, "the sun's core, top right");
+        assert_eq!(pixel(&both, 54, 19)[3], 0, "between the core and a ray is see-through");
+        assert_eq!(pixel(&both, 46, 30)[3], 0, "ring above the disc is see-through");
+        assert_eq!(pixel(&both, 10, 10), black_px, "the icon itself is untouched");
+        let muted = badged(&black, true, false);
+        assert_eq!(pixel(&muted, 53, 46), red);
+        assert_eq!(pixel(&muted, 47, 17), black_px, "no sun when Keep awake is off");
+        let awake = badged(&black, false, true);
+        assert_eq!(pixel(&awake, 47, 17), white);
+        assert_eq!(pixel(&awake, 53, 46), black_px, "no disc when mics are live");
+        assert_eq!(badged(&black, false, false).rgba(), black.rgba(), "no badges: unchanged");
     }
 }
