@@ -128,20 +128,24 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Status)) {
     let _ = tray.set_icon(Some(badged(&tinted(&tray_icon(), status.accent), status.mics_muted, status.awake.is_some())));
 }
 
-/// The icon with its light glyph in `accent` (0xRRGGBB): each pixel is mixed between the dark plate's colour
-/// and the accent by how light it is, so the glyph's grey parts stay a softer shade. A zero accent (not
-/// set yet) leaves the icon as it is.
+/// The icon with its bright tile (the top left one) in `accent` (0xRRGGBB), like the website's logo: each
+/// pixel there is mixed between the dark plate's colour and the accent by how light it is. The other three
+/// tiles and the plate stay as they are. A zero accent (not set yet) leaves the icon as it is.
 fn tinted(icon: &Image, accent: u32) -> Image<'static> {
     const PLATE: [f32; 3] = [11.0, 11.0, 12.0];
-    const GLYPH: f32 = 244.0;
+    const TILE: f32 = 244.0;
+    let (width, height) = (icon.width() as usize, icon.height() as usize);
     let mut rgba = icon.rgba().to_vec();
     if accent != 0 {
         let target = [(accent >> 16 & 0xff) as f32, (accent >> 8 & 0xff) as f32, (accent & 0xff) as f32];
-        for pixel in rgba.as_chunks_mut::<4>().0 {
-            let light = 0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32;
-            let t = ((light - PLATE[1]) / (GLYPH - PLATE[1])).clamp(0.0, 1.0);
-            for c in 0..3 {
-                pixel[c] = (PLATE[c] + (target[c] - PLATE[c]) * t).round() as u8;
+        for y in 0..height / 2 {
+            for x in 0..width / 2 {
+                let pixel = &mut rgba[(y * width + x) * 4..][..3];
+                let light = 0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32;
+                let t = ((light - PLATE[1]) / (TILE - PLATE[1])).clamp(0.0, 1.0);
+                for c in 0..3 {
+                    pixel[c] = (PLATE[c] + (target[c] - PLATE[c]) * t).round() as u8;
+                }
             }
         }
     }
@@ -179,12 +183,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_glyph_takes_the_accent_and_the_plate_stays_dark() {
-        let two = Image::new_owned(vec![244, 244, 242, 255, 11, 11, 12, 255], 2, 1);
-        let out = tinted(&two, 0xd9_2b_24);
+    fn only_the_top_left_tile_takes_the_accent() {
+        // 2 x 2 pixels: the top left is the bright tile, the others a dimmed tile and the plate.
+        let icon = Image::new_owned([[244, 244, 242, 255], [104, 104, 104, 255], [104, 104, 104, 255], [11, 11, 12, 255]].concat(), 2, 2);
+        let out = tinted(&icon, 0xd9_2b_24);
         assert_eq!(&out.rgba()[..4], [0xd9, 0x2b, 0x24, 255]);
-        assert_eq!(&out.rgba()[4..], [11, 11, 12, 255]);
-        assert_eq!(tinted(&two, 0).rgba(), two.rgba(), "no accent yet: unchanged");
+        assert_eq!(&out.rgba()[4..], &icon.rgba()[4..], "the rest is untouched");
+        assert_eq!(tinted(&icon, 0).rgba(), icon.rgba(), "no accent yet: unchanged");
     }
 
     #[test]
