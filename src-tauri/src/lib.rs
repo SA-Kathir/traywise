@@ -63,6 +63,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             shell::panel::PanelShown,
             shell::panel::ShowSettings,
             updater::UpdateAvailable,
+            updater::UpdateProgress,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
             modules::focus::FocusChanged,

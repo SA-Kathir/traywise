@@ -28,7 +28,10 @@ export const commands = {
 	setAutostart: (enabled: boolean) => typedError<null, string>(__TAURI_INVOKE("set_autostart", { enabled })),
 	/**  The version of an update that's been found, if any. */
 	updateAvailable: () => __TAURI_INVOKE<string | null>("update_available"),
-	/**  Downloads and runs the new installer. On success Traywise exits, and the installer restarts it. */
+	/**
+	 *  Downloads the new version (reporting progress), then runs its installer silently. On success Traywise
+	 *  exits and the installer starts the new version.
+	 */
 	updateInstall: () => typedError<null, string>(__TAURI_INVOKE("update_install")),
 	/**  Opens a version's release page on GitHub in the browser. Nothing is fetched by Traywise itself. */
 	openReleaseNotes: (version: string) => typedError<null, string>(__TAURI_INVOKE("open_release_notes", { version })),
@@ -107,6 +110,7 @@ export const events = {
 	showSettings: makeEvent<ShowSettings>("show-settings"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
+	updateProgress: makeEvent<UpdateProgress>("update-progress"),
 	wifiChanged: makeEvent<WifiChanged>("wifi-changed"),
 };
 
@@ -525,6 +529,9 @@ export type Target = "master" |
 
 /**  Sent to the UI when a newer version is found. The payload is its version, like "0.2.0". */
 export type UpdateAvailable = string;
+
+/**  Download progress as a whole percent, 0 to 100. 100 means the download is done and the installer is starting. */
+export type UpdateProgress = number;
 
 /**  Sent when the panel opens and after each change. */
 export type WifiChanged = WifiState;
