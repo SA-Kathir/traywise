@@ -1,6 +1,6 @@
 import { commands, events, type AudioDevice, type AudioDevicesState } from "../../bindings";
 import { Tile, TileCard } from "../../shell/Tile";
-import { Row, ShortcutPicker, SwitchRow } from "../../shell/Settings";
+import { SwitchRow } from "../../shell/Settings";
 import { useSettings } from "../../shell/SettingsContext";
 import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
@@ -134,17 +134,7 @@ function LowerOnUnplug() {
   );
 }
 
-/** The keys that mute or unmute every microphone, anywhere in Windows. */
-function MicShortcut() {
-  const { settings, save } = useSettings();
-  return (
-    <Row label="Shortcut" desc="Mutes every mic">
-      <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
-    </Row>
-  );
-}
-
-function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) {
+function Mics({ state: { micsMuted } }: { state: AudioDevicesState }) {
   if (micsMuted === null) return <p className="hint">No microphone.</p>;
   return (
     <>
@@ -157,12 +147,6 @@ function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) 
           {micsMuted ? "Unmute all" : "Mute all"}
         </button>
       </div>
-      <MicShortcut />
-      {shortcut?.error && (
-        <p className="error" title={shortcut.error}>
-          {shortcut.keys} is already used by another app: pick other keys.
-        </p>
-      )}
     </>
   );
 }
