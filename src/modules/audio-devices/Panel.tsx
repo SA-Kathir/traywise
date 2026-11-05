@@ -99,7 +99,7 @@ function LowerOnUnplug() {
   return (
     <SwitchRow
       label="Quiet on disconnect"
-      desc="When headphones disconnect, lower the speakers to 30% if they're louder"
+      info="When headphones disconnect, lower the speakers to 30% if they're louder"
       checked={settings.lowerVolumeOnUnplug}
       onChange={(lowerVolumeOnUnplug) => save({ ...settings, lowerVolumeOnUnplug })}
     />

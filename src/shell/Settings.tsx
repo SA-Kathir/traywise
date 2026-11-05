@@ -34,6 +34,7 @@ const ACCENTS: { id: Accent; label: string }[] = [
 
 // Segoe Fluent Icons glyph.
 const CHEVRON = String.fromCodePoint(0xe76c);
+const INFO = String.fromCodePoint(0xe946);
 
 type Props = { settings: Settings; onChange: (next: Settings) => void };
 
@@ -243,11 +244,18 @@ export function Row(props: { label: string; desc?: string; stacked?: boolean; ch
 }
 
 /** A setting that's on or off; the whole row toggles it. */
-export function SwitchRow(props: { label: string; desc?: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+export function SwitchRow(props: { label: string; desc?: string; info?: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
   return (
     <label className="setting">
       <span className="setting-text">
-        <span className="setting-label">{props.label}</span>
+        <span className="setting-label">
+          {props.label}
+          {props.info && (
+            <span className="icon info" tabIndex={0} role="img" title={props.info} aria-label={props.info} onClick={(e) => e.preventDefault()}>
+              {INFO}
+            </span>
+          )}
+        </span>
         {props.desc && <span className="setting-desc">{props.desc}</span>}
       </span>
       <input type="checkbox" checked={props.checked} disabled={props.disabled} onChange={(e) => props.onChange(e.target.checked)} />
