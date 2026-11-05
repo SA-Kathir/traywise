@@ -613,22 +613,19 @@ label.row + .hint,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* The app's output device, under its name. */
-/* A small pill sized to its text; a long device name is cut off with "…". */
+/* The app's output device, under its name: plain text with a speaker and a chevron, as in the
+   design. Padding makes the click target bigger; the negative margin keeps the row's layout. */
 .mixer-name .mixer-output {
   display: flex;
   align-items: center;
-  gap: 3px;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 18px;
-  margin-top: 2px;
-  padding: 0 6px;
+  gap: 4px;
+  max-width: calc(100% + 6px);
+  margin: 0 0 -4px -6px;
+  padding: 4px 6px;
   border: none;
-  border-radius: 999px;
-  background: rgb(var(--ink) / 0.08);
+  background: none;
   font-size: 11px;
-  line-height: 1;
+  line-height: 14px;
   color: rgb(var(--ink) / 0.6);
 }
 .mixer-output-name {
@@ -640,7 +637,7 @@ label.row + .hint,
 .mixer-output .glyph {
   flex: none;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 8px;
+  font-size: 10px;
 }
 .mixer-name .mixer-output.moved {
   color: var(--accent);
