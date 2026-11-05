@@ -1,5 +1,5 @@
 import { Fragment, useState, type CSSProperties } from "react";
-import { commands, events, type AppAudio, type OutputDevice, type Target } from "../../bindings";
+import { commands, events, type AppAudio, type AudioDevice, type Target } from "../../bindings";
 import { Num, Tile } from "../../shell/Tile";
 import { Slider as VolumeSlider } from "../../shell/Slider";
 import { useLive } from "../../shell/useLive";
@@ -139,12 +139,12 @@ export default function Panel() {
 }
 
 /** "Default", or the short name of the device the app is set to. */
-const outputName = (app: AppAudio, outputs: OutputDevice[]) => {
+const outputName = (app: AppAudio, outputs: AudioDevice[]) => {
   const device = app.output && outputs.find((d) => d.id === app.output);
   return device ? shortName(device.name) : "Default";
 };
 
-function OutputPicker({ app, outputs, onPicked }: { app: AppAudio; outputs: OutputDevice[]; onPicked: () => void }) {
+function OutputPicker({ app, outputs, onPicked }: { app: AppAudio; outputs: AudioDevice[]; onPicked: () => void }) {
   const pick = (id: string | null) => {
     if (id !== app.output) commands.mixerSetOutput(app.pid, id);
     onPicked();

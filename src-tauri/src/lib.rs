@@ -37,6 +37,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::focus::focus_set,
             modules::audio_devices::audio_devices_state,
             modules::audio_devices::audio_devices_set_output,
+            modules::audio_devices::audio_devices_set_input,
             modules::audio_devices::audio_devices_mute_mics,
             modules::system_monitor::system_monitor_state,
             modules::power::power_state,

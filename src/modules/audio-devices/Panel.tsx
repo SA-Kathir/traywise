@@ -1,6 +1,6 @@
-import { commands, events, type AudioDevicesState } from "../../bindings";
+import { commands, events, type AudioDevice, type AudioDevicesState } from "../../bindings";
 import { Tile, TileCard } from "../../shell/Tile";
-import { Row, ShortcutPicker, SwitchRow } from "../../shell/Settings";
+import { SwitchRow } from "../../shell/Settings";
 import { useSettings } from "../../shell/SettingsContext";
 import { useLive } from "../../shell/useLive";
 import type { TileProps } from "..";
@@ -25,6 +25,17 @@ export function Tiles({ kind, size, open }: TileProps) {
   if (!state) return null;
   if (kind === "mics") {
     const muted = state.micsMuted;
+    if (size === "2x2")
+      return (
+        <TileCard size={size} label="Microphone" onOpen={open}>
+          <Inputs state={state} />
+          {muted !== null && (
+            <button className={muted ? "on" : ""} onClick={() => commands.audioDevicesMuteMics(!muted)}>
+              {muted ? "Unmute all" : "Mute all"}
+            </button>
+          )}
+        </TileCard>
+      );
     return (
       <Tile
         size={size}
@@ -62,6 +73,7 @@ export default function Panel() {
   return (
     <>
       <Outputs state={state} />
+      <Inputs state={state} />
       <LowerOnUnplug />
       <Mics state={state} />
     </>
@@ -69,21 +81,37 @@ export default function Panel() {
 }
 
 function Outputs({ state }: { state: AudioDevicesState }) {
-  if (state.outputs.length === 0) return <p className="hint">No output device.</p>;
-  const shorts = state.outputs.map((d) => shortName(d.name));
+  return <DeviceList devices={state.outputs} none="No output device." label="Output device" icon={outputIcon} pick={commands.audioDevicesSetOutput} />;
+}
+
+function Inputs({ state }: { state: AudioDevicesState }) {
+  return <DeviceList devices={state.inputs} none="No microphone." label="Input device" icon={() => MIC} pick={commands.audioDevicesSetInput} />;
+}
+
+/** The devices to choose the default from. */
+function DeviceList(props: {
+  devices: AudioDevice[];
+  none: string;
+  label: string;
+  icon: (name: string) => string;
+  pick: (id: string) => unknown;
+}) {
+  const { devices } = props;
+  if (devices.length === 0) return <p className="hint">{props.none}</p>;
+  const shorts = devices.map((d) => shortName(d.name));
   return (
-    <div className="segmented vertical" role="radiogroup" aria-label="Output device">
-      {state.outputs.map((d, i) => (
+    <div className="segmented vertical" role="radiogroup" aria-label={props.label}>
+      {devices.map((d, i) => (
         <button
           key={d.id}
           role="radio"
           aria-checked={d.isDefault}
           className={d.isDefault ? "on" : ""}
           title={d.name}
-          onClick={() => d.isDefault || commands.audioDevicesSetOutput(d.id)}
+          onClick={() => d.isDefault || props.pick(d.id)}
         >
           <span className="icon" aria-hidden>
-            {outputIcon(d.name)}
+            {props.icon(d.name)}
           </span>
           {/* Two "Speakers" on different sound cards keep their full names, to tell them apart. */}
           {shorts.indexOf(shorts[i]) === shorts.lastIndexOf(shorts[i]) ? shorts[i] : d.name}
@@ -99,24 +127,14 @@ function LowerOnUnplug() {
   return (
     <SwitchRow
       label="Quiet on disconnect"
-      desc="When headphones disconnect, lower the speakers to 30% if they're louder"
+      info="When headphones disconnect, lower the speakers to 30% if they're louder"
       checked={settings.lowerVolumeOnUnplug}
       onChange={(lowerVolumeOnUnplug) => save({ ...settings, lowerVolumeOnUnplug })}
     />
   );
 }
 
-/** The keys that mute or unmute every microphone, anywhere in Windows. */
-function MicShortcut() {
-  const { settings, save } = useSettings();
-  return (
-    <Row label="Shortcut" desc="Mutes every mic">
-      <ShortcutPicker keys={settings.micShortcut} onChange={(micShortcut) => save({ ...settings, micShortcut })} />
-    </Row>
-  );
-}
-
-function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) {
+function Mics({ state: { micsMuted } }: { state: AudioDevicesState }) {
   if (micsMuted === null) return <p className="hint">No microphone.</p>;
   return (
     <>
@@ -129,12 +147,6 @@ function Mics({ state: { micsMuted, shortcut } }: { state: AudioDevicesState }) 
           {micsMuted ? "Unmute all" : "Mute all"}
         </button>
       </div>
-      <MicShortcut />
-      {shortcut?.error && (
-        <p className="error" title={shortcut.error}>
-          {shortcut.keys} is already used by another app: pick other keys.
-        </p>
-      )}
     </>
   );
 }

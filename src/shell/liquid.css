@@ -1851,6 +1851,17 @@ section > .setting:last-child {
 .module-idle {
   color: rgb(var(--ink) / 0.45);
 }
+/* The (i) beside a setting's name: hover it for the explanation. */
+.setting-label .info {
+  margin-left: 6px;
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.5);
+  cursor: help;
+}
+.setting-label .info:hover,
+.setting-label .info:focus-visible {
+  color: rgb(var(--ink) / 0.9);
+}
 .setting-value {
   color: rgb(var(--ink) / 0.6);
   font-variant-numeric: tabular-nums;

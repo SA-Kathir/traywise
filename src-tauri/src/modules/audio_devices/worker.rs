@@ -20,7 +20,7 @@ use windows::Win32::Media::Audio::{
 use windows::Win32::System::Com::CLSCTX_ALL;
 use windows::core::{PCWSTR, Result, implement};
 
-use super::{AudioDevicesChanged, AudioDevicesState, Msg, OutputDevice, Shared, ShortcutStatus, policy_config};
+use super::{AudioDevicesChanged, AudioDevicesState, Msg, AudioDevice, Shared, ShortcutStatus, policy_config};
 use crate::audio;
 use crate::shell::tray;
 
@@ -47,7 +47,7 @@ fn serve(app: &AppHandle, tx: &Sender<Msg>, rx: &Receiver<Msg>) -> Result<()> {
                 Msg::Stop => break 'serve,
                 Msg::Refresh => refresh = true,
                 // Windows then reports the change, which refreshes.
-                Msg::SetOutput(id) => report(policy_config::set_default(&id)),
+                Msg::SetDefault(id) => report(policy_config::set_default(&id)),
                 Msg::MuteMics(muted) => report(mics.set_muted(muted)),
                 Msg::ToggleMics => {
                     let muted = mics.all_muted().unwrap_or(false);
@@ -81,7 +81,7 @@ const QUIET: f32 = 0.30;
 
 /// The default output's id and the ids of every active output. None when there's no output at all.
 fn default_output(enumerator: &IMMDeviceEnumerator) -> Option<(String, Vec<String>)> {
-    let outputs = outputs(enumerator).ok()?;
+    let outputs = devices(enumerator, eRender).ok()?;
     let id = outputs.iter().find(|d| d.is_default)?.id.clone();
     Some((id, outputs.into_iter().map(|d| d.id).collect()))
 }
@@ -104,14 +104,14 @@ fn report(result: Result<()>) {
 
 /// Re-reads the devices and tells the UI, if anything changed.
 fn publish(app: &AppHandle, enumerator: &IMMDeviceEnumerator, mics: &mut Mics, shortcut: &Option<ShortcutStatus>) {
-    let outputs = match outputs(enumerator) {
-        Ok(outputs) => outputs,
-        Err(e) => return eprintln!("audio-devices: couldn't list outputs: {e}"),
+    let (outputs, inputs) = match (devices(enumerator, eRender), devices(enumerator, eCapture)) {
+        (Ok(outputs), Ok(inputs)) => (outputs, inputs),
+        (Err(e), _) | (_, Err(e)) => return eprintln!("audio-devices: couldn't list devices: {e}"),
     };
     if let Err(e) = mics.refresh(enumerator) {
         eprintln!("audio-devices: couldn't list microphones: {e}");
     }
-    let state = AudioDevicesState { outputs, mics_muted: mics.all_muted(), shortcut: shortcut.clone() };
+    let state = AudioDevicesState { outputs, inputs, mics_muted: mics.all_muted(), shortcut: shortcut.clone() };
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
@@ -121,20 +121,20 @@ fn publish(app: &AppHandle, enumerator: &IMMDeviceEnumerator, mics: &mut Mics, s
     }
 }
 
-/// Every plugged-in, enabled output device, by name.
-fn outputs(enumerator: &IMMDeviceEnumerator) -> Result<Vec<OutputDevice>> {
-    // No default when there's no output device at all.
-    let default = unsafe { enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) }.and_then(|d| audio::device_id(&d)).ok();
-    let list = unsafe { enumerator.EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE)? };
-    let mut outputs = Vec::new();
+/// Every plugged-in, enabled output (`eRender`) or microphone (`eCapture`), by name.
+fn devices(enumerator: &IMMDeviceEnumerator, flow: EDataFlow) -> Result<Vec<AudioDevice>> {
+    // No default when there's no such device at all.
+    let default = unsafe { enumerator.GetDefaultAudioEndpoint(flow, eMultimedia) }.and_then(|d| audio::device_id(&d)).ok();
+    let list = unsafe { enumerator.EnumAudioEndpoints(flow, DEVICE_STATE_ACTIVE)? };
+    let mut devices = Vec::new();
     for i in 0..unsafe { list.GetCount()? } {
         let device = unsafe { list.Item(i)? };
         let id = audio::device_id(&device)?;
         let name = audio::friendly_name(&device).unwrap_or_else(|_| "Unknown device".into());
-        outputs.push(OutputDevice { is_default: default.as_ref() == Some(&id), id, name });
+        devices.push(AudioDevice { is_default: default.as_ref() == Some(&id), id, name });
     }
-    outputs.sort_by(|a, b| a.name.cmp(&b.name));
-    Ok(outputs)
+    devices.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(devices)
 }
 
 /// Every plugged-in, enabled microphone, with a callback on its mute switch.

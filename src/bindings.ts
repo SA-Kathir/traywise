@@ -62,6 +62,8 @@ export const commands = {
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
 	audioDevicesSetOutput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_output", { id })),
+	/**  Makes this microphone the default for everything: apps, games, and calls. */
+	audioDevicesSetInput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_input", { id })),
 	/**  Mutes or unmutes every microphone. */
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
@@ -147,12 +149,22 @@ export type AppAudio = {
 	output: string | null,
 };
 
+export type AudioDevice = {
+	/**  Windows' id for the device. Stays the same across restarts. */
+	id: string,
+	name: string,
+	/**  The one apps play through. */
+	isDefault: boolean,
+};
+
 /**  Sent to the UI whenever a device is plugged in, removed, or becomes the default. */
 export type AudioDevicesChanged = AudioDevicesState;
 
 /**  Everything the panel shows. */
 export type AudioDevicesState = {
-	outputs: OutputDevice[],
+	outputs: AudioDevice[],
+	/**  Active microphones, and which one is the default. */
+	inputs: AudioDevice[],
 	/**  Whether every microphone is muted. None when there are no microphones. */
 	micsMuted: boolean | null,
 	/**  The mute-all shortcut. None until it has been set up. */
@@ -333,7 +345,7 @@ export type MixerState = {
 	device: string | null,
 	apps: AppAudio[],
 	/**  Devices an app can be sent to. Empty where Windows doesn't support per-app output. */
-	outputs: OutputDevice[],
+	outputs: AudioDevice[],
 };
 
 export type Mode = "off" | 
@@ -355,14 +367,6 @@ export type NowPlayingState = {
 	sessions: MediaSession[],
 	/**  The session Windows considers current (the one its own media card shows): what the tiles show. */
 	current: string | null,
-};
-
-export type OutputDevice = {
-	/**  Windows' id for the device. Stays the same across restarts. */
-	id: string,
-	name: string,
-	/**  The one apps play through. */
-	isDefault: boolean,
 };
 
 /**  Sent to the UI each time the panel opens. */

@@ -25,7 +25,7 @@ use windows::core::{BOOL, GUID, Interface, PCWSTR, Ref, Result, implement};
 use super::app_info::{self, AppInfo};
 use super::app_output::Router;
 use crate::audio;
-use crate::modules::audio_devices::OutputDevice;
+use crate::modules::audio_devices::AudioDevice;
 use super::{AppAudio, Level, MixerChanged, MixerState, Msg, Shared, Target};
 
 pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
@@ -120,7 +120,7 @@ struct Device {
     endpoint_events: IAudioEndpointVolumeCallback,
     /// One per plugged-in output, with its new-session callback.
     managers: Vec<(IAudioSessionManager2, IAudioSessionNotification)>,
-    outputs: Vec<OutputDevice>,
+    outputs: Vec<AudioDevice>,
     /// Every session we're listening to, by its instance id (unique across devices).
     sessions: HashMap<String, Session>,
     /// The device each app is set to, by process id. Re-read when its sessions change.
@@ -166,7 +166,7 @@ impl Device {
                     this.managers.push((manager, session_created));
                     let id = audio::device_id(&output)?;
                     let name = audio::friendly_name(&output).unwrap_or_else(|_| "Unknown device".into());
-                    this.outputs.push(OutputDevice { is_default: id == default, id, name });
+                    this.outputs.push(AudioDevice { is_default: id == default, id, name });
                 }
                 this.outputs.sort_by(|a, b| a.name.cmp(&b.name));
                 Ok(this)
