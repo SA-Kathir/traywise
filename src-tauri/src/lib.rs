@@ -15,6 +15,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         .commands(collect_commands![
             shell::panel::panel_painted,
             shell::panel::panel_ready,
+            shell::panel::close_panel,
             shell::panel::quit,
             shell::panel::hide_panel,
             settings::get_settings,

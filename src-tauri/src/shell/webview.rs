@@ -2,18 +2,10 @@
 
 use tauri::WebviewWindow;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
-    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC,
+    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
     COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL, ICoreWebView2_19,
 };
 use windows_core::Interface;
-
-/// Gives the page the keyboard, so keys (Esc) work in a panel that was opened but not clicked yet. Focusing
-/// the window alone leaves WebView2 without it.
-pub fn focus(win: &WebviewWindow) {
-    let _ = win.with_webview(|webview| {
-        let _ = unsafe { webview.controller().MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC) };
-    });
-}
 
 /// Puts WebView2 to sleep while the panel is hidden and wakes it before it's shown.
 /// Hiding the window alone isn't enough: WebView2 keeps rendering behind it (~39% of a core
