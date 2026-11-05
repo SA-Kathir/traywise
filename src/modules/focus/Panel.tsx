@@ -10,8 +10,17 @@ export default function Panel() {
   return (
     <>
       <label className="row">
-        <span className="grow">Custom timer (minutes, 1 to 480)</span>
-        <input type="number" min={1} max={480} value={minutes || ""} onChange={(e) => setMinutes(Number(e.target.value))} style={{ width: "4.5em" }} />
+        <span className="grow">Timer in minutes</span>
+        <input
+          className="text timer-minutes"
+          type="number"
+          min={1}
+          max={480}
+          aria-label="Minutes"
+          value={minutes || ""}
+          onChange={(e) => setMinutes(Number(e.target.value))}
+          onKeyDown={(e) => e.key === "Enter" && valid && commands.focusSet({ minutes })}
+        />
         <button disabled={!valid} onClick={() => commands.focusSet({ minutes })}>
           Start
         </button>

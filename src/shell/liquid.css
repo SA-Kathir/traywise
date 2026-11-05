@@ -1745,6 +1745,18 @@ input.text {
   background: rgb(var(--ink) / 0.06);
   user-select: text;
 }
+/* Focus's custom timer: a short centred number, no native spin buttons. */
+input.text.timer-minutes {
+  width: 5em;
+  margin-top: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+input.timer-minutes::-webkit-inner-spin-button,
+input.timer-minutes::-webkit-outer-spin-button {
+  appearance: none;
+}
 button.net-row {
   width: 100%;
 }
