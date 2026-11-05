@@ -1,4 +1,4 @@
-import { commands, events, type AudioDevicesState } from "../../bindings";
+import { commands, events, type AudioDevice, type AudioDevicesState } from "../../bindings";
 import { Tile, TileCard } from "../../shell/Tile";
 import { Row, ShortcutPicker, SwitchRow } from "../../shell/Settings";
 import { useSettings } from "../../shell/SettingsContext";
@@ -25,6 +25,17 @@ export function Tiles({ kind, size, open }: TileProps) {
   if (!state) return null;
   if (kind === "mics") {
     const muted = state.micsMuted;
+    if (size === "2x2")
+      return (
+        <TileCard size={size} label="Microphone" onOpen={open}>
+          <Inputs state={state} />
+          {muted !== null && (
+            <button className={muted ? "on" : ""} onClick={() => commands.audioDevicesMuteMics(!muted)}>
+              {muted ? "Unmute all" : "Mute all"}
+            </button>
+          )}
+        </TileCard>
+      );
     return (
       <Tile
         size={size}
@@ -62,6 +73,7 @@ export default function Panel() {
   return (
     <>
       <Outputs state={state} />
+      <Inputs state={state} />
       <LowerOnUnplug />
       <Mics state={state} />
     </>
@@ -69,21 +81,37 @@ export default function Panel() {
 }
 
 function Outputs({ state }: { state: AudioDevicesState }) {
-  if (state.outputs.length === 0) return <p className="hint">No output device.</p>;
-  const shorts = state.outputs.map((d) => shortName(d.name));
+  return <DeviceList devices={state.outputs} none="No output device." label="Output device" icon={outputIcon} pick={commands.audioDevicesSetOutput} />;
+}
+
+function Inputs({ state }: { state: AudioDevicesState }) {
+  return <DeviceList devices={state.inputs} none="No microphone." label="Input device" icon={() => MIC} pick={commands.audioDevicesSetInput} />;
+}
+
+/** The devices to choose the default from. */
+function DeviceList(props: {
+  devices: AudioDevice[];
+  none: string;
+  label: string;
+  icon: (name: string) => string;
+  pick: (id: string) => unknown;
+}) {
+  const { devices } = props;
+  if (devices.length === 0) return <p className="hint">{props.none}</p>;
+  const shorts = devices.map((d) => shortName(d.name));
   return (
-    <div className="segmented vertical" role="radiogroup" aria-label="Output device">
-      {state.outputs.map((d, i) => (
+    <div className="segmented vertical" role="radiogroup" aria-label={props.label}>
+      {devices.map((d, i) => (
         <button
           key={d.id}
           role="radio"
           aria-checked={d.isDefault}
           className={d.isDefault ? "on" : ""}
           title={d.name}
-          onClick={() => d.isDefault || commands.audioDevicesSetOutput(d.id)}
+          onClick={() => d.isDefault || props.pick(d.id)}
         >
           <span className="icon" aria-hidden>
-            {outputIcon(d.name)}
+            {props.icon(d.name)}
           </span>
           {/* Two "Speakers" on different sound cards keep their full names, to tell them apart. */}
           {shorts.indexOf(shorts[i]) === shorts.lastIndexOf(shorts[i]) ? shorts[i] : d.name}

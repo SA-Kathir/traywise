@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
 use crate::module::{Module, ModuleId};
-use crate::modules::audio_devices::OutputDevice;
+use crate::modules::audio_devices::AudioDevice;
 
 /// Everything the panel shows. Sent whole on every change: it's a handful of rows.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
@@ -27,7 +27,7 @@ pub struct MixerState {
     pub device: Option<String>,
     pub apps: Vec<AppAudio>,
     /// Devices an app can be sent to. Empty where Windows doesn't support per-app output.
-    pub outputs: Vec<OutputDevice>,
+    pub outputs: Vec<AudioDevice>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, specta::Type)]
