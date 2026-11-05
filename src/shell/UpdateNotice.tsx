@@ -20,7 +20,7 @@ export function UpdateNotice() {
   }
 
   return (
-    <section>
+    <section className="notice">
       <div className="row">
         <span className="grow">Traywise {version} is available</span>
         <button disabled={installing} onClick={install}>
@@ -37,7 +37,7 @@ export function WhatsNew({ version }: { version: string }) {
   const { settings, save } = useSettings();
   if (!version || settings.lastSeenVersion === version || !settings.onboarded) return null;
   return (
-    <section>
+    <section className="notice">
       <div className="row">
         <span className="grow">Traywise updated to {version}</span>
         <button onClick={() => commands.openReleaseNotes(version)}>See what's new</button>

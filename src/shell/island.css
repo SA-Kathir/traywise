@@ -19,7 +19,7 @@
   }
 
   /* Waiting for the panel to open: nothing showing. */
-  html[data-island="pre"] :is(.panel > header, .panel .tabs, .board > .board-slot, .page-dots) {
+  html[data-island="pre"] :is(.panel > header, .panel .tabs, .board > .board-slot, .page-dots, .scroll > .notice) {
     opacity: 0;
   }
 
@@ -30,6 +30,10 @@
   }
   html[data-island="in"] .panel .tabs {
     animation: tw-in 440ms cubic-bezier(0.23, 1, 0.32, 1) 50ms backwards;
+  }
+  /* The update and what's-new cards: after the tabs, just before the first tile. */
+  html[data-island="in"] .scroll > .notice {
+    animation: tw-in 440ms cubic-bezier(0.23, 1, 0.32, 1) 80ms backwards;
   }
   html[data-island="in"] .board > .board-slot {
     animation: tw-in 460ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
@@ -51,10 +55,11 @@
 
   /* On the way out the same pieces blur away from the top down, faster; `forwards` keeps them gone
      until the window hides. */
-  html[data-island="out"] :is(.panel > header, .panel .tabs, .board > .board-slot, .page-dots) {
+  html[data-island="out"] :is(.panel > header, .panel .tabs, .board > .board-slot, .page-dots, .scroll > .notice) {
     animation: tw-out 200ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
   }
   html[data-island="out"] .panel .tabs { animation-delay: 20ms; }
+  html[data-island="out"] .scroll > .notice { animation-delay: 30ms; }
   html[data-island="out"] .board > .board-slot:nth-child(1) { animation-delay: 40ms; }
   html[data-island="out"] .board > .board-slot:nth-child(2) { animation-delay: 55ms; }
   html[data-island="out"] .board > .board-slot:nth-child(3) { animation-delay: 70ms; }
