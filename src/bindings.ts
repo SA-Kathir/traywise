@@ -10,6 +10,11 @@ export const commands = {
 	 *  visible when traywise.exe is started from a terminal.
 	 */
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
+	/**
+	 *  Esc: closes the panel whatever the pointer is doing (unlike `hide_panel`, which keeps an edge-opened panel
+	 *  while the pointer is still on the edge).
+	 */
+	closePanel: () => __TAURI_INVOKE<void>("close_panel"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
 	/**

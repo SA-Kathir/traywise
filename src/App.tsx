@@ -129,7 +129,7 @@ function App() {
       if (e.key !== "Escape" || e.defaultPrevented) return;
       if (editing) (adding ? setAdding : overview ? setOverview : setEditing)(false);
       else if (view !== "home") setView("home");
-      else commands.hidePanel();
+      else commands.closePanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
