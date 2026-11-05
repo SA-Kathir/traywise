@@ -145,20 +145,10 @@ function Bar({ display }: { display: Display }) {
 function ProjectTile({ project, size, open }: { project: Project | null; size: TileProps["size"]; open: () => void }) {
   const current = PROJECTS.find((p) => p.project === project);
   const shown = current ?? PROJECTS[0];
-  if (size === "1x1" || size === "2x1") {
-    // 1×1 cycles through the modes; 2×1 shows the current one (the dots) and opens the page.
-    const next = current && PROJECTS[(PROJECTS.indexOf(current) + 1) % PROJECTS.length];
-    if (size === "1x1")
-      return (
-        <Tile
-          size={size}
-          icon={shown.icon}
-          label="Project"
-          detail={current ? current.name : "1 screen"}
-          onToggle={next && (() => commands.displaysSetProject(next.project))}
-          onOpen={open}
-        />
-      );
+  if (size === "1x1")
+    return <Tile size={size} icon={shown.icon} label="Project" detail={current ? current.name : "1 screen"} onOpen={open} />;
+  if (size === "2x1") {
+    // Shows the current mode (the dots) and opens the page, where the choices are.
     return (
       <TileCard
         size={size}
