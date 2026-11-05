@@ -21,7 +21,7 @@ function check(name: string, tiles: Placed[], expected: string) {
   if (sorted.some((t, i) => t !== tiles[i])) throw new Error(`${name}: not in reading order`);
 }
 
-const tile = (id: string, w: number, h: number): Placed => ({ id, w, h, x: 0, y: 0 });
+const tile = (id: string, w: number, h: number): Placed => ({ id, w, h, x: 0, y: 0, readings: null });
 
 // Auto-arrange: c (1×1) fills the hole beside a, ahead of the wide b.
 const board = pack([tile("a", 1, 1), tile("b", 4, 2), tile("c", 1, 1), tile("d", 2, 2)]);
@@ -42,7 +42,7 @@ check("move, free, rises", topRight, "acdd ..dd bbbb bbbb");
 const pushed = move(board, "c", 0, 4, false);
 check("in the way, nearest free", pushed, "a... bbbb bbbb .dd. cdd.");
 // ...and a 1×1 dropped on another, with a free cell beside it, sends it there rather than swapping.
-const pair = [{ id: "y", w: 1, h: 1, x: 1, y: 0 }, { id: "z", w: 1, h: 1, x: 2, y: 1 }];
+const pair = [{ id: "y", w: 1, h: 1, x: 1, y: 0, readings: null }, { id: "z", w: 1, h: 1, x: 2, y: 1, readings: null }];
 check("in the way, free cell beside", move(pair, "z", 1, 0, false), "yz..");
 // A big tile with no free spot near is pushed just below the moved one instead.
 check("in the way, pushed below", move(board, "a", 0, 1, false), ".c.. a... bbbb bbbb dd.. dd..");

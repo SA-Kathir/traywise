@@ -1,7 +1,9 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import type { ModuleId } from "../bindings";
+import type { ModuleId, Reading } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
+import { READING_CHOICES } from "../modules/system-monitor";
+import { useSettings } from "./SettingsContext";
 import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
 import { Pending } from "./useLive";
 
@@ -81,7 +83,7 @@ export function withModules(saved: Placed[][] | null, before: ModuleId[], after:
 
 function placed(id: string, size: Size): Placed {
   const [w, h] = cells(size);
-  return { id, w, h, x: 0, y: 0 };
+  return { id, w, h, x: 0, y: 0, readings: null };
 }
 
 type Rect = { left: number; top: number; width: number; height: number };
@@ -138,6 +140,7 @@ type Drag = {
 /** The home board: each tile in its cells of the 4-column grid, drawn by its module. In edit mode
  *  the tiles stop working and can be dragged (or moved with the arrow keys), resized and removed. */
 export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages, page, canAddPage, onMoveToPage }: BoardProps) {
+  const { settings } = useSettings();
   const board = useRef<HTMLDivElement>(null);
   // The drag lives in a ref, read by the pointer handlers: several pointer events can arrive before
   // React draws again, and each must see the last one's result. The state copy is for drawing.
@@ -349,6 +352,15 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
     }
   }
 
+  /** Tapping a side of the wide system monitor tile: that side shows the next reading. */
+  function nextReading(t: Placed, side: 0 | 1) {
+    const now = t.readings ?? settings.monitorReadings;
+    const ids = READING_CHOICES.map(([id]) => id);
+    const next: [Reading, Reading] = [...now];
+    next[side] = ids[(ids.indexOf(now[side]) + 1) % ids.length];
+    onChange(tiles.map((o) => (o.id === t.id ? { ...o, readings: next } : o)));
+  }
+
   function nextSize(t: Placed) {
     const { sizes } = info(t.id);
     const [w, h] = cells(sizes[(sizes.indexOf(sizeOf(t)) + 1) % sizes.length]);
@@ -392,7 +404,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
           >
             <div className="board-tile" inert={editing}>
               <Suspense fallback={<Pending />}>
-                <Tiles kind={kindOf(t.id)} size={size} open={() => open(module)} />
+                <Tiles kind={kindOf(t.id)} size={size} open={() => open(module)} readings={t.readings} />
               </Suspense>
             </div>
             {editing && (
@@ -405,6 +417,22 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
                 >
                   {MINUS}
                 </button>
+                {t.id === "system-monitor/monitor" &&
+                  ([0, 1] as const).map((side) => {
+                    const id = (t.readings ?? settings.monitorReadings)[side];
+                    const short = READING_CHOICES.find(([c]) => c === id)![1];
+                    return (
+                      <button
+                        key={side}
+                        className={`tile-badge tile-reading ${side ? "right" : "left"}`}
+                        aria-label={`${side ? "Right" : "Left"} reading: ${short}. Show the next one`}
+                        title="Change what this side shows"
+                        onClick={() => nextReading(t, side)}
+                      >
+                        {short}
+                      </button>
+                    );
+                  })}
                 {sizes.length > 1 && (
                   <button
                     className="tile-badge tile-resize"

@@ -1,5 +1,5 @@
 import type { ComponentType, LazyExoticComponent } from "react";
-import type { ModuleId } from "../bindings";
+import type { ModuleId, Reading } from "../bindings";
 import audioDevices from "./audio-devices";
 import bluetooth from "./bluetooth";
 import displays from "./displays";
@@ -26,7 +26,13 @@ export type Category = keyof typeof categories;
 export type Size = "1x1" | "2x1" | "4x1" | "2x2" | "4x2";
 
 /** What a module's `Tiles` component is given: which of its tiles to draw, and at what size. */
-export type TileProps = { kind: string; size: Size; open: () => void };
+export type TileProps = {
+  kind: string;
+  size: Size;
+  open: () => void;
+  /** The tile's own choice of readings (the system monitor's wide tile), if it has one. */
+  readings?: [Reading, Reading] | null;
+};
 
 /** What the shell needs to show a module. The components are lazy: a disabled module's code never loads. */
 export type ModuleUi = {

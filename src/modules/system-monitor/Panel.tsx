@@ -23,8 +23,8 @@ const NET_FLOOR = 10 * 1024;
 const PITCH = 7;
 
 /** Home tiles, as in the design: CPU or Memory, a dot-matrix number and its graph; at 4×1 and 4×2
- *  two of them side by side, picked on the page. Clicking opens the page. */
-export function Tiles({ kind, size, open }: TileProps) {
+ *  two of them side by side, picked on the tile in edit mode. Clicking opens the page. */
+export function Tiles({ kind, size, open, readings }: TileProps) {
   const s = useSample();
   const { settings } = useSettings();
   const ready = s !== null && s.memoryTotal > 0;
@@ -50,7 +50,7 @@ export function Tiles({ kind, size, open }: TileProps) {
       title="Show details"
     >
       {kind === "monitor"
-        ? settings.monitorReadings.map(reading)
+        ? (readings ?? settings.monitorReadings).map(reading)
         : reading(kind as ReadingId)}
     </button>
   );
@@ -187,50 +187,7 @@ export default function Panel() {
         label="Disk"
         value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`}
       />
-      <TilePicker />
     </>
-  );
-}
-
-/** Which two readings the 4×1 and 4×2 tile shows: a row each for its left and right. */
-function TilePicker() {
-  const { settings, save } = useSettings();
-  return (
-    <div className="tile-picker">
-      <h2>Wide tile</h2>
-      {([0, 1] as const).map((slot) => (
-        <div key={slot} className="row">
-          <span className="picker-side">{slot === 0 ? "Left" : "Right"}</span>
-          <div
-            className="segmented grow"
-            role="radiogroup"
-            aria-label={slot === 0 ? "Left reading" : "Right reading"}
-          >
-            {(Object.keys(READINGS) as ReadingId[]).map((id) => {
-              const on = settings.monitorReadings[slot] === id;
-              return (
-                <button
-                  key={id}
-                  role="radio"
-                  aria-checked={on}
-                  aria-label={READINGS[id].label}
-                  className={on ? "on" : ""}
-                  onClick={() => {
-                    const readings: [ReadingId, ReadingId] = [
-                      ...settings.monitorReadings,
-                    ];
-                    readings[slot] = id;
-                    save({ ...settings, monitorReadings: readings });
-                  }}
-                >
-                  {READINGS[id].short}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 

@@ -190,6 +190,8 @@ export type BoardTile = {
 	h: number,
 	x: number,
 	y: number,
+	/**  Only for the system monitor's wide tile: what its left and right sides show. None uses `monitor_readings`. */
+	readings?: [Reading, Reading] | null,
 };
 
 /**  How the clock tile draws the time. */
@@ -450,7 +452,7 @@ export type Settings = {
 	pages: BoardTile[][] | null,
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
-	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
+	/**  System monitor: the readings a 4×1 or 4×2 tile shows (left then right) until it's given its own. */
 	monitorReadings: [Reading, Reading],
 	/**  Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel. */
 	edgeOpen: boolean,
