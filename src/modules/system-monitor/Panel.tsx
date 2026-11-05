@@ -13,6 +13,9 @@ import { pairOrDefault } from "./readings";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
+// Segoe Fluent "ChevronRight", as in Settings.
+const CHEVRON = String.fromCodePoint(0xe76c);
+
 const useSample = () =>
   useLive(commands.systemMonitorState, events.systemSampled);
 
@@ -150,6 +153,7 @@ function Reading(props: {
 
 export default function Panel() {
   const s = useSample();
+  const [more, setMore] = useState(false);
 
   // Empty until the first sample after the panel opens.
   if (!s || s.memoryTotal === 0) return null;
@@ -159,10 +163,6 @@ export default function Panel() {
       <Stat label="CPU" value={s.cpu === null ? "–" : `${s.cpu}%`}>
         <Graph values={s.history.map((p) => p.cpu)} floor={CPU_FLOOR} />
       </Stat>
-      <Stat
-        label="Memory"
-        value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`}
-      />
       <Stat
         label="Network"
         value={
@@ -175,25 +175,65 @@ export default function Panel() {
           values={s.history.map((p) => p.download + p.upload)}
           floor={NET_FLOOR}
         />
-        <div className="row stat-extra">
-          <span className="grow hint">Since boot</span>
-          <span className="stat-value">
-            ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}
+        <button
+          className="link-text stat-more"
+          aria-expanded={more}
+          onClick={() => setMore(!more)}
+        >
+          Details
+          <span className={more ? "icon chevron open" : "icon chevron"} aria-hidden>
+            {CHEVRON}
           </span>
-        </div>
-        {s.localIp && <LocalIp ip={s.localIp} />}
+        </button>
+        {more && (
+          <>
+            <div className="row stat-extra">
+              <span className="grow hint">Since boot</span>
+              <span className="stat-value">
+                ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}
+              </span>
+            </div>
+            {s.localIp && <LocalIp ip={s.localIp} />}
+          </>
+        )}
       </Stat>
-      {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
-      <Stat
-        label="Disk"
-        value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`}
-      />
+      {/* The rest, quieter: no graphs, a thin bar where a fraction means something. */}
+      <div className="stat-quiet">
+        <Quiet
+          label="Memory"
+          value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`}
+          fraction={s.memoryUsed / s.memoryTotal}
+        />
+        {s.battery && <Quiet label="Battery" value={battery(s.battery)} />}
+        <Quiet
+          label="Disk"
+          value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`}
+          fraction={1 - s.diskFree / s.diskTotal}
+        />
+      </div>
     </>
   );
 }
 
+/** One quiet line: its name, its value, and under it a thin bar of how full it is. */
+function Quiet(props: { label: string; value: string; fraction?: number }) {
+  return (
+    <div className="quiet">
+      <div className="row">
+        <span className="grow hint">{props.label}</span>
+        <span className="stat-value">{props.value}</span>
+      </div>
+      {props.fraction !== undefined && (
+        <span className="meter" aria-hidden>
+          <i style={{ width: `${Math.min(100, props.fraction * 100)}%` }} />
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** The PC's address on the network, hidden until asked for (the panel may be on a shared screen): click to
- *  show it, click again to copy it. */
+ *  show it, click again to copy it. Plain text, not a pill. */
 function LocalIp({ ip }: { ip: string }) {
   const [shown, setShown] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -207,7 +247,7 @@ function LocalIp({ ip }: { ip: string }) {
     <div className="row stat-extra">
       <span className="grow hint">Local IP</span>
       <button
-        className="stat-value ip"
+        className="link-text stat-value ip"
         title={shown ? "Click to copy" : "Click to show"}
         onClick={() => {
           if (!shown) return setShown(true);
