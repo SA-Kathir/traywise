@@ -39,8 +39,11 @@ const HOVER_MS: u32 = 250;
 /// The handle: a pill this many physical pixels wide and tall.
 const HANDLE: (i32, i32) = (8, 80);
 /// While the mouse rests on the handle it swells to this size and brightens, so you can see the
-/// panel is about to open (like a Dynamic Island stretching before it opens). It reaches it as the hover fires.
+/// panel is about to open (like a Dynamic Island stretching before it opens).
 const SWOLLEN: (i32, i32) = (14, 104);
+/// How long the swell takes: the hover time plus about how long the panel then needs to appear, so the handle
+/// stops moving just as the panel is up (no pause between the two).
+const SWELL_MS: u32 = HOVER_MS + 50;
 const SWOLLEN_ALPHA: u8 = 255;
 const HANDLE_ALPHA: u8 = 140;
 /// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
@@ -215,7 +218,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 LRESULT(0)
             }
             WM_TIMER => {
-                let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / HOVER_MS as f32).min(1.0));
+                let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / SWELL_MS as f32).min(1.0));
                 pose(t);
                 if t >= 1.0 {
                     let _ = KillTimer(Some(hwnd), ANIMATION_TIMER); // it stays swollen until the mouse leaves
