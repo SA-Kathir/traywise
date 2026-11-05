@@ -1,14 +1,6 @@
 import { lazy } from "react";
 import type { ModuleUi } from "..";
 
-/** The readings a wide tile can show, in the order tapping its pills cycles through them. */
-export const READING_CHOICES = [
-  ["cpu", "CPU"],
-  ["memory", "RAM"],
-  ["download", "Down"],
-  ["upload", "Up"],
-] as const;
-
 const systemMonitor: ModuleUi = {
   name: "System monitor",
   icon: String.fromCodePoint(0xe9d9), // Segoe Fluent "Diagnostic"

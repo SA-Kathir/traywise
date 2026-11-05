@@ -196,6 +196,14 @@ fn read(path: &Path) -> Settings {
         if let Some(board) = file.remove("board").filter(|b| b.is_array()) {
             file.entry("pages").or_insert(serde_json::Value::Array(vec![board]));
         }
+        // A tile's own readings must be exactly two; anything else is dropped (it then uses the default).
+        if let Some(pages) = file.get_mut("pages").and_then(|p| p.as_array_mut()) {
+            for tile in pages.iter_mut().filter_map(|p| p.as_array_mut()).flatten() {
+                if tile.get("readings").is_some_and(|r| serde_json::from_value::<[Reading; 2]>(r.clone()).is_err()) {
+                    tile["readings"] = serde_json::Value::Null;
+                }
+            }
+        }
         let serde_json::Value::Object(mut fields) = serde_json::to_value(Settings::default())? else {
             unreachable!("Settings serializes to a JSON object")
         };
@@ -335,6 +343,14 @@ mod tests {
             },
             "0.1.0 file"
         );
+
+        // A tile's own readings that aren't exactly two known ones are dropped, not fatal.
+        std::fs::write(
+            &path,
+            r#"{ "pages": [[{ "id": "system-monitor/monitor", "w": 4, "h": 1, "x": 0, "y": 0, "readings": ["cpu", "memory", "upload"] }]] }"#,
+        )
+        .unwrap();
+        assert_eq!(read(&path).pages.unwrap()[0][0].readings, None, "bad readings");
 
         // A 0.2 file's single board becomes page 1; a board never changed (null) stays the default.
         std::fs::write(
