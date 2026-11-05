@@ -4,8 +4,8 @@ import type { Reading } from "../../bindings.ts";
 export const READING_CHOICES = [
   ["cpu", "CPU"],
   ["memory", "RAM"],
-  ["download", "Down"],
-  ["upload", "Up"],
+  ["download", "Download"],
+  ["upload", "Upload"],
 ] as const;
 
 type Pair = [Reading, Reading];
