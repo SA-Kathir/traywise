@@ -41,9 +41,9 @@ const HANDLE: (i32, i32) = (8, 80);
 /// While the mouse rests on the handle it swells to this size and brightens, so you can see the
 /// panel is about to open (like a Dynamic Island stretching before it opens).
 const SWOLLEN: (i32, i32) = (14, 104);
-/// How long the swell takes: the hover time plus about how long the panel then needs to appear, so the handle
-/// stops moving just as the panel is up (no pause between the two).
-const SWELL_MS: u32 = HOVER_MS + 50;
+/// How long the swell takes: longer than the hover, so the handle is still moving while the panel appears and
+/// hands over to it without a pause.
+const SWELL_MS: u32 = HOVER_MS + 150;
 const SWOLLEN_ALPHA: u8 = 255;
 const HANDLE_ALPHA: u8 = 140;
 /// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
@@ -276,9 +276,10 @@ fn pose(t: f32) {
     }
 }
 
-/// The handle's rectangle and opacity at `t`, easing out: quick at first, then settling.
+/// The handle's rectangle and opacity at `t`, easing in: slow at first, gathering speed, so it's at full
+/// stretch only as the panel arrives (an ease-out looked finished halfway through).
 fn swell(monitor: RECT, side: EdgeSide, t: f32) -> (RECT, u8) {
-    let e = 1.0 - (1.0 - t).powi(3);
+    let e = t * t;
     let mix = |a: i32, b: i32| a + ((b - a) as f32 * e).round() as i32;
     let (w, h) = (mix(HANDLE.0, SWOLLEN.0), mix(HANDLE.1, SWOLLEN.1));
     let top = monitor.top + (monitor.bottom - monitor.top - h) / 2;
