@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import type { ModuleId, Reading } from "../bindings";
+import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
-import { READING_CHOICES } from "../modules/system-monitor";
+import { cycle, pairOrDefault, READING_CHOICES } from "../modules/system-monitor/readings";
 import { useSettings } from "./SettingsContext";
 import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
 
@@ -353,10 +353,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
 
   /** Tapping a side of the wide system monitor tile: that side shows the next reading. */
   function nextReading(t: Placed, side: 0 | 1) {
-    const now = t.readings ?? settings.monitorReadings;
-    const ids = READING_CHOICES.map(([id]) => id);
-    const next: [Reading, Reading] = [...now];
-    next[side] = ids[(ids.indexOf(now[side]) + 1) % ids.length];
+    const next = cycle(pairOrDefault(t.readings, settings.monitorReadings), side);
     onChange(tiles.map((o) => (o.id === t.id ? { ...o, readings: next } : o)));
   }
 
@@ -418,7 +415,7 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
                 </button>
                 {t.id === "system-monitor/monitor" &&
                   ([0, 1] as const).map((side) => {
-                    const id = (t.readings ?? settings.monitorReadings)[side];
+                    const id = pairOrDefault(t.readings, settings.monitorReadings)[side];
                     const short = READING_CHOICES.find(([c]) => c === id)![1];
                     return (
                       <button

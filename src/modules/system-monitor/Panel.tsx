@@ -9,6 +9,7 @@ import {
 import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
 import { battery } from "./battery";
+import { pairOrDefault } from "./readings";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
@@ -28,11 +29,11 @@ export function Tiles({ kind, size, open, readings }: TileProps) {
   const s = useSample();
   const { settings } = useSettings();
   const ready = s !== null && s.memoryTotal > 0;
-  const reading = (id: ReadingId) => {
+  const reading = (id: ReadingId, i: number) => {
     const r = READINGS[id];
     return (
       <Reading
-        key={id}
+        key={i} // both sides may show the same reading, so the id is no key
         label={size.startsWith("4") && id === "memory" ? "RAM" : r.label}
         sub={ready ? r.sub(s) : ""}
         value={ready ? r.value(s) : "–"}
@@ -50,8 +51,8 @@ export function Tiles({ kind, size, open, readings }: TileProps) {
       title="Show details"
     >
       {kind === "monitor"
-        ? (readings ?? settings.monitorReadings).map(reading)
-        : reading(kind as ReadingId)}
+        ? pairOrDefault(readings, settings.monitorReadings).map(reading)
+        : reading(kind as ReadingId, 0)}
     </button>
   );
 }

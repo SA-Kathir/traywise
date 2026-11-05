@@ -1,5 +1,6 @@
 // Run with `pnpm test` (Node runs TypeScript directly). Boards are drawn as text, rows separated by
 // spaces: each cell is its tile's id, "." is empty.
+import { cycle, pairOrDefault } from "../modules/system-monitor/readings.ts";
 import { add, compact, move, moveToPage, pack, remove, resize, shift, type Placed } from "./board.ts";
 
 function draw(tiles: Placed[]): string {
@@ -75,5 +76,16 @@ const [one, two] = moveToPage([board, [tile("e", 2, 1)]], "d", 0, 1, true);
 check("to page, from", one, "ac.. bbbb bbbb");
 check("to page, to", two, "eedd ..dd");
 check("to page, free", moveToPage([board, topRight], "e", 0, 1, false)[0], "ac.. bbbb bbbb dd.. dd..");
+
+const same = (name: string, got: string, expected: string) => {
+  if (got !== expected) throw new Error(`${name}: expected "${expected}", got "${got}"`);
+};
+// A wide tile's readings: cycling a side ten times keeps exactly two, and moves only that side.
+let pairNow: ["cpu" | "memory" | "download" | "upload", "cpu" | "memory" | "download" | "upload"] = ["cpu", "memory"];
+for (let i = 0; i < 10; i++) pairNow = cycle(pairNow, 1);
+same("cycle keeps two", String(pairNow.length), "2");
+same("cycle one side", pairNow.join(), "cpu,upload");
+same("bad pair ignored", pairOrDefault(["cpu", "cpu", "cpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
+same("unknown reading ignored", pairOrDefault(["cpu", "gpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
 
 console.log("board: all checks passed");
