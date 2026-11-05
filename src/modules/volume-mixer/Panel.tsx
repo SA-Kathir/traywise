@@ -207,8 +207,10 @@ function Row({ name, icon, glyph, volume, muted, target, output, moved, onOutput
           {glyph}
         </span>
       )}
-      <span className="mixer-name" title={name}>
-        {name}
+      <span className="mixer-name">
+        <span className="mixer-title" title={name}>
+          {name}
+        </span>
         {output && (
           <button className={moved ? "mixer-output moved" : "mixer-output"} title="Output device" onClick={onOutput}>
             <span className="glyph" aria-hidden>
