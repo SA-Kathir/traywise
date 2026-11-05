@@ -30,25 +30,34 @@ export function settled(): Promise<void> {
   });
 }
 
-/** A module's state from Rust: fetched once, then kept current by its change event. Null until the first value. */
+// The last value each module sent, so a tile that is mounted again (coming back from Settings or another tab)
+// shows it at once instead of empty until its data arrives again. Keyed by the fetch command.
+const last = new Map<unknown, unknown>();
+
+/** A module's state from Rust: fetched once, then kept current by its change event. Null until the first value
+ *  (or, when remounted, the last one it had). */
 export function useLive<T>(fetch: () => Promise<T>, changed: LiveEvent<T>): T | null {
-  const [value, setValue] = useState<T | null>(null);
+  const [value, setValue] = useState<T | null>(() => (last.get(fetch) as T | undefined) ?? null);
+  const keep = (v: T) => {
+    last.set(fetch, v);
+    setValue(v);
+  };
   useEffect(() => {
     let live = false; // an event beat the first fetch: don't overwrite it with older data
-    let waiting = true;
+    let waiting = !last.has(fetch); // a remount with a value to show isn't waiting for anything
     const arrived = () => {
       if (waiting) pending--;
       waiting = false;
     };
-    pending++;
+    if (waiting) pending++;
     const unlisten = changed.listen((e) => {
       live = true;
-      setValue(e.payload);
+      keep(e.payload);
       arrived();
     });
     fetch().then(
       (v) => {
-        live || setValue(v);
+        live || keep(v);
         arrived();
       },
       arrived,
