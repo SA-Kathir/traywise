@@ -610,6 +610,11 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+/* "Download" must fit a 1×1 tile whole. */
+.look-dot .size-1x1 .stat-chip-label {
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
 .look-dot .stat-chip-value {
   font-family: inherit;
   font-size: 12px;

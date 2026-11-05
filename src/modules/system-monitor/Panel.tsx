@@ -66,7 +66,6 @@ const READINGS: Record<
   ReadingId,
   {
     label: string;
-    short: string;
     unit: string;
     floor: number;
     sub: (s: SystemSample) => string;
@@ -76,7 +75,6 @@ const READINGS: Record<
 > = {
   cpu: {
     label: "CPU",
-    short: "CPU",
     unit: "%",
     floor: CPU_FLOOR,
     sub: (s) =>
@@ -86,7 +84,6 @@ const READINGS: Record<
   },
   memory: {
     label: "Memory",
-    short: "RAM",
     unit: "GB",
     floor: 10,
     sub: (s) => `of ${Math.round(s.memoryTotal / 1024)} GB`,
@@ -95,7 +92,6 @@ const READINGS: Record<
   },
   download: {
     label: "Download",
-    short: "Down",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
@@ -104,7 +100,6 @@ const READINGS: Record<
   },
   upload: {
     label: "Upload",
-    short: "Up",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
