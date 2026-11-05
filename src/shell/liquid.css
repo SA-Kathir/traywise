@@ -2145,10 +2145,101 @@ section > .setting:last-child {
   min-width: 0;
   padding: 0 4px;
 }
-/* Project's icons are a little smaller there, so four fit with room between them. */
-.segmented.icons .project-icon {
+.project-icon * {
+  vector-effect: non-scaling-stroke;
+}
+/* Project tiles. 2×1: the current mode and four dots; larger: the four choices, icon above the name. */
+.project-pips {
+  display: flex;
+  gap: 5px;
+}
+.project-pips i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+}
+.project-pips i.on {
+  opacity: 1;
+}
+.project-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+.project-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tile-card .segmented.project-grid.stacked {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: 1fr;
+  padding: 0;
+}
+.tile-card.size-4x1 {
+  padding-bottom: 8px;
+  gap: 4px;
+}
+.tile-card .segmented.project-grid.stacked button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 0;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+}
+.tile-card:is(.size-4x1, .size-4x2) .segmented.project-grid.stacked {
+  grid-template-columns: repeat(4, 1fr);
+}
+.size-4x2 .project-grid.stacked {
+  flex: none;
+  height: 46px;
+}
+.size-4x1 .project-grid.stacked button {
+  gap: 2px;
+}
+.project-text .tile-detail {
+  white-space: normal;
+}
+.size-4x1 .project-grid.stacked .project-icon {
+  width: 16px;
+  height: 11.2px;
+}
+.size-4x2 .project-grid.stacked .project-icon {
   width: 18px;
-  height: 11px;
+  height: 12.6px;
+}
+.size-4x2 .project-now {
+  gap: 12px;
+}
+.project-preview {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 58px;
+  border-radius: 10px;
+  background: rgb(var(--ink) / 0.06);
+}
+.project-preview .project-icon {
+  width: 60px;
+  height: 42px;
+}
+.project-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 /* A card's title stays on one line; its detail gives way (ellipsis) instead. */
 .tile-card .tile-title .tile-label {

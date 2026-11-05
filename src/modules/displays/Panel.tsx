@@ -10,36 +10,46 @@ const SUN = String.fromCodePoint(0xe706);
 const LAPTOP = String.fromCodePoint(0xe7f8);
 const MONITOR = String.fromCodePoint(0xe7f4);
 
-/** The design's Project icons: two screens side by side; a screen that's off is four corner dots. */
-const Screen = ({ x, on, wide }: { x: number; on: boolean; wide?: boolean }) =>
-  on ? (
-    <rect x={x + 0.5} y={2.5} width={wide ? 19 : 8} height={7} rx={1.2} fill="none" stroke="currentColor" />
-  ) : (
-    <g fill="currentColor">
-      {[
-        [x + 1, 3],
-        [x + 7, 3],
-        [x + 1, 9],
-        [x + 7, 9],
-      ].map(([cx, cy]) => (
-        <circle key={`${cx}${cy}`} cx={cx} cy={cy} r={0.9} />
-      ))}
-    </g>
-  );
-const icon = (left: boolean, right: boolean, wide = false) => (
-  <svg className="project-icon" viewBox="0 0 20 12" aria-hidden>
-    {wide ? <Screen x={0} on wide /> : <Screen x={0} on={left} />}
-    {!wide && <Screen x={11} on={right} />}
-    {left && right && !wide && <path d="M4.5 6h0M15.5 6h0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
+/** The Project icons, drawn: laptop, two overlapping screens, two side by side, a desktop monitor.
+ *  The stroke stays 1.3 px at every size (non-scaling, see `.project-icon` in liquid.css). */
+const SHAPES: Record<Project, ReactNode> = {
+  pcOnly: (
+    <>
+      <rect x="3.5" y="1.5" width="13" height="8.5" rx="1.5" />
+      <path d="M1 12.5h18" />
+    </>
+  ),
+  duplicate: (
+    <>
+      <rect x="7.5" y="1" width="10" height="7" rx="1.2" />
+      <rect x="2.5" y="5.5" width="10" height="7" rx="1.2" />
+    </>
+  ),
+  extend: (
+    <>
+      <rect x="1" y="3" width="8" height="8" rx="1.5" />
+      <rect x="11" y="3" width="8" height="8" rx="1.5" />
+    </>
+  ),
+  secondOnly: (
+    <>
+      <rect x="2.5" y="1" width="15" height="9.5" rx="1.5" />
+      <path d="M10 10.5V13M6.5 13h7" />
+    </>
+  ),
+};
+const icon = (p: Project) => (
+  <svg className="project-icon" viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" aria-hidden>
+    {SHAPES[p]}
   </svg>
 );
 
-/** `label` is the tooltip, `page` the System page's button, `short` the 1×1 tile (about seven letters). */
-const PROJECTS: { project: Project; label: string; page: string; short: string; icon: ReactNode }[] = [
-  { project: "pcOnly", label: "PC screen only", page: "PC only", short: "PC only", icon: icon(true, false) },
-  { project: "duplicate", label: "Duplicate", page: "Duplicate", short: "Mirror", icon: icon(true, true) },
-  { project: "extend", label: "Extend", page: "Extend", short: "Extend", icon: icon(true, true, true) },
-  { project: "secondOnly", label: "Second screen only", page: "2nd only", short: "2nd only", icon: icon(false, true) },
+/** `label` is the tooltip, `name` the tile and page, `note` the 4×2 tile's line under it. */
+const PROJECTS: { project: Project; label: string; name: string; note: string; icon: ReactNode }[] = [
+  { project: "pcOnly", label: "PC screen only", name: "PC only", note: "Only this PC's screen is on", icon: icon("pcOnly") },
+  { project: "duplicate", label: "Duplicate", name: "Duplicate", note: "Both screens show the same thing", icon: icon("duplicate") },
+  { project: "extend", label: "Extend", name: "Extend", note: "The second screen adds more room", icon: icon("extend") },
+  { project: "secondOnly", label: "Second screen only", name: "2nd only", note: "Only the second screen is on", icon: icon("secondOnly") },
 ];
 
 const useDisplays = () => useLive(commands.displaysState, events.displaysChanged);
@@ -47,7 +57,7 @@ const useDisplays = () => useLive(commands.displaysState, events.displaysChanged
 const setBrightness = (d: Display) => (v: number) => commands.displaysSetBrightness(d.id, v);
 
 /** Home tiles, as in the design: brightness like the volume tile (1×1 the whole tile fills to it;
- *  2×1, 4×1 and 2×2 the first screen that can change; 4×2 every screen) and Project, like Win+P. */
+ *  2×1, 4×1 and 2×2 the first screen that can change; 4×2 every screen) and Project. */
 export function Tiles({ kind, size, open }: TileProps) {
   const state = useDisplays();
   if (!state) return null;
@@ -134,30 +144,55 @@ function Bar({ display }: { display: Display }) {
 
 function ProjectTile({ project, size, open }: { project: Project | null; size: TileProps["size"]; open: () => void }) {
   const current = PROJECTS.find((p) => p.project === project);
-  if (size === "2x1")
+  const shown = current ?? PROJECTS[0];
+  if (size === "1x1")
+    return <Tile size={size} icon={shown.icon} label="Project" detail={current ? current.name : "1 screen"} onOpen={open} />;
+  if (size === "2x1") {
+    // Shows the current mode (the dots) and opens the page, where the choices are.
     return (
-      <TileCard size={size} label="Project" detail={current?.page ?? "One screen"} onOpen={open}>
-        <Choices project={current?.project ?? null} icons />
+      <TileCard
+        size={size}
+        label="Project"
+        detail={
+          <span className="project-pips" aria-hidden>
+            {PROJECTS.map((p) => (
+              <i key={p.project} className={p === current ? "on" : ""} />
+            ))}
+          </span>
+        }
+      >
+        <button className="project-now" title="Details" onClick={open}>
+          <span className="icon" aria-hidden>
+            {shown.icon}
+          </span>
+          <span className="project-name">{current ? current.name : "One screen"}</span>
+        </button>
       </TileCard>
     );
-  const next = current && PROJECTS[(PROJECTS.indexOf(current) + 1) % PROJECTS.length];
+  }
   return (
-    <Tile
-      size={size}
-      icon={(current ?? PROJECTS[0]).icon}
-      label="Project"
-      detail={current ? current.short : "Single"}
-      onToggle={next && (() => commands.displaysSetProject(next.project))}
-      onOpen={open}
-    />
+    <TileCard size={size} label="Project" detail={current ? undefined : "One screen"}>
+      {size === "4x2" && (
+        <div className="project-now">
+          <span className="project-preview icon" aria-hidden>
+            {shown.icon}
+          </span>
+          <span className="project-text">
+            <span className="project-name">{current ? current.name : "One screen"}</span>
+            <span className="tile-detail">{current ? current.note : "Connect a second screen to switch."}</span>
+          </span>
+        </div>
+      )}
+      <Choices project={project} tile />
+    </TileCard>
   );
 }
 
-/** The four Win+P choices: icons only on the 2×1 tile, a 2×2 grid with names on the page.
+/** The four Project choices: on a tile, icon above the name; on the page, icon beside it.
  *  With one screen (no `project`) they're dimmed and can't be picked. */
-function Choices({ project, icons }: { project: Project | null; icons?: boolean }) {
+function Choices({ project, tile }: { project: Project | null; tile?: boolean }) {
   return (
-    <div className={`segmented${icons ? " icons" : " project-grid"}${project ? "" : " unavailable"}`} role="radiogroup" aria-label="Project">
+    <div className={`segmented project-grid${tile ? " stacked" : ""}${project ? "" : " unavailable"}`} role="radiogroup" aria-label="Project">
       {PROJECTS.map((p) => (
         <button
           key={p.project}
@@ -171,7 +206,7 @@ function Choices({ project, icons }: { project: Project | null; icons?: boolean 
           <span className="icon" aria-hidden>
             {p.icon}
           </span>
-          {!icons && p.page}
+          {p.name}
         </button>
       ))}
     </div>

@@ -9,7 +9,7 @@ const displays: ModuleUi = {
   idle: "off till opened",
   tiles: {
     brightness: { name: "Brightness", sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"] },
-    project: { name: "Project", sizes: ["1x1", "2x1"] },
+    project: { name: "Project", sizes: ["1x1", "2x1", "2x2", "4x1", "4x2"] },
   },
   Tiles: lazy(() => import("./Panel").then((m) => ({ default: m.Tiles }))),
   Panel: lazy(() => import("./Panel")),
