@@ -195,32 +195,33 @@ fn paint(pixel: &mut [u8], colour: [u8; 3], amount: f32) {
     pixel[3] = (pixel[3] as f32 + (255.0 - pixel[3] as f32) * amount).round() as u8;
 }
 
+// Badge layout in a 32 x 32 icon's pixels (origin top left), from the maintainers' Figma design; scaled to
+// the icon's real width. The cup's ring ends 1.3 px above the microphone's ring, so they never touch.
+const MIC: (f32, f32, f32, f32) = (24.2, 24.2, 6.8, 1.5); // centre x, centre y, disc radius, clear ring
+const CUP: (f32, f32, f32, f32) = (25.6, 7.4, 8.3, 1.2); // glyph centre x, centre y, size, clear ring
+
 /// The Traywise icon with a badge per state, each cut out with a clear ring so it reads as a mark on
 /// Traywise's icon rather than a separate (Windows) mute icon: a red disc with a slashed microphone
-/// (bottom right) for muted microphones, and a white coffee cup (top right) for Keep awake. Shapes are sized
-/// from the icon's width, drawn from distances to circles and line segments.
+/// (bottom right) for muted microphones, and a white coffee cup (top right) for Keep awake, like the
+/// Keep awake tile's icon. Drawn from distances to circles and line segments.
 fn badged(icon: &Image, muted: bool, awake: bool) -> Image<'static> {
     let (width, height) = (icon.width(), icon.height());
     let mut rgba = icon.rgba().to_vec();
-    let size = width as f32;
-    let disc = size * 0.234; // the muted disc's radius
-    let mug = size * 0.306; // the cup's size
-    let ring = size * 0.047;
-    let disc_at = size - disc - ring;
-    let (mug_x, mug_y) = (size * 0.7125, size * 0.319);
+    let scale = width as f32 / 32.0;
+    let [(mic_x, mic_y, disc, mic_ring), (cup_x, cup_y, mug, cup_ring)] = [MIC, CUP].map(|(a, b, c, d)| (a * scale, b * scale, c * scale, d * scale));
     for y in 0..height {
         for x in 0..width {
             let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
             let pixel = &mut rgba[((y * width + x) * 4) as usize..][..4];
             if awake {
-                let d = cup(px - mug_x, py - mug_y, mug);
-                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - size * 0.031))).round() as u8;
+                let d = cup(px - cup_x, py - cup_y, mug);
+                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - cup_ring))).round() as u8;
                 paint(pixel, AWAKE, cover(d));
             }
             if muted {
-                let d = (px - disc_at).hypot(py - disc_at);
-                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - disc - ring))).round() as u8;
-                let colour = MUTED.map(|c| c as f32 + (255.0 - c as f32) * muted_mic(px - disc_at, py - disc_at, disc));
+                let d = (px - mic_x).hypot(py - mic_y);
+                pixel[3] = (pixel[3] as f32 * (1.0 - cover(d - disc - mic_ring))).round() as u8;
+                let colour = MUTED.map(|c| c as f32 + (255.0 - c as f32) * muted_mic(px - mic_x, py - mic_y, disc));
                 paint(pixel, colour.map(|c| c as u8), cover(d - disc));
             }
         }
@@ -249,18 +250,19 @@ mod tests {
         let pixel = |image: &Image, x: u32, y: u32| image.rgba()[((y * 64 + x) * 4) as usize..][..4].to_vec();
         let (red, white, black_px) = ([MUTED[0], MUTED[1], MUTED[2], 255], [255; 4], [0, 0, 0, 255]);
         let both = badged(&black, true, true);
-        assert_eq!(pixel(&both, 53, 46), red, "red disc, bottom right");
-        assert_eq!(pixel(&both, 45, 40), white, "the microphone is white");
-        assert_eq!(pixel(&both, 45, 24), white, "the cup's body, top right");
-        assert_eq!(pixel(&both, 46, 30)[3], 0, "ring above the disc is see-through");
+        assert_eq!(pixel(&both, 55, 48), red, "red disc, bottom right");
+        assert_eq!(pixel(&both, 47, 42), white, "the microphone is white");
+        assert_eq!(pixel(&both, 51, 22), white, "the cup's body, top right");
+        assert_eq!(pixel(&both, 48, 32)[3], 0, "ring above the disc is see-through");
+        assert_eq!(pixel(&both, 51, 30), black_px, "the two rings leave a gap of plate between them");
         assert_eq!(pixel(&both, 10, 10), black_px, "the icon itself is untouched");
         let muted = badged(&black, true, false);
-        assert_eq!(pixel(&muted, 53, 46), red);
-        assert_eq!(pixel(&muted, 45, 24), black_px, "no cup when Keep awake is off");
+        assert_eq!(pixel(&muted, 55, 48), red);
+        assert_eq!(pixel(&muted, 51, 22), black_px, "no cup when Keep awake is off");
         let awake = badged(&black, false, true);
-        assert_eq!(pixel(&awake, 45, 24), white);
-        assert_eq!(pixel(&awake, 45, 35)[3], 0, "ring below the cup is see-through");
-        assert_eq!(pixel(&awake, 53, 46), black_px, "no disc when mics are live");
+        assert_eq!(pixel(&awake, 51, 22), white);
+        assert_eq!(pixel(&awake, 51, 28)[3], 0, "ring below the cup is see-through");
+        assert_eq!(pixel(&awake, 55, 48), black_px, "no disc when mics are live");
         assert_eq!(badged(&black, false, false).rgba(), black.rgba(), "no badges: unchanged");
     }
 }
