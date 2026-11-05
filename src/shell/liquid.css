@@ -607,26 +607,44 @@ label.row + .hint,
   min-width: 0;
 }
 .mixer-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   width: 96px;
   flex: none;
+}
+.mixer-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* The app's output device, under its name: plain text with a speaker and a chevron, as in the
-   design. Padding makes the click target bigger; the negative margin keeps the row's layout. */
+   design. `all: unset` drops every generic button style (the pill, its inset edge, the radius,
+   the min-height), which the three looks each set differently and which a clipped edge showed as
+   half an outline. The ::after widens the click target to ~28 px without changing the row. */
 .mixer-name .mixer-output {
+  all: unset;
+  position: relative;
   display: flex;
   align-items: center;
+  align-self: flex-start;
   gap: 4px;
-  max-width: calc(100% + 6px);
-  margin: 0 0 -4px -6px;
-  padding: 4px 6px;
-  border: none;
-  background: none;
+  max-width: 100%;
+  box-sizing: border-box;
   font-size: 11px;
   line-height: 14px;
   color: rgb(var(--ink) / 0.6);
+  cursor: pointer;
+}
+.mixer-output::after {
+  content: "";
+  position: absolute;
+  inset: -7px -4px;
+}
+.mixer-output:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 .mixer-output-name {
   min-width: 0;
@@ -639,7 +657,8 @@ label.row + .hint,
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 10px;
 }
-.mixer-name .mixer-output.moved {
+.mixer-name .mixer-output.moved,
+.mixer-name .mixer-output:hover {
   color: var(--accent);
 }
 .mixer-outputs .check {
@@ -648,9 +667,6 @@ label.row + .hint,
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 10px;
   line-height: inherit;
-}
-.mixer-name .mixer-output:hover {
-  color: var(--accent);
 }
 .mixer-outputs,
 .mixer-reset {
