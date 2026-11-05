@@ -5,7 +5,7 @@ const displays: ModuleUi = {
   name: "Displays",
   icon: String.fromCodePoint(0xe706), // Segoe Fluent "Brightness"
   category: "system",
-  description: "Brightness, Win+P",
+  description: "Brightness, Project",
   idle: "off till opened",
   tiles: {
     brightness: { name: "Brightness", sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"] },

@@ -239,7 +239,7 @@ Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is th
 | **Brightness** (0.3) | 1×1, 2×1, 4×1, 4×2 (2×2 designed) | Volume anatomy with a sun; 4×2 has one row per display. |
 | **Power mode** (0.3) | 1×1, 2×1 | Leaf / gauge / bolt. 1×1 cycles; 2×1 is a three-step selector. No accent. |
 | **Battery** (0.3) | 1×1, 2×1 | Dot-matrix cell gauge, % in Doto, time left; status colours below 20 / 10 %. |
-| **Project** (0.3) | 1×1, 2×1 | Win+P: PC only / Duplicate / Extend / Second only. 1×1 cycles; 2×1 four-step selector; "One screen" dimmed when only one is connected. |
+| **Project** (0.3) | 1×1, 2×1 | Windows' Project menu: PC only / Duplicate / Extend / Second only. 1×1 cycles; 2×1 four-step selector; "One screen" dimmed when only one is connected. |
 
 ## 0.3.0 designs
 
