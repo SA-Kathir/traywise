@@ -227,6 +227,7 @@ fn show(win: &WebviewWindow) {
         }
         let _ = win.show();
         let _ = win.set_focus();
+        webview::focus(win);
     }
     // The page's tiles come in one after another (shell/island.css). Until now the page has been
     // waiting with nothing showing; once they're all in, it goes back to normal.
