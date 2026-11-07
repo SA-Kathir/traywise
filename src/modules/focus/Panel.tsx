@@ -21,7 +21,7 @@ function Minutes({ label, value, onChange }: { label: string; value: number; onC
   );
 }
 
-type Section = "lengths" | "dnd" | "auto" | "look" | "sound";
+type Section = "lengths" | "options";
 
 export default function Panel() {
   const { settings, save, showTile } = useSettings();
@@ -33,15 +33,21 @@ export default function Panel() {
   const presets = settings.focusPresets;
   // Starting takes you Home to watch the tile, if the board has one; otherwise you stay here.
   const start = (f: number, r: number) => commands.focusStart(f, r).then(() => showTile("focus/focus"));
+  const optionsSummary = [settings.focusStyle === "arc" ? "Arc" : "Hourglass", settings.focusDndFocus && "Do not disturb", settings.focusChime && "Sound"].filter(Boolean).join(", ");
   return (
-    <>
-      <Row label="Start">
-        {presets.map((p, i) => (
-          <button key={`${p.focus}/${p.rest}/${i}`} title={`${p.focus} focus, ${p.rest} rest`} onClick={() => start(p.focus, p.rest)}>
-            {p.focus}/{p.rest}
-          </button>
-        ))}
-      </Row>
+    <div className="focus-page">
+      <div className="setting stacked">
+        <span className="setting-text">
+          <span className="setting-label">Start</span>
+        </span>
+        <div className="focus-starts">
+          {presets.map((p, i) => (
+            <button key={`${p.focus}/${p.rest}/${i}`} title={`${p.focus} focus, ${p.rest} rest`} onClick={() => start(p.focus, p.rest)}>
+              {p.focus}/{p.rest}
+            </button>
+          ))}
+        </div>
+      </div>
       <Row label="Custom">
         <Minutes label="Focus minutes" value={focus} onChange={setFocus} />
         <Minutes label="Rest minutes" value={rest} onChange={setRest} />
@@ -70,21 +76,11 @@ export default function Panel() {
         </Row>
       </Collapsible>
 
-      <Collapsible
-        title="Do not disturb"
-        summary={settings.focusDndFocus ? (settings.focusDndRest ? "During focus and rests" : "During focus") : settings.focusDndRest ? "During rests" : "Off"}
-        open={open === "dnd"}
-        onToggle={toggle("dnd")}
-      >
-        <SwitchRow label="While focusing" checked={settings.focusDndFocus} onChange={(focusDndFocus) => set({ focusDndFocus })} />
-        <SwitchRow label="During rests" checked={settings.focusDndRest} onChange={(focusDndRest) => set({ focusDndRest })} />
-      </Collapsible>
-
-      <Collapsible title="Automation" summary={settings.focusAutoNext ? "Phases start by themselves" : "Wait for a tap"} open={open === "auto"} onToggle={toggle("auto")}>
+      <Collapsible title="Options" summary={optionsSummary} open={open === "options"} onToggle={toggle("options")}>
+        <SwitchRow label="Do not disturb while focusing" checked={settings.focusDndFocus} onChange={(focusDndFocus) => set({ focusDndFocus })} />
+        <SwitchRow label="Do not disturb during rests" checked={settings.focusDndRest} onChange={(focusDndRest) => set({ focusDndRest })} />
         <SwitchRow label="Start each phase by itself" checked={settings.focusAutoNext} onChange={(focusAutoNext) => set({ focusAutoNext })} />
-      </Collapsible>
-
-      <Collapsible title="Look" summary={settings.focusStyle === "arc" ? "Arc" : "Hourglass"} open={open === "look"} onToggle={toggle("look")}>
+        <SwitchRow label="Play a sound when a phase ends" checked={settings.focusChime} onChange={(focusChime) => set({ focusChime })} />
         <Row label="Tile style" desc="How the Focus tile draws the countdown">
           <Pick<FocusStyle>
             label="Tile style"
@@ -97,10 +93,6 @@ export default function Panel() {
           />
         </Row>
       </Collapsible>
-
-      <Collapsible title="Sound" summary={settings.focusChime ? "Chime at each phase end" : "Silent"} open={open === "sound"} onToggle={toggle("sound")}>
-        <SwitchRow label="Play a sound when a phase ends" checked={settings.focusChime} onChange={(focusChime) => set({ focusChime })} />
-      </Collapsible>
-    </>
+    </div>
   );
 }
