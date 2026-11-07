@@ -52,9 +52,9 @@ export default function Panel() {
 
       <Collapsible title="Lengths" summary={`${presets.map((p) => `${p.focus}/${p.rest}`).join(", ")}, long rest ${settings.focusLongRest}`} open={open === "lengths"} onToggle={toggle("lengths")}>
         {presets.map((p, i) => (
-          <Row key={`${p.focus}/${p.rest}/${i}`} label={`${p.focus} focus · ${p.rest} rest`} desc={i === 0 ? "Default: what the tile starts" : undefined}>
+          <Row key={`${p.focus}/${p.rest}/${i}`} label={`${p.focus} focus Â· ${p.rest} rest`} desc={i === 0 ? "Default: what the tile starts" : undefined}>
             <button aria-label="Remove this length" disabled={presets.length === 1} onClick={() => set({ focusPresets: presets.filter((_, j) => j !== i) })}>
-              ×
+              Ã—
             </button>
           </Row>
         ))}
