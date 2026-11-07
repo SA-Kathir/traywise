@@ -54,7 +54,7 @@ export default function Panel() {
         {presets.map((p, i) => (
           <Row key={`${p.focus}/${p.rest}/${i}`} label={`${p.focus} focus · ${p.rest} rest`} desc={i === 0 ? "Default: what the tile starts" : undefined}>
             <button aria-label="Remove this length" disabled={presets.length === 1} onClick={() => set({ focusPresets: presets.filter((_, j) => j !== i) })}>
-              �
+              ×
             </button>
           </Row>
         ))}
