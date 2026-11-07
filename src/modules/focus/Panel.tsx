@@ -35,7 +35,7 @@ export default function Panel() {
   const start = (f: number, r: number) => commands.focusStart(f, r).then(() => showTile("focus/focus"));
   return (
     <>
-      <Row label="Start" desc="Focus and rest, in minutes">
+      <Row label="Start">
         {presets.map((p, i) => (
           <button key={`${p.focus}/${p.rest}/${i}`} title={`${p.focus} focus, ${p.rest} rest`} onClick={() => start(p.focus, p.rest)}>
             {p.focus}/{p.rest}
@@ -50,7 +50,7 @@ export default function Panel() {
         </button>
       </Row>
 
-      <Collapsible title="Lengths" summary={`${presets.map((p) => `${p.focus}/${p.rest}`).join(", ")} · long rest ${settings.focusLongRest}`} open={open === "lengths"} onToggle={toggle("lengths")}>
+      <Collapsible title="Lengths" summary={`${presets.map((p) => `${p.focus}/${p.rest}`).join(", ")}, long rest ${settings.focusLongRest}`} open={open === "lengths"} onToggle={toggle("lengths")}>
         {presets.map((p, i) => (
           <Row key={`${p.focus}/${p.rest}/${i}`} label={`${p.focus} focus · ${p.rest} rest`} desc={i === 0 ? "Default: what the tile starts" : undefined}>
             <button aria-label="Remove this length" disabled={presets.length === 1} onClick={() => set({ focusPresets: presets.filter((_, j) => j !== i) })}>
