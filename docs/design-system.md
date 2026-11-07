@@ -235,7 +235,7 @@ Every tile is frosted, with a 20 px radius and 12 px padding. An "on" tile is th
 | Now playing | 1×1, 2×1, 2×2, 4×2 | Cover art (or a music note on the track colour), title, artist, accent progress line, play/pause (inverted circle), next; times in Doto. |
 | Keep awake | 1×1, 2×1, 2×2 | Countdown in Doto; 2×2 has a 24-dot ring (lit in accent) and quick durations. |
 | **Clock** (0.3) | 1×1, 2×1, 4×1, 2×2, 4×2 × Digital/Analogue | See [Clock](#clock-and-focus). |
-| **Focus** (0.3) | 1×1, 2×1, 2×2 | Keep-awake anatomy: countdown, 24-dot ring at 2×2, "Do not disturb on", quick durations 25m · 50m · 1h. |
+| **Focus** (0.3, Pomodoro in 0.4) | 1×1, 2×1, 2×2, 4×2 | A focus and rest cycle: a half ring of 19 dots (or an hourglass, a setting) with the time, four round dots, and pause / next / end. See [Focus](#focus-pomodoro). |
 | **Brightness** (0.3) | 1×1, 2×1, 4×1, 4×2 (2×2 designed) | Volume anatomy with a sun; 4×2 has one row per display. |
 | **Power mode** (0.3) | 1×1, 2×1 | Leaf / gauge / bolt. 1×1 cycles; 2×1 is a three-step selector. No accent. |
 | **Battery** (0.3) | 1×1, 2×1 | Dot-matrix cell gauge, % in Doto, time left; status colours below 20 / 10 %. |
@@ -262,7 +262,18 @@ Figma: v0.3 › Clock + Focus.
 - Analogue: a dot-matrix face (60 tick dots, the 5-minute ones brighter), hands drawn as dots, the minute hand's tip in the accent, and digits beside it from 2×1.
 - **Second time zone** (from 4×1 / 2×2): always in its own inset well (`control-track`, radius 12) with a globe, the CITY in overline caps, the day difference in accent text (+1) and the time in Doto. At 4×2 the well is a full column with "SUN 1 · +8 H", a day/night glyph and a TOMORROW / YESTERDAY tag (`accent-soft-bg`). The other zone's time is never shown bare next to local time.
 - One timer, on the minute.
-- Focus starts a Windows focus session, which also silences notifications. Do not disturb on its own is a toggle tile with the bell-off icon.
+- Do not disturb on its own is a toggle tile with the bell-off icon. It never affects the Focus cycle, and the cycle only switches it at a phase change.
+
+### Focus (Pomodoro)
+
+Figma: v0.3.1 · Focus tile.
+
+- **Cycle:** focus (25 min), rest (5), four rounds, then a long rest (15) and the cycle ends. Lengths are saved presets (the first two are the tile's chips, the first is the default a tap starts), the long rest is a setting. Do not disturb goes on while focusing and off for rests, each switchable; the chime plays at every phase end.
+- **Colours:** focus is the accent, rest is `status-success`. A running tile is the inverted plate, so it takes the other theme's accent (`accent-strong` on the light plate) and green (#137F4B light plate, #34C77B on black) to keep contrast. With the Green accent, focus stays red, because green is the rest colour. Tint and Windows use the accent for both phases.
+- **Arc (default):** 19 dots, 5 px, on a 180° arc of radius 52 (116 × 60), time in Doto centred under it with the phase word. Focus empties it from the right; a rest refills it from the left.
+- **Hourglass (setting, Tile style):** 11 × 13 dots, 4.4 px, pitch 6 (64 × 76 at 2×2; 75 × 89 at 4×2). One grain per dot in the bottom bulb: it leaves the neck, falls a row a second and lands exactly when that dot is due, then stays. Nothing moves up. A dim dot slides down the sand above the neck as a sign of life. The pile is the elapsed time in ink; the sand is the time left in the phase colour.
+- **2×2:** title row with the four round dots (filled = done, accent = current), then the hero, then three 36 × 22 icon buttons (pause, next, end); idle shows the first two presets and "+". Hourglass 2×2 stacks the time as minutes over seconds in Doto 36. **4×2:** hourglass left, time in Doto 56, "In focus · round 2 of 4" and the buttons. 1×1 and 2×1 show the time left.
+- Updates once a second, only while the panel is open; the rest is static (no CSS animation).
 
 ### Displays, power and project
 
