@@ -24,14 +24,15 @@ function Minutes({ label, value, onChange }: { label: string; value: number; onC
 type Section = "lengths" | "dnd" | "auto" | "look" | "sound";
 
 export default function Panel() {
-  const { settings, save } = useSettings();
+  const { settings, save, showTile } = useSettings();
   const set = (patch: Partial<Settings>) => save({ ...settings, ...patch });
   const [focus, setFocus] = useState(45);
   const [rest, setRest] = useState(10);
   const [open, setOpen] = useState<Section | null>(null);
   const toggle = (s: Section) => () => setOpen(open === s ? null : s);
   const presets = settings.focusPresets;
-  const start = (f: number, r: number) => commands.focusStart(f, r);
+  // Starting takes you Home to watch the tile, if the board has one; otherwise you stay here.
+  const start = (f: number, r: number) => commands.focusStart(f, r).then(() => showTile("focus/focus"));
   return (
     <>
       <Row label="Start" desc="Focus and rest, in minutes">
