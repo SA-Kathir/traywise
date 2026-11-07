@@ -63,7 +63,6 @@ export default function Tiles({ kind, size, open }: TileProps) {
   const lit = !timed ? 0 : Math.ceil((rest ? 1 - left / total : left / total) * 19);
   const time = clock(left);
   const glass = settings.focusStyle === "hourglass";
-  const [mm, ss] = time.split(":");
   const round = state.round ?? 0;
   return (
     <div className={`tile pomo size-${size} ${glass ? "glass" : "arc"}${timed ? " on" : ""}${rest ? " rest" : ""}`}>
@@ -84,14 +83,7 @@ export default function Tiles({ kind, size, open }: TileProps) {
         {glass ? <Hourglass elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
         {timed ? (
           <span className="pomo-read">
-            {glass && size === "2x2" ? (
-              <>
-                <Num text={mm} />
-                <Num text={ss} />
-              </>
-            ) : (
-              <Num text={time} />
-            )}
+            <Num text={time} />
             {(size === "4x2" || !glass) && (
               <span className="tile-detail">{size === "4x2" ? `${word} · round ${round} of 4` : running ? word : "Paused"}</span>
             )}

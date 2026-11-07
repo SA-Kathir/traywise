@@ -1821,10 +1821,22 @@ button.pomo-main:hover {
   font-weight: 300;
   line-height: 1;
 }
-.pomo.glass.size-2x2 .pomo-read .num {
-  font-size: 36px;
-  line-height: 1.05;
+/* The small hourglass has its readout under it, in every state (idle, running, paused). */
+.pomo.glass.size-2x2 .pomo-main {
+  flex-direction: column;
+  gap: 4px;
 }
+.pomo.glass.size-2x2 .pomo-glass {
+  width: 38px;
+  height: 45px;
+}
+.pomo.glass.size-2x2 .pomo-read {
+  align-items: center;
+}
+.pomo.glass.size-2x2 .pomo-read .num {
+  font-size: 24px;
+}
+
 .pomo.size-4x2 .pomo-read .num {
   font-size: 56px;
 }
