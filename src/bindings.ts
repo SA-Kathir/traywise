@@ -327,7 +327,9 @@ export type Look =
 /**  Glass cards over a colour preset's background. */
 "liquid" | 
 /**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
-"windows";
+"windows" | 
+/**  Frosted glass: Windows blurs the desktop behind a transparent panel (`shell/glass.rs`). */
+"glass";
 
 export type MediaAction = "playPause" | "next" | "previous" | 
 /**  Jump to this many milliseconds into the track. */

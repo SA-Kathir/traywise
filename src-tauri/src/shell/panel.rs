@@ -23,6 +23,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::BOOL;
 
+use super::glass::{self, Glass};
 use super::webview;
 use crate::module::Modules;
 use crate::settings::{EdgeSide, Look, Settings, SettingsState};
@@ -57,6 +58,8 @@ pub struct PanelState {
     anim: AtomicU32,
     /// While the page waits to come in: the UI says (`panel_ready`) once its tiles have their data.
     ready: Mutex<Option<std::sync::mpsc::Sender<()>>>,
+    /// The Glass look's blur, while that look is on.
+    glass: Mutex<Option<Glass>>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -76,6 +79,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .shadow(false)
         .build()?;
     frame(&win, framed(&app.state::<SettingsState>().get()));
+    sync_glass(&win);
     // Windows fades a window in and out when it's shown or hidden: that fade would play on the empty
     // frame around the tiny bar (it lingered for about half a second after closing). The panel
     // animates itself.
@@ -222,6 +226,7 @@ fn show(win: &WebviewWindow) {
     webview::set_active(win, true);
     let hover = win.state::<PanelState>().hover.load(Ordering::Relaxed);
     place(win, hover);
+    sync_glass(win);
     // Before showing it, so the sample is of what's behind the panel, not the panel.
     let settings = win.state::<SettingsState>().get();
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
@@ -489,6 +494,7 @@ pub fn refresh_frame(app: &AppHandle) {
         let had_focus = win.is_focused().unwrap_or(false) || win.hwnd().is_ok_and(|h| unsafe { GetForegroundWindow() } == h);
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
+        sync_glass(&win);
         // Tauri's frame change hides a window it didn't show itself (the edge shows it with
         // ShowWindow, so Tauri thinks it's hidden): show it again, still without taking the keyboard.
         if was_open && !is_open(&win) && let Ok(hwnd) = win.hwnd() {
@@ -508,10 +514,39 @@ fn just_reframed(win: &WebviewWindow) -> bool {
 }
 
 /// Whether the window gets Windows 11's frame: every look except transparent Dot, whose cards
-/// float over the desktop, where a frame would outline empty space. (Only Dot can be transparent;
-/// an old Tint file may still say so.)
+/// float over the desktop, where a frame would outline empty space, and Glass, which draws its own
+/// rim over the blur. (Only Dot can be transparent; an old Tint file may still say so.)
 fn framed(settings: &Settings) -> bool {
-    settings.look != Look::Dot || !settings.transparent
+    match settings.look {
+        Look::Dot => !settings.transparent,
+        Look::Glass => false,
+        _ => true,
+    }
+}
+
+/// Glass look's corner radius, in logical pixels (the CSS uses the same).
+const GLASS_RADIUS: f32 = 20.0;
+
+/// The Glass look's blur exists while that look is on, and fills the window. It has to be made on
+/// the thread that owns the window, hence the main thread.
+fn sync_glass(win: &WebviewWindow) {
+    let w = win.clone();
+    let _ = win.run_on_main_thread(move || {
+        let state = w.state::<PanelState>();
+        let mut glass = state.glass.lock().unwrap();
+        if w.state::<SettingsState>().get().look != Look::Glass {
+            *glass = None;
+            return;
+        }
+        let (Ok(hwnd), Ok(size), Ok(scale)) = (w.hwnd(), w.inner_size(), w.scale_factor()) else { return };
+        let rect = glass::inset(size.width as f32, size.height as f32, 0.0, GLASS_RADIUS * scale as f32);
+        match glass.as_ref() {
+            Some(g) => {
+                let _ = g.set_rect(rect);
+            }
+            None => *glass = Glass::attach(hwnd, rect).ok(),
+        }
+    });
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none

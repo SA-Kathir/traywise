@@ -346,6 +346,7 @@ pub fn accent_rgb(settings: &Settings) -> u32 {
             Preset::Rose => 0xf0_bf_d4,
         },
         Look::Windows => 0x4c_c2_ff,
+        Look::Glass => 0x8e_c1_ff,
     }
 }
 

@@ -10,11 +10,7 @@
 //! owns the window. It works with `no_redirection_bitmap`, focused or not. Windows decides how
 //! strong the blur is; the page's tint sets the look.
 //!
-//! This module only creates and moves the blur. Hooking it into the panel (when to attach, the
-//! rectangle, hiding it for the other looks) comes with the Glass look itself.
-
-// Not called yet: it is hooked into the panel with the Glass look.
-#![allow(dead_code)]
+//! This module only creates and moves the blur; `panel.rs` decides when it exists.
 
 use windows::{
     System::DispatcherQueueController,
@@ -120,11 +116,6 @@ impl Glass {
         self.sprite.SetSize(size)?;
         self.shape.SetSize(size)?;
         self.shape.SetCornerRadius(Vector2 { X: rect.radius, Y: rect.radius })
-    }
-
-    /// Shows or hides the blur without tearing it down (for the looks that don't use it).
-    pub fn set_visible(&self, visible: bool) -> Result<()> {
-        self.sprite.SetIsVisible(visible)
     }
 }
 

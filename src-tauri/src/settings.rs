@@ -177,6 +177,8 @@ pub enum Look {
     Liquid,
     /// Flat, like Windows 11's own flyouts, following Windows' light or dark mode.
     Windows,
+    /// Frosted glass: Windows blurs the desktop behind a transparent panel (`shell/glass.rs`).
+    Glass,
 }
 
 /// Background colour preset (Liquid look): one muted hue each. The colours are in `src/shell/liquid.css`.
