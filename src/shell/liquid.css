@@ -1847,8 +1847,28 @@ button.pomo-main:hover {
   gap: 4px;
 }
 .pomo.glass.size-2x2 .pomo-glass {
-  width: 38px;
-  height: 45px;
+  width: 54px;
+  height: 64px;
+}
+/* The three controls stand in a column at the right, which leaves the glass the room. */
+.pomo.glass.size-2x2 {
+  position: relative;
+}
+.pomo.glass.size-2x2 .pomo-main {
+  padding-right: 40px;
+}
+.pomo.glass.size-2x2 .pomo-keys {
+  position: absolute;
+  top: 50%;
+  right: var(--tile-pad);
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-50%);
+}
+.pomo.glass.size-2x2 .pomo-keys button {
+  min-width: 30px;
+  min-height: 26px;
+  padding: 0 4px;
 }
 .pomo.glass.size-2x2 .pomo-read {
   align-items: center;
