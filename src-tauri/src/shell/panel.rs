@@ -544,7 +544,10 @@ fn sync_glass(win: &WebviewWindow) {
             Some(g) => {
                 let _ = g.set_rect(rect);
             }
-            None => *glass = Glass::attach(hwnd, rect).ok(),
+            None => match Glass::attach(hwnd, rect) {
+                Ok(g) => *glass = Some(g),
+                Err(e) => eprintln!("glass blur failed: {e}"),
+            },
         }
     });
 }
