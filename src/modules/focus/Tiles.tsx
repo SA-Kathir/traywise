@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { commands, events, type FocusAction, type FocusMode, type FocusPreset } from "../../bindings";
 import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
@@ -32,6 +33,14 @@ export default function Tiles({ kind, size, open }: TileProps) {
   const timed = state?.phase != null;
   const running = timed && state.leftMs == null;
   const now = useNow(running);
+  // The hourglass is turned over each time the phase changes (a skip included), not when it first appears.
+  const phaseKey = state?.phase ? `${state.phase}${state.round}` : null;
+  const lastKey = useRef(phaseKey);
+  const [turns, setTurns] = useState(0);
+  useEffect(() => {
+    if (phaseKey && lastKey.current && phaseKey !== lastKey.current) setTurns((n) => n + 1);
+    lastKey.current = phaseKey;
+  }, [phaseKey]);
   if (!state) return null;
 
   if (!state.available)
@@ -80,7 +89,7 @@ export default function Tiles({ kind, size, open }: TileProps) {
         )}
       </span>
       <button className="pomo-main" onClick={toggle} title={timed ? (running ? "Pause" : "Resume") : `Start ${preset.focus} focus, ${preset.rest} rest`}>
-        {glass ? <Hourglass elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
+        {glass ? <Hourglass key={turns} turned={turns > 0} elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
         {timed ? (
           <span className="pomo-read">
             <Num text={time} />

@@ -20,10 +20,10 @@ const PITCH = 6;
 const DOT = 4.4;
 
 /** The hourglass, `elapsed` seconds into a phase of `total` seconds (empty when `off`). */
-export function Hourglass({ elapsed, total, off }: { elapsed: number; total: number; off?: boolean }) {
+export function Hourglass({ elapsed, total, off, turned }: { elapsed: number; total: number; off?: boolean; turned?: boolean }) {
   const sand = off ? [] : sandAt(elapsed, total);
   return (
-    <svg className="pomo-glass" viewBox={`0 0 ${10 * PITCH + DOT} ${12 * PITCH + DOT}`} aria-hidden>
+    <svg className={turned ? "pomo-glass turn" : "pomo-glass"} viewBox={`0 0 ${10 * PITCH + DOT} ${12 * PITCH + DOT}`} aria-hidden>
       {DOTS.map((d, i) => (
         <circle key={i} cx={d.c * PITCH + DOT / 2} cy={d.r * PITCH + DOT / 2} r={DOT / 2} className={sand[i] || undefined} />
       ))}
