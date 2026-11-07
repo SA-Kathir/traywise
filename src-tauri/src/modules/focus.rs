@@ -28,6 +28,7 @@ use windows::core::{GUID, HRESULT, HSTRING, IUnknown, IUnknown_Vtbl, PCWSTR, PWS
 
 use crate::module::{Module, ModuleId};
 use crate::settings::SettingsState;
+use crate::shell::tray;
 
 /// WNF_SHEL_QUIETHOURS_ACTIVE_PROFILE_CHANGED: 0 when Do not disturb is off, 1 (priority only) or
 /// 2 (alarms only) when it's on.
@@ -269,6 +270,7 @@ impl Module for Focus {
             let _ = worker.join();
         }
         *shared.state.lock().unwrap() = FocusState::default();
+        tray::set_focus(&self.app, None);
     }
 }
 
@@ -412,9 +414,15 @@ fn publish(app: &AppHandle, on: Option<bool>, cycle: Option<Cycle>, works: bool)
         ends_at,
         left_ms: cycle.and_then(|c| c.paused).map(ms),
     };
+    let line = cycle.map(|c| match (c.paused, c.phase) {
+        (Some(_), _) => "Focus paused".to_string(),
+        (None, Phase::Focus) => format!("Focus until {}", super::keep_awake::clock_in(c.ends.saturating_duration_since(Instant::now()))),
+        (None, _) => format!("Resting until {}", super::keep_awake::clock_in(c.ends.saturating_duration_since(Instant::now()))),
+    });
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
+        tray::set_focus(app, line);
         *current = state.clone();
         let _ = FocusChanged(state).emit(app);
     }

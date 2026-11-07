@@ -80,7 +80,7 @@ fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool) 
 
 /// The time of day `left` from now, in the user's own format, like "3:40 PM" or "15:40". A clock time
 /// rather than "40 min left", so the tray tooltip stays right without a timer updating it.
-fn clock_in(left: Duration) -> String {
+pub(crate) fn clock_in(left: Duration) -> String {
     let mut time = unsafe { GetLocalTime() };
     let now = time.wHour as u64 * 3600 + time.wMinute as u64 * 60 + time.wSecond as u64;
     let minute = (now + left.as_secs() + 30) / 60 % (24 * 60);

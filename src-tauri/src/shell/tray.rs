@@ -35,6 +35,8 @@ struct Status {
     mics_muted: bool,
     /// The tooltip line, like "Keeping awake until 3:40 PM". None when Keep awake is off.
     awake: Option<String>,
+    /// The tooltip line for a running Focus cycle, like "Focus until 3:40 PM". None when none is running.
+    focus: Option<String>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -102,6 +104,10 @@ pub fn set_mics_muted(app: &AppHandle, muted: bool) {
     update(app, |status| status.mics_muted = muted);
 }
 
+pub fn set_focus(app: &AppHandle, line: Option<String>) {
+    update(app, |status| status.focus = line);
+}
+
 pub fn set_keep_awake(app: &AppHandle, line: Option<String>) {
     update(app, |status| status.awake = line);
 }
@@ -122,6 +128,11 @@ fn update(app: &AppHandle, change: impl FnOnce(&mut Status)) {
     }
     if let Some(line) = &status.awake {
         tooltip += "\n";
+        tooltip += line;
+    }
+    if let Some(line) = &status.focus {
+        tooltip += "
+";
         tooltip += line;
     }
     let _ = tray.set_tooltip(Some(tooltip));
