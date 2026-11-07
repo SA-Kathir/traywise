@@ -256,7 +256,7 @@ export function SwitchRow(props: { label: string; desc?: string; checked: boolea
 }
 
 /** One of a few choices, as a segmented control. */
-function Pick<T extends string>(props: { label: string; options: { id: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+export function Pick<T extends string>(props: { label: string; options: { id: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   return (
     <div className="segmented" role="radiogroup" aria-label={props.label}>
       {props.options.map((o) => (

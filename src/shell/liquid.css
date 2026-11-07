@@ -1672,10 +1672,147 @@ button.clock-main:hover {
   opacity: 0.6;
 }
 
-/* Focus 2×2 (it shares Keep awake's layout): the bell before its status line. */
-.focus-bell {
+/* ---- Focus 2×2 and 4×2: the Pomodoro tile ------------------------------------------------- */
+
+/* The title and the four round dots, the countdown (an arc, or an hourglass), and the buttons.
+   --pomo-focus and --pomo-rest are the two phase colours (Dot sets them; the other looks use the accent). */
+.pomo {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tile-pad);
+  overflow: hidden;
+  --focus: var(--pomo-focus, var(--accent));
+  --restful: var(--pomo-rest, var(--accent));
+}
+.pomo.rest {
+  --focus: var(--restful);
+}
+.pomo .tile-title .tile-icon {
+  font-size: 14px;
+}
+.pomo-rounds {
+  display: flex;
+  gap: 7px;
+  margin-left: auto;
+}
+.pomo-rounds i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.2);
+}
+.pomo-rounds .done {
+  background: rgb(var(--ink) / 0.9);
+}
+.pomo-rounds .cur {
+  background: var(--focus);
+}
+.pomo-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+  padding: 0 0 4px;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.pomo-main:hover {
+  background: none;
+}
+.pomo.size-4x2 .pomo-main {
+  justify-content: flex-start;
+  gap: 24px;
+}
+.pomo-arc {
+  flex: none;
+  width: 116px;
+  height: 60px;
+  fill: rgb(var(--ink) / 0.2);
+}
+.pomo-arc .lit {
+  fill: var(--focus);
+}
+.pomo-glass {
+  flex: none;
+  width: 64px;
+  height: 76px;
+  fill: rgb(var(--ink) / 0.2);
+}
+.pomo.size-4x2 .pomo-glass {
+  width: 75px;
+  height: 89px;
+}
+.pomo-glass :is(.sand, .grain) {
+  fill: var(--focus);
+}
+.pomo-glass .dim {
+  fill: var(--focus);
+  opacity: 0.45;
+}
+.pomo-glass .pile {
+  fill: rgb(var(--ink) / 0.55);
+}
+/* On, the tile is filled with the accent: the dots switch to the text colour on it. */
+.panel:not(.look-dot) .pomo.on :is(.pomo-arc, .pomo-glass) {
+  fill: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .pomo.on :is(.lit, .sand, .grain, .dim) {
+  fill: var(--on-accent);
+}
+.panel:not(.look-dot) .pomo.on .pile {
+  fill: color-mix(in srgb, var(--on-accent) 60%, transparent);
+}
+.panel:not(.look-dot) .pomo.on .pomo-rounds i {
+  background: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .pomo.on .pomo-rounds :is(.done, .cur) {
+  background: var(--on-accent);
+}
+.pomo-read {
+  display: flex;
+  flex-direction: column;
+}
+.pomo-read .num {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+.pomo.glass.size-2x2 .pomo-read .num {
+  font-size: 36px;
+  line-height: 1.05;
+}
+.pomo.size-4x2 .pomo-read .num {
+  font-size: 56px;
+}
+/* The arc has the time inside it. */
+.pomo.arc.size-2x2 .pomo-read {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  align-items: center;
+}
+.pomo .tile-detail {
+  font-size: 12px;
+}
+.pomo-keys {
+  display: flex;
+  gap: 6px;
+}
+.pomo-keys button {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.pomo-keys .glyph {
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 11px;
 }
 
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
