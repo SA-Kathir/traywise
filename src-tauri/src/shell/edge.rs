@@ -43,7 +43,7 @@ const HANDLE: (i32, i32) = (8, 80);
 const SWOLLEN: (i32, i32) = (14, 104);
 /// How long the swell takes: longer than the hover, so the handle is still moving while the panel appears and
 /// hands over to it without a pause.
-const SWELL_MS: u32 = HOVER_MS + 150;
+const SWELL_MS: u32 = HOVER_MS + 250;
 const SWOLLEN_ALPHA: u8 = 255;
 const HANDLE_ALPHA: u8 = 140;
 /// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
