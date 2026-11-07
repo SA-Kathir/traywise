@@ -6,6 +6,8 @@
 
 mod worker;
 
+pub(crate) use worker::clock_in;
+
 use std::sync::Mutex;
 use std::sync::mpsc::{Sender, channel};
 use std::thread::JoinHandle;

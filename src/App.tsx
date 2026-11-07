@@ -1,3 +1,4 @@
+import { getVersion } from "@tauri-apps/api/app";
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
@@ -11,10 +12,11 @@ import { Num } from "./shell/Tile";
 import { SettingsPage, useSave } from "./shell/Settings";
 import { SettingsContext } from "./shell/SettingsContext";
 import { Setup } from "./shell/Setup";
-import { UpdateNotice } from "./shell/UpdateNotice";
+import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
 import "./shell/island.css";
+import { Pending, settled } from "./shell/useLive";
 
 // Segoe Fluent Icons glyphs.
 const HOME = String.fromCodePoint(0xe80f);
@@ -47,8 +49,11 @@ function App() {
   // The home board's page on screen.
   const [page, setPage] = useState(0);
 
+  const [version, setVersion] = useState("");
+
   useEffect(() => {
     commands.getSettings().then(setSettings);
+    getVersion().then(setVersion);
   }, []);
 
   // The panel's accent edge (dot.css) brightens where the pointer is.
@@ -107,21 +112,35 @@ function App() {
       setOverview(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
       requestAnimationFrame(() => requestAnimationFrame(() => commands.panelPainted()));
+      // The tiles come in once they all have their data (Rust waits for this, but not for long).
+      settled().then(() => commands.panelReady());
     });
     return () => {
       unlisten.then((stop) => stop());
     };
   }, []);
 
-  // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode.
+  // The tray menu's Settings line: Rust opens the panel, then sends this.
   useEffect(() => {
-    if (!editing) return;
+    const unlisten = events.showSettings.listen(() => setView("settings"));
+    return () => {
+      unlisten.then((stop) => stop());
+    };
+  }, []);
+
+  // Esc steps out: from the tray of tiles to add or the pages, then out of edit mode, then from a page
+  // back to Home, and from Home it closes the panel. (A control that used Esc itself, like cancelling a
+  // shortcut or closing a list, has already handled it.)
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") (adding ? setAdding : overview ? setOverview : setEditing)(false);
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (editing) (adding ? setAdding : overview ? setOverview : setEditing)(false);
+      else if (view !== "home") setView("home");
+      else commands.closePanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, adding, overview]);
+  }, [editing, adding, overview, view]);
 
   // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
@@ -133,6 +152,13 @@ function App() {
   }, [lookClass]);
 
   const { save, error } = useSave({ settings: settings!, onChange: setSettings });
+
+  // A fresh install (setup not done yet) has nothing new to read about: note the version silently.
+  // (A 0.3.0 file has no version yet but is onboarded, so its first update still shows the note.)
+  const fresh = settings && !settings.onboarded && settings.lastSeenVersion !== version && version !== "";
+  useEffect(() => {
+    if (fresh) save({ ...settings, lastSeenVersion: version });
+  }, [fresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Settings arrive within milliseconds of startup, long before anyone opens the panel.
   if (!settings) return null;
@@ -154,6 +180,12 @@ function App() {
   const setPages = (next: Placed[][], show: number) => {
     save({ ...settings, pages: next });
     setPage(show);
+  };
+  const showTile = (id: string) => {
+    const i = pages.findIndex((p) => p.some((t) => t.id === id));
+    if (i < 0) return;
+    setView("home");
+    setPage(i);
   };
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
@@ -181,7 +213,7 @@ function App() {
   }
 
   return (
-    <SettingsContext.Provider value={{ settings, save }}>
+    <SettingsContext.Provider value={{ settings, save, showTile }}>
     <main className={`${panelClass} fixed`}>
       <header className="row">
         {!tabbed && !editHome && (
@@ -274,6 +306,7 @@ function App() {
 
       <div className="scroll">
       <UpdateNotice />
+      {view === "home" && <WhatsNew version={version} />}
       {view === "settings" ? (
         <SettingsPage settings={settings} onChange={setSettings} />
       ) : view === "modules" ? (
@@ -354,7 +387,7 @@ function CategoryPage({ ids }: { ids: ModuleId[] }) {
     return (
       <section key={id}>
         <h2>{name}</h2>
-        <Suspense fallback={null}>
+        <Suspense fallback={<Pending />}>
           <Panel />
         </Suspense>
       </section>

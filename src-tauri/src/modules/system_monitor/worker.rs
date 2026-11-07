@@ -4,7 +4,9 @@ use std::collections::VecDeque;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
-use sysinfo::{Networks, System};
+use std::net::IpAddr;
+
+use sysinfo::{NetworkData, Networks, System};
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
@@ -98,12 +100,40 @@ impl Sampler {
             memory_total: mib(self.system.total_memory()),
             download,
             upload,
+            download_total: mib(self.networks.values().filter(|n| has_address(n)).map(|n| n.total_received()).sum()),
+            upload_total: mib(self.networks.values().filter(|n| has_address(n)).map(|n| n.total_transmitted()).sum()),
+            local_ip: local_ip(&self.networks),
             battery: battery(),
             disk_free,
             disk_total,
             history: self.history.clone(),
         }
     }
+}
+
+/// An adapter with a real address (not just loopback or link-local), so it's a connection and not a leftover.
+fn has_address(n: &NetworkData) -> bool {
+    n.ip_networks().iter().any(|ip| usable(&ip.addr))
+}
+
+fn usable(addr: &IpAddr) -> bool {
+    match addr {
+        IpAddr::V4(a) => !a.is_loopback() && !a.is_link_local() && !a.is_unspecified(),
+        IpAddr::V6(a) => !a.is_loopback() && !a.is_unspecified() && (a.segments()[0] & 0xffc0) != 0xfe80,
+    }
+}
+
+/// The IPv4 address of the adapter that has carried the most traffic (so a VPN or virtual switch that
+/// sits idle doesn't win).
+fn local_ip(networks: &Networks) -> Option<String> {
+    networks
+        .values()
+        .filter_map(|n| {
+            let ip = n.ip_networks().iter().map(|i| i.addr).find(|a| a.is_ipv4() && usable(a))?;
+            Some((n.total_received(), ip))
+        })
+        .max_by_key(|(received, _)| *received)
+        .map(|(_, ip)| ip.to_string())
 }
 
 /// Total CPU use as Task Manager counts it: Windows' "% Processor Utility" counter, which scales

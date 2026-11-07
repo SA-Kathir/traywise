@@ -16,7 +16,7 @@ Priorities, in order: **1. fast and lean, with no bloat; 2. a distinctive, polis
 
 ## Product boundaries
 
-- Out of scope: launcher features (clipboard history, snippets, notes, timer/Pomodoro, calculator, web search). Launchers can drive Traywise through `traywise://` links instead (planned).
+- Out of scope: launcher features (clipboard history, snippets, notes, calculator, web search). The Focus module's Pomodoro-style timer (focus/rest cycles that can switch Do not disturb on) is in scope because it is part of Focus, not a general timer app. Launchers can drive Traywise through `traywise://` links instead (planned).
 - No paid services (code signing etc.) for now.
 - **Keep private notes private:** no Figma links, account names, personal details or mentions of other people's projects in tracked files, commits, PRs, issues or release notes. They belong in `CLAUDE.local.md`.
 - Never decompile or copy other products (Nothing OS, Vorssaint). Learn from public material only.

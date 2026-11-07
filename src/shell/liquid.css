@@ -458,6 +458,23 @@ button.tile-title:hover {
   top: 4px;
   left: 4px;
 }
+/* The wide system monitor tile's pills: one under each half, showing what that side reads. */
+.board .tile-reading {
+  bottom: -8px;
+  width: auto;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 10px;
+}
+.board .tile-reading.left {
+  left: 25%;
+  transform: translateX(-50%);
+}
+.board .tile-reading.right {
+  left: 75%;
+  transform: translateX(-50%);
+}
 .tile-resize {
   right: 4px;
   bottom: 4px;
@@ -590,29 +607,44 @@ label.row + .hint,
   min-width: 0;
 }
 .mixer-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   width: 96px;
   flex: none;
+}
+.mixer-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* The app's output device, under its name. */
-/* A small pill sized to its text; a long device name is cut off with "…". */
+/* The app's output device, under its name: plain text with a speaker and a chevron, as in the
+   design. `all: unset` drops every generic button style (the pill, its inset edge, the radius,
+   the min-height), which the three looks each set differently and which a clipped edge showed as
+   half an outline. The ::after widens the click target to ~28 px without changing the row. */
 .mixer-name .mixer-output {
+  all: unset;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 3px;
-  width: fit-content;
+  align-self: flex-start;
+  gap: 4px;
   max-width: 100%;
-  min-height: 18px;
-  margin-top: 2px;
-  padding: 0 6px;
-  border: none;
-  border-radius: 999px;
-  background: rgb(var(--ink) / 0.08);
+  box-sizing: border-box;
   font-size: 11px;
-  line-height: 1;
+  line-height: 14px;
   color: rgb(var(--ink) / 0.6);
+  cursor: pointer;
+}
+.mixer-output::after {
+  content: "";
+  position: absolute;
+  inset: -7px -4px;
+}
+.mixer-output:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 .mixer-output-name {
   min-width: 0;
@@ -623,9 +655,10 @@ label.row + .hint,
 .mixer-output .glyph {
   flex: none;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 8px;
+  font-size: 10px;
 }
-.mixer-name .mixer-output.moved {
+.mixer-name .mixer-output.moved,
+.mixer-name .mixer-output:hover {
   color: var(--accent);
 }
 .mixer-outputs .check {
@@ -634,9 +667,6 @@ label.row + .hint,
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
   font-size: 10px;
   line-height: inherit;
-}
-.mixer-name .mixer-output:hover {
-  color: var(--accent);
 }
 .mixer-outputs,
 .mixer-reset {
@@ -679,6 +709,13 @@ label.row + .hint,
 .error {
   font-size: 12px;
   color: #ffb4b4;
+}
+
+/* Update download progress: the browser's own thin bar, in the look's accent. */
+.update-progress {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent, currentColor);
 }
 
 /* ---- Controls -------------------------------------------------------------------------- */
@@ -1672,10 +1709,256 @@ button.clock-main:hover {
   opacity: 0.6;
 }
 
-/* Focus 2×2 (it shares Keep awake's layout): the bell before its status line. */
-.focus-bell {
+/* ---- Focus 2×2 and 4×2: the Pomodoro tile ------------------------------------------------- */
+
+/* The title and the four round dots, the countdown (an arc, or an hourglass), and the buttons.
+   --pomo-focus and --pomo-rest are the two phase colours (Dot sets them; the other looks use the accent). */
+.pomo {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tile-pad);
+  overflow: hidden;
+  --focus: var(--pomo-focus, var(--accent));
+  --restful: var(--pomo-rest, var(--accent));
+}
+.pomo.rest {
+  --focus: var(--restful);
+}
+.pomo .tile-title .tile-icon {
+  font-size: 14px;
+}
+.pomo-rounds {
+  display: flex;
+  gap: 7px;
+  margin-left: auto;
+}
+.pomo-rounds i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.2);
+}
+.pomo-rounds .done {
+  background: rgb(var(--ink) / 0.9);
+}
+.pomo-rounds .cur {
+  background: var(--focus);
+}
+.pomo-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+  padding: 0 0 4px;
+  text-align: left;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+button.pomo-main:hover {
+  background: none;
+}
+.pomo.size-4x2 .pomo-main {
+  justify-content: center;
+  gap: 24px;
+}
+.pomo-arc {
+  flex: none;
+  width: 116px;
+  height: 60px;
+  fill: rgb(var(--ink) / 0.2);
+}
+.pomo-arc .lit {
+  fill: var(--focus);
+}
+.pomo-glass {
+  flex: none;
+  width: 64px;
+  height: 76px;
+  fill: rgb(var(--ink) / 0.2);
+}
+/* A phase change turns the glass over: it starts upside down, where the finished glass left off, and
+   rolls upright with the new phase's full top. Only on that event, never continuously. */
+.pomo-glass.turn {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pomo-turn 650ms ease-in-out;
+}
+@keyframes pomo-turn {
+  from {
+    transform: rotate(180deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pomo-glass.turn {
+    animation: none;
+  }
+}
+.pomo.size-4x2 .pomo-glass {
+  width: 75px;
+  height: 89px;
+}
+.pomo-glass :is(.sand, .grain) {
+  fill: var(--focus);
+}
+.pomo-glass .dim {
+  fill: var(--focus);
+  opacity: 0.45;
+}
+.pomo-glass .pile {
+  fill: rgb(var(--ink) / 0.55);
+}
+/* On, the tile is filled with the accent: the dots switch to the text colour on it. */
+.panel:not(.look-dot) .pomo.on :is(.pomo-arc, .pomo-glass) {
+  fill: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .pomo.on :is(.lit, .sand, .grain, .dim) {
+  fill: var(--on-accent);
+}
+.panel:not(.look-dot) .pomo.on .pile {
+  fill: color-mix(in srgb, var(--on-accent) 60%, transparent);
+}
+.panel:not(.look-dot) .pomo.on .pomo-rounds i {
+  background: color-mix(in srgb, var(--on-accent) 30%, transparent);
+}
+.panel:not(.look-dot) .pomo.on .pomo-rounds :is(.done, .cur) {
+  background: var(--on-accent);
+}
+.pomo-read {
+  display: flex;
+  flex-direction: column;
+}
+.pomo-read .num {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+/* The small hourglass has its readout under it, in every state (idle, running, paused). */
+.pomo.glass.size-2x2 .pomo-main {
+  flex-direction: column;
+  gap: 4px;
+}
+.pomo.glass.size-2x2 .pomo-glass {
+  width: 54px;
+  height: 64px;
+}
+.pomo.glass.size-2x2 .pomo-read {
+  align-items: center;
+}
+.pomo.glass.size-2x2 .pomo-read .num {
+  font-size: 24px;
+}
+
+.pomo.size-4x2 .pomo-read .num {
+  font-size: 56px;
+}
+/* The arc has the time inside it. */
+.pomo.arc.size-2x2 .pomo-read {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  align-items: center;
+}
+.pomo .tile-detail {
+  font-size: 12px;
+}
+.pomo-keys {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+/* The gear sits where the round dots do (top right) and gives way to them while a cycle runs. */
+.pomo-gear {
+  margin-left: auto;
+  padding: 4px;
+  font-size: 12px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.pomo .pomo-gear {
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 11px;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+.pomo .pomo-gear:is(:hover, :focus-visible, :active) {
+  opacity: 1;
+  background: transparent;
+  background-image: none;
+}
+/* Idle: a big play button over the graphic, shown on hover or keyboard focus (always on touch). */
+.pomo-gfx {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.pomo-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  font-size: 18px;
+  border-radius: 50%;
+  background: var(--focus);
+  color: var(--on-accent, #fff);
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+.pomo-main:hover .pomo-play,
+.pomo-main:focus-visible .pomo-play {
+  opacity: 1;
+}
+@media (hover: none) {
+  .pomo-play {
+    opacity: 1;
+  }
+}
+.pomo-keys button {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.pomo-keys .glyph,
+.pomo button.glyph,
+.pomo span.glyph {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+}
+
+/* The Focus page: its folding sections are spaced like cards, and the saved lengths wrap into a grid. */
+.focus-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.focus-starts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+.focus-starts button {
+  flex: none;
+  width: 64px;
+  min-width: 0;
 }
 
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
@@ -1745,29 +2028,20 @@ input.text {
   background: rgb(var(--ink) / 0.06);
   user-select: text;
 }
+/* Focus's custom timer: a short centred number, no native spin buttons. */
+input.text.timer-minutes {
+  width: 5em;
+  margin-top: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+input.timer-minutes::-webkit-inner-spin-button,
+input.timer-minutes::-webkit-outer-spin-button {
+  appearance: none;
+}
 button.net-row {
   width: 100%;
-}
-
-/* The system monitor page's picker for its wide tile: a heading, then a row each for left and right. */
-.tile-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgb(var(--ink) / 0.08);
-}
-.tile-picker h2 {
-  margin: 0;
-}
-.tile-picker .row + .row {
-  margin-top: 0;
-}
-.picker-side {
-  width: 44px;
-  flex: none;
-  color: rgb(var(--ink) / 0.6);
 }
 
 /* ---- Settings rows (Settings, Modules, module options) ---------------------------------- */
@@ -1822,6 +2096,17 @@ section > .setting:last-child {
 }
 .module-idle {
   color: rgb(var(--ink) / 0.45);
+}
+/* The (i) beside a setting's name: hover it for the explanation. */
+.setting-label .info {
+  margin-left: 6px;
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.5);
+  cursor: help;
+}
+.setting-label .info:hover,
+.setting-label .info:focus-visible {
+  color: rgb(var(--ink) / 0.9);
 }
 .setting-value {
   color: rgb(var(--ink) / 0.6);
@@ -2130,10 +2415,101 @@ section > .setting:last-child {
   min-width: 0;
   padding: 0 4px;
 }
-/* Project's icons are a little smaller there, so four fit with room between them. */
-.segmented.icons .project-icon {
+.project-icon * {
+  vector-effect: non-scaling-stroke;
+}
+/* Project tiles. 2×1: the current mode and four dots; larger: the four choices, icon above the name. */
+.project-pips {
+  display: flex;
+  gap: 5px;
+}
+.project-pips i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+}
+.project-pips i.on {
+  opacity: 1;
+}
+.project-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+.project-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tile-card .segmented.project-grid.stacked {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: 1fr;
+  padding: 0;
+}
+.tile-card.size-4x1 {
+  padding-bottom: 8px;
+  gap: 4px;
+}
+.tile-card .segmented.project-grid.stacked button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 0;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+}
+.tile-card:is(.size-4x1, .size-4x2) .segmented.project-grid.stacked {
+  grid-template-columns: repeat(4, 1fr);
+}
+.size-4x2 .project-grid.stacked {
+  flex: none;
+  height: 46px;
+}
+.size-4x1 .project-grid.stacked button {
+  gap: 2px;
+}
+.project-text .tile-detail {
+  white-space: normal;
+}
+.size-4x1 .project-grid.stacked .project-icon {
+  width: 16px;
+  height: 11.2px;
+}
+.size-4x2 .project-grid.stacked .project-icon {
   width: 18px;
-  height: 11px;
+  height: 12.6px;
+}
+.size-4x2 .project-now {
+  gap: 12px;
+}
+.project-preview {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 58px;
+  border-radius: 10px;
+  background: rgb(var(--ink) / 0.06);
+}
+.project-preview .project-icon {
+  width: 60px;
+  height: 42px;
+}
+.project-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 /* A card's title stays on one line; its detail gives way (ellipsis) instead. */
 .tile-card .tile-title .tile-label {
@@ -2173,4 +2549,117 @@ html:not(.clear) body::after {
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+}
+
+/* System monitor: the secondary network lines sit in rows under a closed "Details" line. */
+.stat-extra {
+  margin-top: 4px;
+}
+/* A button that reads as plain text (the Details line, the local IP): no pill, edge or shadow, only a
+   colour change on hover. Specific enough to beat each look's own button rules. */
+.stat button.link-text {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  min-height: 0;
+  cursor: pointer;
+}
+.stat button.link-text:hover {
+  background: none;
+  color: var(--accent);
+}
+.stat-more {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  color: rgb(var(--ink) / 0.6);
+}
+.stat-more .icon {
+  font-size: 9px;
+}
+.stat-value.ip {
+  font-family: ui-monospace, Consolas, monospace;
+}
+/* Memory, battery and disk: smaller and closer together than the graphs above. */
+.stat-quiet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 11px;
+}
+.meter {
+  display: block;
+  height: 2px;
+  margin-top: 4px;
+  border-radius: 1px;
+  background: rgb(var(--ink) / 0.12);
+}
+.meter i {
+  display: block;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* The hourglass tile at rest shows only the glass and its time, centred. Hovered (or with focus inside),
+   the glass slides left and the controls fade in as a column on the right. Only transform and opacity
+   change, and only on that event. */
+.pomo.glass {
+  position: relative;
+}
+.pomo.glass .pomo-main {
+  justify-content: center;
+  transition: transform 0.22s ease-out;
+}
+.pomo.glass .pomo-keys {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.22s ease-out;
+}
+.pomo.glass .pomo-keys button {
+  min-width: 30px;
+  min-height: 26px;
+  padding: 0 4px;
+}
+.pomo.glass.on:is(:hover, :focus-within) .pomo-main {
+  transform: translateX(-26px);
+}
+.pomo.glass.on:is(:hover, :focus-within) .pomo-keys {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* No hover (touch): the controls stay, as a compact row at the bottom, and the glass is smaller. */
+@media (hover: none) {
+  .pomo.glass .pomo-keys {
+    position: static;
+    flex-direction: row;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  .pomo.glass.on:is(:hover, :focus-within) .pomo-main {
+    transform: none;
+  }
+  .pomo.glass.size-2x2 .pomo-glass {
+    width: 38px;
+    height: 45px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pomo.glass .pomo-main {
+    transition: none;
+  }
 }

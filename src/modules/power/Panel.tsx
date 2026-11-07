@@ -62,7 +62,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   if (size === "2x1" && current)
     return (
       <TileCard size={size} label="Power mode" onOpen={open}>
-        <Modes mode={current.mode} icons />
+        <Modes mode={current.mode} icons locked={state.energySaver} />
       </TileCard>
     );
   const next = current && MODES[(MODES.indexOf(current) + 1) % MODES.length];
@@ -72,7 +72,7 @@ export function Tiles({ kind, size, open }: TileProps) {
       icon={(current ?? MODES[1]).icon}
       label="Power mode"
       detail={current ? (size === "1x1" ? current.short : current.label) : "None"}
-      onToggle={next && (() => commands.powerSetMode(next.mode))}
+      onToggle={next && !state.energySaver ? () => commands.powerSetMode(next.mode) : undefined}
       onOpen={open}
     />
   );
@@ -92,16 +92,18 @@ function Gauge({ percent }: { percent: number }) {
   );
 }
 
-function Modes({ mode, icons }: { mode: PowerMode; icons?: boolean }) {
+/** `locked`: Energy saver is on, so Windows overrides the mode; dim the choices and ignore clicks. */
+function Modes({ mode, icons, locked }: { mode: PowerMode; icons?: boolean; locked?: boolean }) {
   return (
-    <div className={`segmented${icons ? " icons" : ""}`} role="radiogroup" aria-label="Power mode">
+    <div className={`segmented${icons ? " icons" : ""}${locked ? " unavailable" : ""}`} role="radiogroup" aria-label="Power mode">
       {MODES.map((m) => (
         <button
           key={m.mode}
           role="radio"
           aria-checked={mode === m.mode}
           className={mode === m.mode ? "on" : ""}
-          title={m.label}
+          title={locked ? `${m.label}: Energy saver is on` : m.label}
+          disabled={locked}
           onClick={() => commands.powerSetMode(m.mode)}
         >
           {icons ? (
@@ -123,7 +125,8 @@ export default function Panel() {
   const at = state.energySaverAt;
   return (
     <>
-      {state.mode ? <Modes mode={state.mode} /> : <p className="hint">Power modes need the Balanced power plan.</p>}
+      {state.mode ? <Modes mode={state.mode} locked={state.energySaver} /> : <p className="hint">Power modes need the Balanced power plan.</p>}
+      {state.mode && state.energySaver && <p className="hint">Energy saver is on, so Windows sets the power mode.</p>}
       {state.battery && (
         <div className={`row battery-row${low(state.battery.percent)}`}>
           <span className="battery-big">

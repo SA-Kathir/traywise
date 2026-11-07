@@ -39,13 +39,19 @@ const HOVER_MS: u32 = 250;
 /// The handle: a pill this many physical pixels wide and tall.
 const HANDLE: (i32, i32) = (8, 80);
 /// While the mouse rests on the handle it swells to this size and brightens, so you can see the
-/// panel is about to open (like a Dynamic Island stretching before it opens). It reaches it as the hover fires.
+/// panel is about to open (like a Dynamic Island stretching before it opens).
 const SWOLLEN: (i32, i32) = (14, 104);
+/// How long the swell takes: longer than the hover, so the handle is still moving while the panel appears and
+/// hands over to it without a pause.
+const SWELL_MS: u32 = HOVER_MS + 250;
 const SWOLLEN_ALPHA: u8 = 255;
 const HANDLE_ALPHA: u8 = 140;
 /// Windows' "the mouse left" message, and the animation's timer (about 60 frames a second).
 const WM_MOUSELEAVE: u32 = 0x02A3;
 const ANIMATION_TIMER: usize = 1;
+/// Warming the panel up starts this long after the mouse lands (so passing by costs nothing), and its timer.
+const WARM_MS: u32 = 120;
+const WARM_TIMER: usize = 2;
 const FRAME_MS: u32 = 16;
 
 thread_local! {
@@ -53,6 +59,8 @@ thread_local! {
     static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
     /// The window you see (the handle). The edge window itself never changes size, so the pointer's target
     /// holds still while the handle swells (resizing the target under the pointer made the handle flicker).
+    /// The panel has been warmed up for this visit (and must be put back if the mouse leaves).
+    static WARMED: Cell<bool> = const { Cell::new(false) };
     static VISIBLE: Cell<isize> = const { Cell::new(0) };
 }
 
@@ -177,9 +185,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             // Ask Windows to say when the mouse has rested here for HOVER_MS (once per arrival).
             WM_MOUSEMOVE => {
                 // The handle starts swelling as soon as the mouse arrives (the strip has nothing to show).
-                if SHOW_HANDLE.load(Ordering::Relaxed) && ARRIVED.get().is_none() {
+                if ARRIVED.get().is_none() {
                     ARRIVED.set(Some(Instant::now()));
-                    SetTimer(Some(hwnd), ANIMATION_TIMER, FRAME_MS, None);
+                    if SHOW_HANDLE.load(Ordering::Relaxed) {
+                        SetTimer(Some(hwnd), ANIMATION_TIMER, FRAME_MS, None);
+                    }
+                    SetTimer(Some(hwnd), WARM_TIMER, WARM_MS, None);
                 }
                 let mut track = TRACKMOUSEEVENT {
                     cbSize: size_of::<TRACKMOUSEEVENT>() as u32,
@@ -197,8 +208,17 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 }
                 LRESULT(0)
             }
+            WM_TIMER if wparam.0 == WARM_TIMER => {
+                // Resting here: the panel is likely to open, so start getting its data ready.
+                let _ = KillTimer(Some(hwnd), WARM_TIMER);
+                if let Some(app) = APP.get() {
+                    WARMED.set(true);
+                    super::panel::warm_up(app, true);
+                }
+                LRESULT(0)
+            }
             WM_TIMER => {
-                let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / HOVER_MS as f32).min(1.0));
+                let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / SWELL_MS as f32).min(1.0));
                 pose(t);
                 if t >= 1.0 {
                     let _ = KillTimer(Some(hwnd), ANIMATION_TIMER); // it stays swollen until the mouse leaves
@@ -208,7 +228,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             // The mouse left: back to the resting handle.
             WM_MOUSELEAVE => {
                 let _ = KillTimer(Some(hwnd), ANIMATION_TIMER);
+                // (Does nothing if the panel did open.)
+                let _ = KillTimer(Some(hwnd), WARM_TIMER);
                 ARRIVED.set(None);
+                if WARMED.replace(false) && let Some(app) = APP.get() {
+                    super::panel::warm_up(app, false);
+                }
                 pose(0.0);
                 LRESULT(0)
             }
@@ -251,9 +276,10 @@ fn pose(t: f32) {
     }
 }
 
-/// The handle's rectangle and opacity at `t`, easing out: quick at first, then settling.
+/// The handle's rectangle and opacity at `t`, easing in: slow at first, gathering speed, so it's at full
+/// stretch only as the panel arrives (an ease-out looked finished halfway through).
 fn swell(monitor: RECT, side: EdgeSide, t: f32) -> (RECT, u8) {
-    let e = 1.0 - (1.0 - t).powi(3);
+    let e = t * t;
     let mix = |a: i32, b: i32| a + ((b - a) as f32 * e).round() as i32;
     let (w, h) = (mix(HANDLE.0, SWOLLEN.0), mix(HANDLE.1, SWOLLEN.1));
     let top = monitor.top + (monitor.bottom - monitor.top - h) / 2;
@@ -300,31 +326,32 @@ fn rect(monitor: RECT, handle: bool, side: EdgeSide) -> RECT {
     RECT { left, top, right: left + w, bottom: top + h }
 }
 
-/// The handle's colour as Windows wants it (0x00BBGGRR): the accent of the current look, or grey.
-/// Dot's accent presets, Tint's preset accents and Windows' blue; the same colours as in the CSS.
+/// The accent of the current look as 0xRRGGBB: Dot's accent presets, Tint's preset accents and Windows'
+/// blue; the same colours as in the CSS.
+pub fn accent_rgb(settings: &Settings) -> u32 {
+    match settings.look {
+        Look::Dot => match settings.accent {
+            Accent::Red => 0xd9_2b_24,
+            Accent::Amber => 0xf2_a3_3a,
+            Accent::Violet => 0xa9_8b_ff,
+            Accent::Blue => 0x5a_a9_ff,
+            Accent::Green => 0x34_c7_7b,
+        },
+        Look::Liquid => match settings.preset {
+            Preset::Ocean => 0xa9_c8_ee,
+            Preset::Graphite => 0xd7_dc_e4,
+            Preset::Forest => 0xa8_d8_bd,
+            Preset::Plum => 0xd4_bd_e8,
+            Preset::Ember => 0xf0_c3_a6,
+            Preset::Rose => 0xf0_bf_d4,
+        },
+        Look::Windows => 0x4c_c2_ff,
+    }
+}
+
+/// The handle's colour as Windows wants it (0x00BBGGRR): the accent, or grey.
 fn handle_colour(settings: &Settings) -> u32 {
-    let rgb: u32 = if !settings.edge_handle_accent {
-        0x90_90_90
-    } else {
-        match settings.look {
-            Look::Dot => match settings.accent {
-                Accent::Red => 0xd9_2b_24,
-                Accent::Amber => 0xf2_a3_3a,
-                Accent::Violet => 0xa9_8b_ff,
-                Accent::Blue => 0x5a_a9_ff,
-                Accent::Green => 0x34_c7_7b,
-            },
-            Look::Liquid => match settings.preset {
-                Preset::Ocean => 0xa9_c8_ee,
-                Preset::Graphite => 0xd7_dc_e4,
-                Preset::Forest => 0xa8_d8_bd,
-                Preset::Plum => 0xd4_bd_e8,
-                Preset::Ember => 0xf0_c3_a6,
-                Preset::Rose => 0xf0_bf_d4,
-            },
-            Look::Windows => 0x4c_c2_ff,
-        }
-    };
+    let rgb = if settings.edge_handle_accent { accent_rgb(settings) } else { 0x90_90_90 };
     let (r, g, b) = (rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff);
     (b << 16) | (g << 8) | r
 }

@@ -1,5 +1,6 @@
 // Run with `pnpm test` (Node runs TypeScript directly). Boards are drawn as text, rows separated by
 // spaces: each cell is its tile's id, "." is empty.
+import { cycle, pairOrDefault } from "../modules/system-monitor/readings.ts";
 import { add, compact, move, moveToPage, pack, remove, resize, shift, type Placed } from "./board.ts";
 
 function draw(tiles: Placed[]): string {
@@ -21,7 +22,7 @@ function check(name: string, tiles: Placed[], expected: string) {
   if (sorted.some((t, i) => t !== tiles[i])) throw new Error(`${name}: not in reading order`);
 }
 
-const tile = (id: string, w: number, h: number): Placed => ({ id, w, h, x: 0, y: 0 });
+const tile = (id: string, w: number, h: number): Placed => ({ id, w, h, x: 0, y: 0, readings: null });
 
 // Auto-arrange: c (1×1) fills the hole beside a, ahead of the wide b.
 const board = pack([tile("a", 1, 1), tile("b", 4, 2), tile("c", 1, 1), tile("d", 2, 2)]);
@@ -42,7 +43,7 @@ check("move, free, rises", topRight, "acdd ..dd bbbb bbbb");
 const pushed = move(board, "c", 0, 4, false);
 check("in the way, nearest free", pushed, "a... bbbb bbbb .dd. cdd.");
 // ...and a 1×1 dropped on another, with a free cell beside it, sends it there rather than swapping.
-const pair = [{ id: "y", w: 1, h: 1, x: 1, y: 0 }, { id: "z", w: 1, h: 1, x: 2, y: 1 }];
+const pair = [{ id: "y", w: 1, h: 1, x: 1, y: 0, readings: null }, { id: "z", w: 1, h: 1, x: 2, y: 1, readings: null }];
 check("in the way, free cell beside", move(pair, "z", 1, 0, false), "yz..");
 // A big tile with no free spot near is pushed just below the moved one instead.
 check("in the way, pushed below", move(board, "a", 0, 1, false), ".c.. a... bbbb bbbb dd.. dd..");
@@ -75,5 +76,16 @@ const [one, two] = moveToPage([board, [tile("e", 2, 1)]], "d", 0, 1, true);
 check("to page, from", one, "ac.. bbbb bbbb");
 check("to page, to", two, "eedd ..dd");
 check("to page, free", moveToPage([board, topRight], "e", 0, 1, false)[0], "ac.. bbbb bbbb dd.. dd..");
+
+const same = (name: string, got: string, expected: string) => {
+  if (got !== expected) throw new Error(`${name}: expected "${expected}", got "${got}"`);
+};
+// A wide tile's readings: cycling a side ten times keeps exactly two, and moves only that side.
+let pairNow: ["cpu" | "memory" | "download" | "upload", "cpu" | "memory" | "download" | "upload"] = ["cpu", "memory"];
+for (let i = 0; i < 10; i++) pairNow = cycle(pairNow, 1);
+same("cycle keeps two", String(pairNow.length), "2");
+same("cycle one side", pairNow.join(), "cpu,upload");
+same("bad pair ignored", pairOrDefault(["cpu", "cpu", "cpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
+same("unknown reading ignored", pairOrDefault(["cpu", "gpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
 
 console.log("board: all checks passed");

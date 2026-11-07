@@ -1,11 +1,23 @@
-import { commands, events, type Point, type Reading as ReadingId, type SystemSample } from "../../bindings";
+import { useEffect, useState } from "react";
+import {
+  commands,
+  events,
+  type Point,
+  type Reading as ReadingId,
+  type SystemSample,
+} from "../../bindings";
 import { useSettings } from "../../shell/SettingsContext";
 import { Num } from "../../shell/Tile";
 import { battery } from "./battery";
+import { pairOrDefault } from "./readings";
 import { useLive } from "../../shell/useLive";
 import type { Size, TileProps } from "..";
 
-const useSample = () => useLive(commands.systemMonitorState, events.systemSampled);
+// Segoe Fluent "ChevronRight", as in Settings.
+const CHEVRON = String.fromCodePoint(0xe76c);
+
+const useSample = () =>
+  useLive(commands.systemMonitorState, events.systemSampled);
 
 /** The graphs zoom in to the highest reading shown, but never further than this (CPU %, network
  *  bytes a second), so a quiet PC's jitter doesn't look like a spike. */
@@ -15,16 +27,16 @@ const NET_FLOOR = 10 * 1024;
 const PITCH = 7;
 
 /** Home tiles, as in the design: CPU or Memory, a dot-matrix number and its graph; at 4×1 and 4×2
- *  two of them side by side, picked on the page. Clicking opens the page. */
-export function Tiles({ kind, size, open }: TileProps) {
+ *  two of them side by side, picked on the tile in edit mode. Clicking opens the page. */
+export function Tiles({ kind, size, open, readings }: TileProps) {
   const s = useSample();
   const { settings } = useSettings();
   const ready = s !== null && s.memoryTotal > 0;
-  const reading = (id: ReadingId) => {
+  const reading = (id: ReadingId, i: number) => {
     const r = READINGS[id];
     return (
       <Reading
-        key={id}
+        key={i} // both sides may show the same reading, so the id is no key
         label={size.startsWith("4") && id === "memory" ? "RAM" : r.label}
         sub={ready ? r.sub(s) : ""}
         value={ready ? r.value(s) : "–"}
@@ -36,8 +48,14 @@ export function Tiles({ kind, size, open }: TileProps) {
     );
   };
   return (
-    <button className={`tile stats size-${size}`} onClick={open} title="Show details">
-      {kind === "monitor" ? settings.monitorReadings.map(reading) : reading(kind as ReadingId)}
+    <button
+      className={`tile stats size-${size}`}
+      onClick={open}
+      title="Show details"
+    >
+      {kind === "monitor"
+        ? pairOrDefault(readings, settings.monitorReadings).map(reading)
+        : reading(kind as ReadingId, 0)}
     </button>
   );
 }
@@ -46,20 +64,26 @@ export function Tiles({ kind, size, open }: TileProps) {
  *  unit, apart for the dot type) and its history for the graph. */
 const READINGS: Record<
   ReadingId,
-  { label: string; short: string; unit: string; floor: number; sub: (s: SystemSample) => string; value: (s: SystemSample) => string; history: (p: Point) => number }
+  {
+    label: string;
+    unit: string;
+    floor: number;
+    sub: (s: SystemSample) => string;
+    value: (s: SystemSample) => string;
+    history: (p: Point) => number;
+  }
 > = {
   cpu: {
     label: "CPU",
-    short: "CPU",
     unit: "%",
     floor: CPU_FLOOR,
-    sub: (s) => (s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`),
+    sub: (s) =>
+      s.cpuMhz === null ? "" : `${(s.cpuMhz / 1000).toFixed(1)} GHz`,
     value: (s) => (s.cpu === null ? "–" : String(s.cpu)),
     history: (p) => p.cpu,
   },
   memory: {
     label: "Memory",
-    short: "RAM",
     unit: "GB",
     floor: 10,
     sub: (s) => `of ${Math.round(s.memoryTotal / 1024)} GB`,
@@ -68,7 +92,6 @@ const READINGS: Record<
   },
   download: {
     label: "Download",
-    short: "Down",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
@@ -77,7 +100,6 @@ const READINGS: Record<
   },
   upload: {
     label: "Upload",
-    short: "Up",
     unit: "",
     floor: NET_FLOOR,
     sub: () => "",
@@ -88,7 +110,15 @@ const READINGS: Record<
 
 /** One reading on a tile: its name (and at 2×2 and 4×2 a detail, like the clock speed), the number
  *  in dot type with its unit, and from 2×1 up its graph. */
-function Reading(props: { label: string; sub: string; value: string; unit: string; values: number[]; floor: number; size: Size }) {
+function Reading(props: {
+  label: string;
+  sub: string;
+  value: string;
+  unit: string;
+  values: number[];
+  floor: number;
+  size: Size;
+}) {
   const tall = props.size === "2x2" || props.size === "4x2";
   return (
     <span className="reading">
@@ -104,7 +134,12 @@ function Reading(props: { label: string; sub: string; value: string; unit: strin
       </span>
       {props.size !== "1x1" && (
         <span className="reading-graph">
-          <Graph values={props.values} floor={props.floor} cols={tall ? 19 : 7} rows={tall ? 5 : 6} />
+          <Graph
+            values={props.values}
+            floor={props.floor}
+            cols={tall ? 19 : 7}
+            rows={tall ? 5 : 6}
+          />
         </span>
       )}
     </span>
@@ -113,6 +148,7 @@ function Reading(props: { label: string; sub: string; value: string; unit: strin
 
 export default function Panel() {
   const s = useSample();
+  const [more, setMore] = useState(false);
 
   // Empty until the first sample after the panel opens.
   if (!s || s.memoryTotal === 0) return null;
@@ -122,57 +158,115 @@ export default function Panel() {
       <Stat label="CPU" value={s.cpu === null ? "–" : `${s.cpu}%`}>
         <Graph values={s.history.map((p) => p.cpu)} floor={CPU_FLOOR} />
       </Stat>
-      <Stat label="Memory" value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`} />
       <Stat
         label="Network"
-        value={s.download === null || s.upload === null ? "–" : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`}
+        value={
+          s.download === null || s.upload === null
+            ? "–"
+            : `↓ ${rate(s.download)}  ↑ ${rate(s.upload)}`
+        }
       >
-        <Graph values={s.history.map((p) => p.download + p.upload)} floor={NET_FLOOR} />
+        <Graph
+          values={s.history.map((p) => p.download + p.upload)}
+          floor={NET_FLOOR}
+        />
+        <button
+          className="link-text stat-more"
+          aria-expanded={more}
+          onClick={() => setMore(!more)}
+        >
+          Details
+          <span className={more ? "icon chevron open" : "icon chevron"} aria-hidden>
+            {CHEVRON}
+          </span>
+        </button>
+        {more && (
+          <>
+            <div className="row stat-extra">
+              <span className="grow hint">Since boot</span>
+              <span className="stat-value">
+                ↓ {gib(s.downloadTotal)} ↑ {gib(s.uploadTotal)}
+              </span>
+            </div>
+            {s.localIp && <LocalIp ip={s.localIp} />}
+          </>
+        )}
       </Stat>
-      {s.battery && <Stat label="Battery" value={battery(s.battery)} />}
-      <Stat label="Disk" value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`} />
-      <TilePicker />
+      {/* The rest, quieter: no graphs, a thin bar where a fraction means something. */}
+      <div className="stat-quiet">
+        <Quiet
+          label="Memory"
+          value={`${gib(s.memoryUsed)} of ${gib(s.memoryTotal)}`}
+          fraction={s.memoryUsed / s.memoryTotal}
+        />
+        {s.battery && <Quiet label="Battery" value={battery(s.battery)} />}
+        <Quiet
+          label="Disk"
+          value={`${gib(s.diskFree)} free of ${gib(s.diskTotal)}`}
+          fraction={1 - s.diskFree / s.diskTotal}
+        />
+      </div>
     </>
   );
 }
 
-/** Which two readings the 4×1 and 4×2 tile shows: a row each for its left and right. */
-function TilePicker() {
-  const { settings, save } = useSettings();
+/** One quiet line: its name, its value, and under it a thin bar of how full it is. */
+function Quiet(props: { label: string; value: string; fraction?: number }) {
   return (
-    <div className="tile-picker">
-      <h2>Wide tile</h2>
-      {([0, 1] as const).map((slot) => (
-        <div key={slot} className="row">
-          <span className="picker-side">{slot === 0 ? "Left" : "Right"}</span>
-          <div className="segmented grow" role="radiogroup" aria-label={slot === 0 ? "Left reading" : "Right reading"}>
-            {(Object.keys(READINGS) as ReadingId[]).map((id) => {
-              const on = settings.monitorReadings[slot] === id;
-              return (
-                <button
-                  key={id}
-                  role="radio"
-                  aria-checked={on}
-                  aria-label={READINGS[id].label}
-                  className={on ? "on" : ""}
-                  onClick={() => {
-                    const readings: [ReadingId, ReadingId] = [...settings.monitorReadings];
-                    readings[slot] = id;
-                    save({ ...settings, monitorReadings: readings });
-                  }}
-                >
-                  {READINGS[id].short}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+    <div className="quiet">
+      <div className="row">
+        <span className="grow hint">{props.label}</span>
+        <span className="stat-value">{props.value}</span>
+      </div>
+      {props.fraction !== undefined && (
+        <span className="meter" aria-hidden>
+          <i style={{ width: `${Math.min(100, props.fraction * 100)}%` }} />
+        </span>
+      )}
     </div>
   );
 }
 
-function Stat({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) {
+/** The PC's address on the network, hidden until asked for (the panel may be on a shared screen): click to
+ *  show it, click again to copy it. Plain text, not a pill. */
+function LocalIp({ ip }: { ip: string }) {
+  const [shown, setShown] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // Hides itself again after a while (the page stays mounted while the panel is closed).
+  useEffect(() => {
+    if (!shown) return;
+    const timer = setTimeout(() => setShown(false), 15000);
+    return () => clearTimeout(timer);
+  }, [shown]);
+  return (
+    <div className="row stat-extra">
+      <span className="grow hint">Local IP</span>
+      <button
+        className="link-text stat-value ip"
+        title={shown ? "Click to copy" : "Click to show"}
+        onClick={() => {
+          if (!shown) return setShown(true);
+          navigator.clipboard.writeText(ip).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+      >
+        {shown ? (copied ? "copied" : ip) : "•••.•••.•••.•••"}
+      </button>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="stat">
       <div className="row">
@@ -184,19 +278,36 @@ function Stat({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-
 /** The last 60 seconds, newest on the right, scaled to the highest reading (or `floor`): a line,
  *  and for the Dot look a dot matrix of `cols` × `rows` (each style hides the other). */
-function Graph({ values, floor, cols = 40, rows = 5 }: { values: number[]; floor: number; cols?: number; rows?: number }) {
+function Graph({
+  values,
+  floor,
+  cols = 40,
+  rows = 5,
+}: {
+  values: number[];
+  floor: number;
+  cols?: number;
+  rows?: number;
+}) {
   if (values.length < 2) return <svg className="graph" aria-hidden />;
   const top = Math.max(floor, ...values) * 1.1; // a little headroom above the peak
   // 60 seconds across 59 steps, newest on the right.
-  const points = values.map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`).join(" ");
+  const points = values
+    .map((v, i) => `${59 - (values.length - 1 - i)},${20 - (v / top) * 20}`)
+    .join(" ");
   // Each column is the highest reading in its slice of the minute; columns before the first reading stay dark.
   const per = 60 / cols;
   const dots = Array.from({ length: cols }, (_, c) => {
-    const slice = values.slice(Math.max(0, values.length - (cols - c) * per), values.length - (cols - 1 - c) * per);
-    const lit = slice.length === 0 ? 0 : Math.max(1, Math.round((Math.max(...slice) / top) * rows));
+    const slice = values.slice(
+      Math.max(0, values.length - (cols - c) * per),
+      values.length - (cols - 1 - c) * per,
+    );
+    const lit =
+      slice.length === 0
+        ? 0
+        : Math.max(1, Math.round((Math.max(...slice) / top) * rows));
     return Array.from({ length: rows }, (_, r) => (
       <circle
         key={r}
@@ -209,10 +320,19 @@ function Graph({ values, floor, cols = 40, rows = 5 }: { values: number[]; floor
   });
   return (
     <>
-      <svg className="graph" viewBox="0 0 59 20" preserveAspectRatio="none" aria-hidden>
+      <svg
+        className="graph"
+        viewBox="0 0 59 20"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
         <polyline points={points} />
       </svg>
-      <svg className="graph-dots" viewBox={`0 0 ${cols * PITCH} ${rows * PITCH}`} aria-hidden>
+      <svg
+        className="graph-dots"
+        viewBox={`0 0 ${cols * PITCH} ${rows * PITCH}`}
+        aria-hidden
+      >
         {dots}
       </svg>
     </>
@@ -223,6 +343,7 @@ const gib = (mib: number) => `${(mib / 1024).toFixed(1)} GB`;
 
 function rate(bytesPerSecond: number) {
   if (bytesPerSecond < 1024) return `${bytesPerSecond} B/s`;
-  if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(0)} KB/s`;
+  if (bytesPerSecond < 1024 * 1024)
+    return `${(bytesPerSecond / 1024).toFixed(0)} KB/s`;
   return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
 }
