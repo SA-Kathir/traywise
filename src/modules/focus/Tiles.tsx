@@ -14,6 +14,7 @@ const PAUSE = String.fromCodePoint(0xe769);
 const PLAY = String.fromCodePoint(0xe768);
 const NEXT = String.fromCodePoint(0xe893);
 const STOP = String.fromCodePoint(0xe71a);
+const GEAR = String.fromCodePoint(0xe713);
 
 const FALLBACK: FocusPreset = { focus: 25, rest: 5 };
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -121,13 +122,11 @@ export default function Tiles({ kind, size, open }: TileProps) {
           </>
         ) : (
           <>
-            {settings.focusPresets.slice(0, 2).map((p) => (
-              <button key={`${p.focus}/${p.rest}`} title={`${p.focus} focus, ${p.rest} rest`} onClick={() => start(p)}>
-                {p.focus}/{p.rest}
-              </button>
-            ))}
-            <button aria-label="More lengths" title="More lengths" onClick={open}>
-              +
+            <button className="glyph" aria-label="Start" title={`Start ${preset.focus} focus, ${preset.rest} rest`} onClick={toggle}>
+              {PLAY}
+            </button>
+            <button className="glyph" aria-label="Set up" title="Set up lengths and options" onClick={open}>
+              {GEAR}
             </button>
           </>
         )}
