@@ -81,6 +81,11 @@ export default function Tiles({ kind, size, open }: TileProps) {
           {TARGET}
         </span>
         <span className="tile-label">Focus</span>
+        {!timed && (
+          <button className="glyph pomo-gear" aria-label="Set up" title="Set up lengths and options" onClick={open}>
+            {GEAR}
+          </button>
+        )}
         {timed && (
           <span className="pomo-rounds" title={`Round ${round} of 4`}>
             {[1, 2, 3, 4].map((r) => (
@@ -90,7 +95,14 @@ export default function Tiles({ kind, size, open }: TileProps) {
         )}
       </span>
       <button className="pomo-main" onClick={toggle} title={timed ? (running ? "Pause" : "Resume") : `Start ${preset.focus} focus, ${preset.rest} rest`}>
-        {glass ? <Hourglass key={turns} turned={turns > 0} elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
+        <span className="pomo-gfx">
+          {glass ? <Hourglass key={turns} turned={turns > 0} elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
+          {!timed && (
+            <span className="pomo-play glyph" aria-hidden>
+              {PLAY}
+            </span>
+          )}
+        </span>
         {timed ? (
           <span className="pomo-read">
             <Num text={time} />
@@ -107,30 +119,19 @@ export default function Tiles({ kind, size, open }: TileProps) {
           </span>
         )}
       </button>
-      <span className="pomo-keys">
-        {timed ? (
-          <>
-            <button className="glyph" aria-label={running ? "Pause" : "Resume"} title={running ? "Pause" : "Resume"} onClick={toggle}>
-              {running ? PAUSE : PLAY}
-            </button>
-            <button className="glyph" aria-label="Next phase" title="Skip to the next phase" onClick={() => control("skip")}>
-              {NEXT}
-            </button>
-            <button className="glyph" aria-label="End" title="End" onClick={() => control("end")}>
-              {STOP}
-            </button>
-          </>
-        ) : (
-          <>
-            <button className="glyph" aria-label="Start" title={`Start ${preset.focus} focus, ${preset.rest} rest`} onClick={toggle}>
-              {PLAY}
-            </button>
-            <button className="glyph" aria-label="Set up" title="Set up lengths and options" onClick={open}>
-              {GEAR}
-            </button>
-          </>
-        )}
-      </span>
+      {timed && (
+        <span className="pomo-keys">
+          <button className="glyph" aria-label={running ? "Pause" : "Resume"} title={running ? "Pause" : "Resume"} onClick={toggle}>
+            {running ? PAUSE : PLAY}
+          </button>
+          <button className="glyph" aria-label="Next phase" title="Skip to the next phase" onClick={() => control("skip")}>
+            {NEXT}
+          </button>
+          <button className="glyph" aria-label="End" title="End" onClick={() => control("end")}>
+            {STOP}
+          </button>
+        </span>
+      )}
     </div>
   );
 }

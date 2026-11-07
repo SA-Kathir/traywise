@@ -1873,15 +1873,81 @@ button.pomo-main:hover {
 }
 .pomo-keys {
   display: flex;
+  justify-content: center;
   gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+/* The gear sits where the round dots do (top right) and gives way to them while a cycle runs. */
+.pomo-gear {
+  margin-left: auto;
+  padding: 4px;
+  font-size: 12px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.pomo-gear:hover {
+  background: rgb(var(--ink) / 0.16);
+}
+/* Idle: a big play button over the graphic, shown on hover or keyboard focus (always on touch). */
+.pomo-gfx {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.pomo-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  font-size: 18px;
+  border-radius: 50%;
+  background: var(--focus);
+  color: var(--on-accent, #fff);
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+.pomo-main:hover .pomo-play,
+.pomo-main:focus-visible .pomo-play {
+  opacity: 1;
+}
+@media (hover: none) {
+  .pomo-play {
+    opacity: 1;
+  }
 }
 .pomo-keys button {
   min-width: 36px;
   padding: 2px 8px;
   font-size: 12px;
 }
-.pomo-keys .glyph {
+.pomo-keys .glyph,
+.pomo button.glyph,
+.pomo span.glyph {
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+}
+
+/* The Focus page: its folding sections are spaced like cards, and the saved lengths wrap into a grid. */
+.focus-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.focus-starts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+.focus-starts button {
+  min-width: 0;
 }
 
 /* ---- 2×2 toggle tiles, and the Connect pages ---------------------------------------------- */
