@@ -1,4 +1,5 @@
-//! Focus: switches Windows' Do not disturb, for a while or until turned off.
+//! Focus: a Pomodoro-style timer (focus and rest rounds) that switches Windows' Do not disturb, plus the
+//! plain Do not disturb switch.
 //!
 //! Windows has no public API for this. Its own switch is the older Focus assist ("quiet hours")
 //! setting underneath, so this module uses the two undocumented pieces Windows itself uses:
@@ -67,14 +68,34 @@ unsafe extern "system" {
     fn RtlUnsubscribeWnfStateChangeNotification(subscription: *mut c_void) -> i32;
 }
 
+/// The plain Do not disturb switch (its own tile).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum FocusMode {
     Off,
-    /// Until turned off.
     On,
-    /// For this many minutes, then off.
-    Minutes(u32),
+}
+
+/// Which part of the cycle is running.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Phase {
+    Focus,
+    Rest,
+    /// The longer rest after the last round.
+    LongRest,
+}
+
+/// What the tile's buttons do to the running cycle.
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum FocusAction {
+    Pause,
+    Resume,
+    /// Jump to the next phase now.
+    Skip,
+    /// Stop the cycle.
+    End,
 }
 
 /// Everything the tiles show.
@@ -83,12 +104,18 @@ pub enum FocusMode {
 pub struct FocusState {
     /// Do not disturb is on, however it was switched on.
     pub on: bool,
-    /// Switched on here for a while: when it turns off, in milliseconds since 1970 (like `Date.now()`).
-    pub ends_at: Option<f64>,
-    /// How long that while is, in minutes, for the tile's ring.
-    pub minutes: Option<u32>,
     /// False if this Windows doesn't have what it needs; the tiles say so.
     pub available: bool,
+    /// The running cycle's phase, or None when no cycle is running.
+    pub phase: Option<Phase>,
+    /// Which round (1 to 4) the cycle is in.
+    pub round: Option<u8>,
+    /// How long the current phase is, in minutes.
+    pub minutes: Option<u32>,
+    /// While it runs: when the phase ends, in milliseconds since 1970 (like `Date.now()`).
+    pub ends_at: Option<f64>,
+    /// While paused (or waiting for a tap to start the phase): the time left, in milliseconds.
+    pub left_ms: Option<f64>,
 }
 
 /// Sent to the UI whenever the state changes.
@@ -98,38 +125,96 @@ pub struct FocusChanged(pub FocusState);
 #[derive(Clone, Copy)]
 enum Msg {
     Set(FocusMode),
-    /// Windows says Do not disturb changed (here or anywhere else).
+    Start { focus: u32, rest: u32 },
+    Control(FocusAction),
+    /// Windows says Do not disturb changed (here or anywhere else). A cycle carries on regardless.
     Changed,
-    /// The timer ran out by itself.
+    /// The phase ran out by itself.
     Ended,
     Stop,
 }
 
-/// The longest timer, in minutes (8 hours).
+/// The longest focus or rest, in minutes (8 hours).
 const MAX_MINUTES: u32 = 480;
+/// Focus rounds before the long rest.
+const ROUNDS: u8 = 4;
 
-/// A timer Traywise started. Kept apart from the Windows calls so it can be tested.
+/// A running or paused cycle: focus and rest rounds, then one long rest. Kept apart from the Windows
+/// calls so it can be tested.
 #[derive(Clone, Copy, Debug, PartialEq)]
-struct Timer {
-    minutes: u32,
+struct Cycle {
+    focus: u32,
+    rest: u32,
+    long_rest: u32,
+    phase: Phase,
+    round: u8,
+    /// When the phase ends, while it runs.
     ends: Instant,
+    /// Time left, while paused.
+    paused: Option<Duration>,
 }
 
-impl Timer {
-    fn new(mode: FocusMode, now: Instant) -> Option<Self> {
-        match mode {
-            FocusMode::Minutes(minutes) => {
-                let minutes = minutes.clamp(1, MAX_MINUTES);
-                Some(Self { minutes, ends: now + Duration::from_secs(u64::from(minutes) * 60) })
-            }
-            _ => None,
+impl Cycle {
+    fn start(focus: u32, rest: u32, long_rest: u32, now: Instant) -> Self {
+        let clamp = |m: u32| m.clamp(1, MAX_MINUTES);
+        let mut cycle = Self { focus: clamp(focus), rest: clamp(rest), long_rest: clamp(long_rest), phase: Phase::Focus, round: 1, ends: now, paused: None };
+        cycle.ends = now + cycle.length();
+        cycle
+    }
+
+    fn minutes(&self) -> u32 {
+        match self.phase {
+            Phase::Focus => self.focus,
+            Phase::Rest => self.rest,
+            Phase::LongRest => self.long_rest,
         }
     }
 
-    /// Turned off elsewhere before it ran out: forget it, so it doesn't later turn off a Do not
-    /// disturb someone switched on again by hand.
-    fn keep(timer: Option<Self>, on: bool) -> Option<Self> {
-        timer.filter(|_| on)
+    fn length(&self) -> Duration {
+        Duration::from_secs(u64::from(self.minutes()) * 60)
+    }
+
+    fn remaining(&self, now: Instant) -> Duration {
+        self.paused.unwrap_or_else(|| self.ends.saturating_duration_since(now))
+    }
+
+    fn pause(&mut self, now: Instant) {
+        if self.paused.is_none() {
+            self.paused = Some(self.remaining(now));
+        }
+    }
+
+    fn resume(&mut self, now: Instant) {
+        if let Some(left) = self.paused.take() {
+            self.ends = now + left;
+        }
+    }
+
+    /// The cycle after this phase: None once the long rest is over. With `auto` the next phase starts
+    /// at once; otherwise it waits, paused at its full length, for a tap.
+    fn advance(self, now: Instant, auto: bool) -> Option<Self> {
+        let (phase, round) = match self.phase {
+            Phase::Focus if self.round >= ROUNDS => (Phase::LongRest, self.round),
+            Phase::Focus => (Phase::Rest, self.round),
+            Phase::Rest => (Phase::Focus, self.round + 1),
+            Phase::LongRest => return None,
+        };
+        let mut next = Self { phase, round, ends: now, paused: None, ..self };
+        next.ends = now + next.length();
+        if !auto {
+            next.paused = Some(next.length());
+        }
+        Some(next)
+    }
+}
+
+/// What Do not disturb should become when a phase starts (`None` for the cycle ending), from the two
+/// settings; None means leave it alone.
+fn dnd_for(entering: Option<Phase>, while_focusing: bool, during_rest: bool) -> Option<bool> {
+    match entering {
+        Some(Phase::Focus) => while_focusing.then_some(true),
+        Some(_) if during_rest => Some(true),
+        _ => while_focusing.then_some(false),
     }
 }
 
@@ -192,32 +277,58 @@ fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
         .inspect_err(|e| eprintln!("focus: quiet hours settings unavailable: {e}"))
         .ok();
     let watch = Watch::start(tx);
-    let mut timer: Option<Timer> = None;
+    let switch = |on: bool| {
+        if let Some(settings) = &settings {
+            let id = HSTRING::from(if on { ON } else { OFF });
+            if let Err(e) = unsafe { settings.put_UserSelectedProfile(PCWSTR(id.as_ptr())) }.ok() {
+                eprintln!("focus: couldn't switch Do not disturb: {e}");
+            }
+        }
+    };
+    // Do not disturb follows the phase that is starting, per the two settings.
+    let enter = |phase: Option<Phase>| {
+        let s = app.state::<SettingsState>().get();
+        if let Some(on) = dnd_for(phase, s.focus_dnd_focus, s.focus_dnd_rest) {
+            switch(on);
+        }
+    };
+    let mut cycle: Option<Cycle> = None;
     loop {
-        publish(&app, read(), timer, settings.is_some() && watch.is_some());
+        publish(&app, read(), cycle, settings.is_some() && watch.is_some());
 
-        let msg = match timer {
-            Some(t) => rx.recv_timeout(t.ends.saturating_duration_since(Instant::now())).unwrap_or_else(|e| match e {
+        let msg = match cycle.filter(|c| c.paused.is_none()) {
+            Some(c) => rx.recv_timeout(c.ends.saturating_duration_since(Instant::now())).unwrap_or_else(|e| match e {
                 RecvTimeoutError::Timeout => Msg::Ended,
                 RecvTimeoutError::Disconnected => Msg::Stop,
             }),
             None => rx.recv().unwrap_or(Msg::Stop),
         };
+        let now = Instant::now();
         match msg {
-            Msg::Set(_) | Msg::Ended => {
-                let mode = if let Msg::Set(mode) = msg { mode } else { FocusMode::Off };
-                if let Some(settings) = &settings {
-                    let id = HSTRING::from(if mode == FocusMode::Off { OFF } else { ON });
-                    if let Err(e) = unsafe { settings.put_UserSelectedProfile(PCWSTR(id.as_ptr())) }.ok() {
-                        eprintln!("focus: couldn't switch Do not disturb: {e}");
-                    }
+            Msg::Set(mode) => switch(mode == FocusMode::On),
+            Msg::Start { focus, rest } => {
+                cycle = Some(Cycle::start(focus, rest, app.state::<SettingsState>().get().focus_long_rest, now));
+                enter(Some(Phase::Focus));
+            }
+            Msg::Control(action) => match (action, cycle.as_mut()) {
+                (FocusAction::Pause, Some(c)) => c.pause(now),
+                (FocusAction::Resume, Some(c)) => c.resume(now),
+                (FocusAction::Skip | FocusAction::End, Some(_)) => {
+                    let auto = app.state::<SettingsState>().get().focus_auto_next;
+                    cycle = cycle.and_then(|c| if action == FocusAction::Skip { c.advance(now, auto) } else { None });
+                    enter(cycle.map(|c| c.phase));
                 }
-                timer = Timer::new(mode, Instant::now());
-                if matches!(msg, Msg::Ended) && app.state::<SettingsState>().get().focus_chime {
+                _ => {}
+            },
+            Msg::Ended => {
+                let s = app.state::<SettingsState>().get();
+                if s.focus_chime {
                     chime();
                 }
+                cycle = cycle.and_then(|c| c.advance(now, s.focus_auto_next));
+                enter(cycle.map(|c| c.phase));
             }
-            Msg::Changed => timer = Timer::keep(timer, read() == Some(true)),
+            Msg::Changed => {}
             Msg::Stop => break,
         }
     }
@@ -286,12 +397,21 @@ unsafe extern "system" fn changed(_: u64, _: u32, _: *const c_void, context: *co
     0
 }
 
-fn publish(app: &AppHandle, on: Option<bool>, timer: Option<Timer>, works: bool) {
-    let ends_at = timer.map(|t| {
-        let end = SystemTime::now() + t.ends.saturating_duration_since(Instant::now());
-        end.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs_f64() * 1000.0
+fn publish(app: &AppHandle, on: Option<bool>, cycle: Option<Cycle>, works: bool) {
+    let ms = |d: Duration| d.as_secs_f64() * 1000.0;
+    let ends_at = cycle.filter(|c| c.paused.is_none()).map(|c| {
+        let end = SystemTime::now() + c.ends.saturating_duration_since(Instant::now());
+        ms(end.duration_since(UNIX_EPOCH).unwrap_or_default())
     });
-    let state = FocusState { on: on == Some(true), ends_at, minutes: timer.map(|t| t.minutes), available: works && on.is_some() };
+    let state = FocusState {
+        on: on == Some(true),
+        available: works && on.is_some(),
+        phase: cycle.map(|c| c.phase),
+        round: cycle.map(|c| c.round),
+        minutes: cycle.map(|c| c.minutes()),
+        ends_at,
+        left_ms: cycle.and_then(|c| c.paused).map(ms),
+    };
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
@@ -307,32 +427,96 @@ pub fn focus_state(shared: State<Shared>) -> FocusState {
     shared.state.lock().unwrap().clone()
 }
 
-/// Picking a timed mode (again) restarts its timer.
+/// Do not disturb on or off, on its own (a running cycle carries on).
 #[tauri::command]
 #[specta::specta]
 pub fn focus_set(shared: State<Shared>, mode: FocusMode) -> Result<(), String> {
+    send(&shared, Msg::Set(mode))
+}
+
+/// Starts a cycle of focus and rest rounds, in minutes. Starting again restarts it.
+#[tauri::command]
+#[specta::specta]
+pub fn focus_start(shared: State<Shared>, focus: u32, rest: u32) -> Result<(), String> {
+    send(&shared, Msg::Start { focus, rest })
+}
+
+/// Pause, resume, skip to the next phase, or end the running cycle.
+#[tauri::command]
+#[specta::specta]
+pub fn focus_control(shared: State<Shared>, action: FocusAction) -> Result<(), String> {
+    send(&shared, Msg::Control(action))
+}
+
+fn send(shared: &Shared, msg: Msg) -> Result<(), String> {
     let tx = shared.tx.lock().unwrap();
-    tx.as_ref().ok_or("Focus is off")?.send(Msg::Set(mode)).map_err(|e| e.to_string())
+    tx.as_ref().ok_or("Focus is off")?.send(msg).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn only_timed_modes_end() {
-        let now = Instant::now();
-        assert_eq!(Timer::new(FocusMode::Minutes(25), now), Some(Timer { minutes: 25, ends: now + Duration::from_secs(25 * 60) }));
-        assert_eq!(Timer::new(FocusMode::Minutes(0), now).map(|t| t.minutes), Some(1));
-        assert_eq!(Timer::new(FocusMode::Minutes(9999), now).map(|t| t.minutes), Some(480));
-        assert_eq!(Timer::new(FocusMode::On, now), None);
-        assert_eq!(Timer::new(FocusMode::Off, now), None);
+    fn last(mut cycle: Cycle, now: Instant) -> Cycle {
+        while let Some(next) = cycle.advance(now, true) {
+            cycle = next;
+        }
+        cycle
     }
 
     #[test]
-    fn turned_off_elsewhere_forgets_the_timer() {
-        let timer = Timer::new(FocusMode::Minutes(50), Instant::now());
-        assert_eq!(Timer::keep(timer, true), timer);
-        assert_eq!(Timer::keep(timer, false), None);
+    fn four_rounds_then_a_long_rest() {
+        use Phase::*;
+        let now = Instant::now();
+        let mut cycle = Cycle::start(25, 5, 15, now);
+        let mut seen = vec![(cycle.phase, cycle.round)];
+        while let Some(next) = cycle.advance(now, true) {
+            seen.push((next.phase, next.round));
+            cycle = next;
+        }
+        assert_eq!(seen, [(Focus, 1), (Rest, 1), (Focus, 2), (Rest, 2), (Focus, 3), (Rest, 3), (Focus, 4), (LongRest, 4)]);
+    }
+
+    #[test]
+    fn each_phase_has_its_own_length() {
+        let now = Instant::now();
+        let c = Cycle::start(25, 5, 15, now);
+        assert_eq!(c.ends, now + Duration::from_secs(25 * 60));
+        assert_eq!(c.advance(now, true).unwrap().ends, now + Duration::from_secs(5 * 60));
+        let long = last(c, now);
+        assert_eq!((long.phase, long.minutes()), (Phase::LongRest, 15));
+        let clamped = Cycle::start(0, 9999, 1, now);
+        assert_eq!((clamped.focus, clamped.rest), (1, 480), "lengths are clamped");
+    }
+
+    #[test]
+    fn without_auto_start_the_next_phase_waits() {
+        let now = Instant::now();
+        let mut next = Cycle::start(25, 5, 15, now).advance(now, false).unwrap();
+        assert_eq!((next.phase, next.paused), (Phase::Rest, Some(Duration::from_secs(5 * 60))));
+        let later = now + Duration::from_secs(60);
+        next.resume(later);
+        assert_eq!((next.paused, next.ends), (None, later + Duration::from_secs(5 * 60)));
+    }
+
+    #[test]
+    fn pausing_keeps_the_time_left() {
+        let now = Instant::now();
+        let mut c = Cycle::start(25, 5, 15, now);
+        c.pause(now + Duration::from_secs(10 * 60));
+        assert_eq!(c.remaining(now + Duration::from_secs(99 * 60)), Duration::from_secs(15 * 60));
+        c.resume(now + Duration::from_secs(20 * 60));
+        assert_eq!(c.remaining(now + Duration::from_secs(21 * 60)), Duration::from_secs(14 * 60));
+    }
+
+    #[test]
+    fn do_not_disturb_follows_the_phase() {
+        use Phase::*;
+        assert_eq!(dnd_for(Some(Focus), true, false), Some(true));
+        assert_eq!(dnd_for(Some(Rest), true, false), Some(false), "off for the rest");
+        assert_eq!(dnd_for(Some(LongRest), true, true), Some(true), "kept on through rests");
+        assert_eq!(dnd_for(None, true, true), Some(false), "off when the cycle ends");
+        assert_eq!(dnd_for(Some(Focus), false, false), None, "setting off: never touched");
+        assert_eq!(dnd_for(None, false, true), None);
     }
 }

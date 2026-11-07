@@ -44,8 +44,12 @@ export const commands = {
 	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
 	/**  The latest state. Default (off, unavailable) while the module is switched off. */
 	focusState: () => __TAURI_INVOKE<FocusState>("focus_state"),
-	/**  Picking a timed mode (again) restarts its timer. */
+	/**  Do not disturb on or off, on its own (a running cycle carries on). */
 	focusSet: (mode: FocusMode) => typedError<null, string>(__TAURI_INVOKE("focus_set", { mode })),
+	/**  Starts a cycle of focus and rest rounds, in minutes. Starting again restarts it. */
+	focusStart: (focus: number, rest: number) => typedError<null, string>(__TAURI_INVOKE("focus_start", { focus, rest })),
+	/**  Pause, resume, skip to the next phase, or end the running cycle. */
+	focusControl: (action: FocusAction) => typedError<null, string>(__TAURI_INVOKE("focus_control", { action })),
 	/**  The latest snapshot. Empty while the module is off. */
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
@@ -216,26 +220,49 @@ export type DisplaysState = {
 /**  Which side of the screen the panel opens from, when it opens from an edge. */
 export type EdgeSide = "left" | "right";
 
+/**  What the tile's buttons do to the running cycle. */
+export type FocusAction = "pause" | "resume" | 
+/**  Jump to the next phase now. */
+"skip" | 
+/**  Stop the cycle. */
+"end";
+
 /**  Sent to the UI whenever the state changes. */
 export type FocusChanged = FocusState;
 
-export type FocusMode = "off" | 
-/**  Until turned off. */
-"on" | 
-/**  For this many minutes, then off. */
-{ minutes: number };
+/**  The plain Do not disturb switch (its own tile). */
+export type FocusMode = "off" | "on";
+
+/**  A saved focus and rest length, in minutes. */
+export type FocusPreset = {
+	focus: number,
+	rest: number,
+};
 
 /**  Everything the tiles show. */
 export type FocusState = {
 	/**  Do not disturb is on, however it was switched on. */
 	on: boolean,
-	/**  Switched on here for a while: when it turns off, in milliseconds since 1970 (like `Date.now()`). */
-	endsAt: number | null,
-	/**  How long that while is, in minutes, for the tile's ring. */
-	minutes: number | null,
 	/**  False if this Windows doesn't have what it needs; the tiles say so. */
 	available: boolean,
+	/**  The running cycle's phase, or None when no cycle is running. */
+	phase: Phase | null,
+	/**  Which round (1 to 4) the cycle is in. */
+	round: number | null,
+	/**  How long the current phase is, in minutes. */
+	minutes: number | null,
+	/**  While it runs: when the phase ends, in milliseconds since 1970 (like `Date.now()`). */
+	endsAt: number | null,
+	/**  While paused (or waiting for a tap to start the phase): the time left, in milliseconds. */
+	leftMs: number | null,
 };
+
+/**  How the Focus tiles draw the countdown. */
+export type FocusStyle = 
+/**  A half ring of dots. */
+"arc" | 
+/**  An hourglass of dots. */
+"hourglass";
 
 /**  Sent to the UI whenever the state changes. */
 export type KeepAwakeChanged = KeepAwakeState;
@@ -360,6 +387,11 @@ export type PanelShown = {
 	hover: boolean,
 };
 
+/**  Which part of the cycle is running. */
+export type Phase = "focus" | "rest" | 
+/**  The longer rest after the last round. */
+"longRest";
+
 export type Point = {
 	cpu: number,
 	/**  Memory in use, percent. */
@@ -449,8 +481,20 @@ export type Settings = {
 	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
 	clockZone: string | null,
 	clockStyle: ClockStyle,
-	/**  Focus: play a soft chime when a timed Do not disturb runs out. */
+	/**  Focus: play a soft chime when a focus or rest phase ends. */
 	focusChime: boolean,
+	/**  Focus: how its tiles draw the countdown. */
+	focusStyle: FocusStyle,
+	/**  Focus: saved "focus / rest" lengths in minutes; the tile shows the first two, the first is the default. */
+	focusPresets: FocusPreset[],
+	/**  Focus: the long rest after the fourth round, in minutes. */
+	focusLongRest: number,
+	/**  Focus: start each phase by itself, instead of waiting for a tap. */
+	focusAutoNext: boolean,
+	/**  Focus: switch Do not disturb on while focusing (and off when the phase ends). */
+	focusDndFocus: boolean,
+	/**  Focus: keep Do not disturb on during rests too. */
+	focusDndRest: boolean,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
