@@ -7,6 +7,7 @@ const LOOKS: { id: Look; label: string; detail: string }[] = [
   { id: "dot", label: "Dot", detail: "Monochrome tiles on a plain background, with one accent colour. Follows light and dark mode." },
   { id: "liquid", label: "Tint", detail: "Cards tinted in a soft colour you pick." },
   { id: "windows", label: "Windows", detail: "Flat, like Windows' own flyouts. Follows light and dark mode." },
+  { id: "glass", label: "Glass", detail: "Frosted glass over a blurred desktop. Follows light and dark mode." },
 ];
 
 /** First run: pick a look (it applies at once, so the panel itself is the preview), then modules. */

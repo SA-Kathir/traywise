@@ -9,6 +9,7 @@ const LOOKS: { id: Look; label: string }[] = [
   { id: "dot", label: "Dot" },
   { id: "liquid", label: "Tint" },
   { id: "windows", label: "Windows" },
+  { id: "glass", label: "Glass" },
 ];
 
 const SIDES: { id: EdgeSide; label: string }[] = [

@@ -15,6 +15,7 @@ import { Setup } from "./shell/Setup";
 import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
+import "./shell/glass.css";
 import "./shell/island.css";
 import { Pending, settled } from "./shell/useLive";
 

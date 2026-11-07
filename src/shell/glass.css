@@ -2,9 +2,7 @@
    panel (src-tauri/src/shell/glass.rs); this file paints only what sits on top of it: a thin tint,
    lit rims, soft shadows. Tokens are the Figma file's "Glass" variables, dark and light, and
    follow Windows' mode. Tiles can't blur the desktop themselves (the page has nothing behind it),
-   so they are translucent sheets over the panel's blur.
-
-   Tokens only for now. The panel and tile rules come once the look is hooked in. */
+   so they are translucent sheets over the panel's blur. */
 
 .look-glass {
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
@@ -26,6 +24,11 @@
   --tw-glass-text: #f7f8fa;
   --tw-glass-text-2: rgb(255 255 255 / 0.78);
   --tw-glass-text-3: rgb(255 255 255 / 0.62);
+  /* The shared variables liquid.css is built on. */
+  --ink: 255 255 255;
+  --accent: var(--tw-glass-accent);
+  --on-accent: #0b1626;
+  color-scheme: dark;
 }
 
 @media (prefers-color-scheme: light) {
@@ -45,5 +48,72 @@
     --tw-glass-text: #0e1116;
     --tw-glass-text-2: rgb(14 17 22 / 0.7);
     --tw-glass-text-3: rgb(14 17 22 / 0.55);
+    --ink: 0 0 0;
+    color-scheme: light;
   }
+}
+
+/* ---- The panel ----------------------------------------------------------------------------- */
+
+/* The classes are on html too, so its two pseudo-elements frame the whole window: the tint under
+   everything, and the lit rim (a 1 px gradient edge, cut out with a mask) over it. The window itself
+   is transparent; Windows draws the blur behind the tint. 20px matches GLASS_RADIUS in panel.rs. */
+html.look-glass::before,
+html.look-glass::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+html.look-glass::before {
+  z-index: -1;
+  background: var(--tw-glass-frost);
+}
+html.look-glass::after {
+  z-index: 100;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    var(--tw-glass-rim-1) 35%,
+    var(--tw-glass-rim-2) 65%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.panel.look-glass {
+  color: var(--tw-glass-text);
+}
+.look-glass h1 {
+  color: var(--tw-glass-text);
+}
+.look-glass :is(.hint, .tile-detail, .module-desc, .stat-chip-label) {
+  color: var(--tw-glass-text-2);
+}
+
+/* ---- Cards and tiles ----------------------------------------------------------------------- */
+
+/* A translucent sheet; the rim is two inset edges, bright at the top left and bottom right. */
+.look-glass :is(section, .tile, .stats) {
+  border: none;
+  border-radius: 16px;
+  background: var(--tw-glass-slab);
+  box-shadow:
+    inset 1px 1px 0 var(--tw-glass-rim-0),
+    inset -1px -1px 0 var(--tw-glass-rim-3),
+    inset 0 0 0 1px var(--tw-glass-rim-2);
+}
+/* Switched on: the accent as tinted glass, with an accent rim and glyph. */
+.look-glass .tile.on {
+  background: var(--tw-glass-accent-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-accent) 55%, transparent);
+  color: var(--tw-glass-accent);
+}
+.look-glass .tile.on .tile-detail {
+  color: color-mix(in srgb, var(--tw-glass-accent) 80%, transparent);
 }
