@@ -8,6 +8,9 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tauri_specta::Event;
+use windows::Win32::UI::Shell::ShellExecuteW;
+use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+use windows::core::{HSTRING, PCWSTR};
 
 use crate::settings::SettingsState;
 
@@ -22,6 +25,10 @@ pub struct UpdateState {
 /// Sent to the UI when a newer version is found. The payload is its version, like "0.2.0".
 #[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
 pub struct UpdateAvailable(pub String);
+
+/// Download progress as a whole percent, 0 to 100. 100 means the download is done and the installer is starting.
+#[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct UpdateProgress(pub u8);
 
 /// Checks in the background unless switched off, already found, or checked within the last day.
 pub fn check(app: &AppHandle) {
@@ -64,10 +71,42 @@ pub fn update_available(state: State<UpdateState>) -> Option<String> {
     state.found.lock().unwrap().as_ref().map(|u| u.version.clone())
 }
 
-/// Downloads and runs the new installer. On success Traywise exits, and the installer restarts it.
+/// Opens a version's release page on GitHub in the browser. Nothing is fetched by Traywise itself.
 #[tauri::command]
 #[specta::specta]
-pub async fn update_install(state: State<'_, UpdateState>) -> Result<(), String> {
+pub fn open_release_notes(version: String) -> Result<(), String> {
+    // The version ends up in a URL that Windows opens, so allow only what a version contains.
+    if version.is_empty() || !version.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-') {
+        return Err("not a version".into());
+    }
+    let url = format!("https://github.com/SA-Kathir/traywise/releases/tag/v{version}");
+    unsafe { ShellExecuteW(None, &HSTRING::from("open"), &HSTRING::from(url), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
+    Ok(())
+}
+
+/// Downloads the new version (reporting progress), then runs its installer silently. On success Traywise
+/// exits and the installer starts the new version.
+#[tauri::command]
+#[specta::specta]
+pub async fn update_install(app: AppHandle, state: State<'_, UpdateState>) -> Result<(), String> {
     let update = state.found.lock().unwrap().clone().ok_or("no update found")?;
-    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())
+    let (mut got, mut last) = (0u64, 0u8);
+    let _ = UpdateProgress(0).emit(&app);
+    let done = app.clone();
+    update
+        .download_and_install(
+            move |chunk, total| {
+                got += chunk as u64;
+                let pct = total.map_or(0, |t| (got * 100 / t.max(1)).min(99) as u8);
+                if pct != last {
+                    last = pct;
+                    let _ = UpdateProgress(pct).emit(&app);
+                }
+            },
+            move || {
+                let _ = UpdateProgress(100).emit(&done);
+            },
+        )
+        .await
+        .map_err(|e| e.to_string())
 }

@@ -10,6 +10,13 @@ export const commands = {
 	 *  visible when traywise.exe is started from a terminal.
 	 */
 	panelPainted: () => __TAURI_INVOKE<void>("panel_painted"),
+	/**  Called by the UI when every tile on the page has its data, so the tiles can come in. */
+	panelReady: () => __TAURI_INVOKE<void>("panel_ready"),
+	/**
+	 *  Esc: closes the panel whatever the pointer is doing (unlike `hide_panel`, which keeps an edge-opened panel
+	 *  while the pointer is still on the edge).
+	 */
+	closePanel: () => __TAURI_INVOKE<void>("close_panel"),
 	/**  The panel's Quit button, the same as the tray menu's. */
 	quit: () => __TAURI_INVOKE<void>("quit"),
 	/**
@@ -26,8 +33,13 @@ export const commands = {
 	setAutostart: (enabled: boolean) => typedError<null, string>(__TAURI_INVOKE("set_autostart", { enabled })),
 	/**  The version of an update that's been found, if any. */
 	updateAvailable: () => __TAURI_INVOKE<string | null>("update_available"),
-	/**  Downloads and runs the new installer. On success Traywise exits, and the installer restarts it. */
+	/**
+	 *  Downloads the new version (reporting progress), then runs its installer silently. On success Traywise
+	 *  exits and the installer starts the new version.
+	 */
 	updateInstall: () => typedError<null, string>(__TAURI_INVOKE("update_install")),
+	/**  Opens a version's release page on GitHub in the browser. Nothing is fetched by Traywise itself. */
+	openReleaseNotes: (version: string) => typedError<null, string>(__TAURI_INVOKE("open_release_notes", { version })),
 	/**  The latest snapshot. Empty while the module is off. */
 	mixerState: () => __TAURI_INVOKE<MixerState>("mixer_state"),
 	/**  Sets a volume, in percent (0 to 100). */
@@ -44,12 +56,18 @@ export const commands = {
 	keepAwakeSetDisplay: (display: boolean) => typedError<null, string>(__TAURI_INVOKE("keep_awake_set_display", { display })),
 	/**  The latest state. Default (off, unavailable) while the module is switched off. */
 	focusState: () => __TAURI_INVOKE<FocusState>("focus_state"),
-	/**  Picking a timed mode (again) restarts its timer. */
+	/**  Do not disturb on or off, on its own (a running cycle carries on). */
 	focusSet: (mode: FocusMode) => typedError<null, string>(__TAURI_INVOKE("focus_set", { mode })),
+	/**  Starts a cycle of focus and rest rounds, in minutes. Starting again restarts it. */
+	focusStart: (focus: number, rest: number) => typedError<null, string>(__TAURI_INVOKE("focus_start", { focus, rest })),
+	/**  Pause, resume, skip to the next phase, or end the running cycle. */
+	focusControl: (action: FocusAction) => typedError<null, string>(__TAURI_INVOKE("focus_control", { action })),
 	/**  The latest snapshot. Empty while the module is off. */
 	audioDevicesState: () => __TAURI_INVOKE<AudioDevicesState>("audio_devices_state"),
 	/**  Makes this output the default for everything: apps, games, and calls. */
 	audioDevicesSetOutput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_output", { id })),
+	/**  Makes this microphone the default for everything: apps, games, and calls. */
+	audioDevicesSetInput: (id: string) => typedError<null, string>(__TAURI_INVOKE("audio_devices_set_input", { id })),
 	/**  Mutes or unmutes every microphone. */
 	audioDevicesMuteMics: (muted: boolean) => typedError<null, string>(__TAURI_INVOKE("audio_devices_mute_mics", { muted })),
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
@@ -100,8 +118,10 @@ export const events = {
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	powerChanged: makeEvent<PowerChanged>("power-changed"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
+	showSettings: makeEvent<ShowSettings>("show-settings"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
 	updateAvailable: makeEvent<UpdateAvailable>("update-available"),
+	updateProgress: makeEvent<UpdateProgress>("update-progress"),
 	wifiChanged: makeEvent<WifiChanged>("wifi-changed"),
 };
 
@@ -133,12 +153,22 @@ export type AppAudio = {
 	output: string | null,
 };
 
+export type AudioDevice = {
+	/**  Windows' id for the device. Stays the same across restarts. */
+	id: string,
+	name: string,
+	/**  The one apps play through. */
+	isDefault: boolean,
+};
+
 /**  Sent to the UI whenever a device is plugged in, removed, or becomes the default. */
 export type AudioDevicesChanged = AudioDevicesState;
 
 /**  Everything the panel shows. */
 export type AudioDevicesState = {
-	outputs: OutputDevice[],
+	outputs: AudioDevice[],
+	/**  Active microphones, and which one is the default. */
+	inputs: AudioDevice[],
 	/**  Whether every microphone is muted. None when there are no microphones. */
 	micsMuted: boolean | null,
 	/**  The mute-all shortcut. None until it has been set up. */
@@ -181,6 +211,8 @@ export type BoardTile = {
 	h: number,
 	x: number,
 	y: number,
+	/**  Only for the system monitor's wide tile: what its left and right sides show. None uses `monitor_readings`. */
+	readings?: [Reading, Reading] | null,
 };
 
 /**  How the clock tile draws the time. */
@@ -216,26 +248,49 @@ export type DisplaysState = {
 /**  Which side of the screen the panel opens from, when it opens from an edge. */
 export type EdgeSide = "left" | "right";
 
+/**  What the tile's buttons do to the running cycle. */
+export type FocusAction = "pause" | "resume" | 
+/**  Jump to the next phase now. */
+"skip" | 
+/**  Stop the cycle. */
+"end";
+
 /**  Sent to the UI whenever the state changes. */
 export type FocusChanged = FocusState;
 
-export type FocusMode = "off" | 
-/**  Until turned off. */
-"on" | 
-/**  For this many minutes, then off. */
-{ minutes: number };
+/**  The plain Do not disturb switch (its own tile). */
+export type FocusMode = "off" | "on";
+
+/**  A saved focus and rest length, in minutes. */
+export type FocusPreset = {
+	focus: number,
+	rest: number,
+};
 
 /**  Everything the tiles show. */
 export type FocusState = {
 	/**  Do not disturb is on, however it was switched on. */
 	on: boolean,
-	/**  Switched on here for a while: when it turns off, in milliseconds since 1970 (like `Date.now()`). */
-	endsAt: number | null,
-	/**  How long that while is, in minutes, for the tile's ring. */
-	minutes: number | null,
 	/**  False if this Windows doesn't have what it needs; the tiles say so. */
 	available: boolean,
+	/**  The running cycle's phase, or None when no cycle is running. */
+	phase: Phase | null,
+	/**  Which round (1 to 4) the cycle is in. */
+	round: number | null,
+	/**  How long the current phase is, in minutes. */
+	minutes: number | null,
+	/**  While it runs: when the phase ends, in milliseconds since 1970 (like `Date.now()`). */
+	endsAt: number | null,
+	/**  While paused (or waiting for a tap to start the phase): the time left, in milliseconds. */
+	leftMs: number | null,
 };
+
+/**  How the Focus tiles draw the countdown. */
+export type FocusStyle = 
+/**  A half ring of dots. */
+"arc" | 
+/**  An hourglass of dots. */
+"hourglass";
 
 /**  Sent to the UI whenever the state changes. */
 export type KeepAwakeChanged = KeepAwakeState;
@@ -317,7 +372,7 @@ export type MixerState = {
 	device: string | null,
 	apps: AppAudio[],
 	/**  Devices an app can be sent to. Empty where Windows doesn't support per-app output. */
-	outputs: OutputDevice[],
+	outputs: AudioDevice[],
 };
 
 export type Mode = "off" | 
@@ -341,14 +396,6 @@ export type NowPlayingState = {
 	current: string | null,
 };
 
-export type OutputDevice = {
-	/**  Windows' id for the device. Stays the same across restarts. */
-	id: string,
-	name: string,
-	/**  The one apps play through. */
-	isDefault: boolean,
-};
-
 /**  Sent to the UI each time the panel opens. */
 export type PanelShown = {
 	/**
@@ -359,6 +406,11 @@ export type PanelShown = {
 	/**  Opened from the screen's edge: the UI closes it when the mouse leaves. */
 	hover: boolean,
 };
+
+/**  Which part of the cycle is running. */
+export type Phase = "focus" | "rest" | 
+/**  The longer rest after the last round. */
+"longRest";
 
 export type Point = {
 	cpu: number,
@@ -412,7 +464,7 @@ export type Repeat = "off" | "track" | "list";
 export type Settings = {
 	enabledModules: ModuleId[],
 	look: Look,
-	/**  Liquid and Dot: no panel background, so the cards float over the desktop. */
+	/**  Dot only: no panel background, so the cards float over the desktop. (Tint had this too until 0.4; an old file may still say true.) */
 	transparent: boolean,
 	/**  Tint (called Liquid in the code): cards in one even hue (the default), instead of lighter at the top left fading darker. */
 	singleHue: boolean,
@@ -423,6 +475,11 @@ export type Settings = {
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
 	micShortcut: string,
+	/**
+	 *  Audio devices: when the output you were using is unplugged or disconnects and Windows falls back to
+	 *  another (headphones out, speakers on), lower that one's volume to a quiet level if it's louder.
+	 */
+	lowerVolumeOnUnplug: boolean,
 	/**  Global shortcut that opens or closes the panel, like "Ctrl+Alt+T". */
 	panelShortcut: string,
 	/**  Whether Traywise asks GitHub for a newer version (at startup and about once a day). */
@@ -436,7 +493,7 @@ export type Settings = {
 	pages: BoardTile[][] | null,
 	/**  Home board: tiles fill gaps (true), or stay where they're put (false). */
 	autoArrange: boolean,
-	/**  System monitor: the two readings its 4×1 and 4×2 tile shows, left then right. */
+	/**  System monitor: the readings a 4×1 or 4×2 tile shows (left then right) until it's given its own. */
 	monitorReadings: [Reading, Reading],
 	/**  Resting the mouse on the middle of the screen's left or right edge (`edge_side`) opens the panel. */
 	edgeOpen: boolean,
@@ -449,6 +506,22 @@ export type Settings = {
 	/**  Clock: a second time zone its wider tiles show, like "Europe/London". None for none. */
 	clockZone: string | null,
 	clockStyle: ClockStyle,
+	/**  Focus: play a soft chime when a focus or rest phase ends. */
+	focusChime: boolean,
+	/**  The version whose "What's new" note was last shown (or that was first installed). None on a fresh install. */
+	lastSeenVersion: string | null,
+	/**  Focus: how its tiles draw the countdown. */
+	focusStyle: FocusStyle,
+	/**  Focus: saved "focus / rest" lengths in minutes; the tile shows the first two, the first is the default. */
+	focusPresets: FocusPreset[],
+	/**  Focus: the long rest after the fourth round, in minutes. */
+	focusLongRest: number,
+	/**  Focus: start each phase by itself, instead of waiting for a tap. */
+	focusAutoNext: boolean,
+	/**  Focus: switch Do not disturb on while focusing (and off when the phase ends). */
+	focusDndFocus: boolean,
+	/**  Focus: keep Do not disturb on during rests too. */
+	focusDndRest: boolean,
 };
 
 /**  The Windows Settings pages the UI can open: only these, never an arbitrary link. */
@@ -469,6 +542,9 @@ export type ShortcutStatus = {
 	error: string | null,
 };
 
+/**  Sent to the UI to go to its Settings page. */
+export type ShowSettings = Record<string, never>;
+
 /**  Everything the panel shows. Sent whole every second while the panel is open. */
 export type SystemSample = {
 	/**  Percent of all cores together. None for the first second after opening. */
@@ -481,6 +557,14 @@ export type SystemSample = {
 	/**  Bytes a second, all network adapters together. None for the first second after opening. */
 	download: number | null,
 	upload: number | null,
+	/**
+	 *  MiB received and sent since the PC started (Windows' own counters, so nothing is counted while the
+	 *  panel is closed), over the adapters that have an address.
+	 */
+	downloadTotal: number,
+	uploadTotal: number,
+	/**  The IPv4 address of the busiest adapter. Only for the System page, which hides it until asked. */
+	localIp: string | null,
 	/**  None on a PC without a battery. */
 	battery: Battery | null,
 	/**  The drive Windows is on, usually C:. MiB. */
@@ -500,6 +584,9 @@ export type Target = "master" |
 
 /**  Sent to the UI when a newer version is found. The payload is its version, like "0.2.0". */
 export type UpdateAvailable = string;
+
+/**  Download progress as a whole percent, 0 to 100. 100 means the download is done and the installer is starting. */
+export type UpdateProgress = number;
 
 /**  Sent when the panel opens and after each change. */
 export type WifiChanged = WifiState;

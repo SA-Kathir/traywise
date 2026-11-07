@@ -14,6 +14,8 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::new()
         .commands(collect_commands![
             shell::panel::panel_painted,
+            shell::panel::panel_ready,
+            shell::panel::close_panel,
             shell::panel::quit,
             shell::panel::hide_panel,
             settings::get_settings,
@@ -22,6 +24,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             settings::set_autostart,
             updater::update_available,
             updater::update_install,
+            updater::open_release_notes,
             modules::volume_mixer::mixer_state,
             modules::volume_mixer::mixer_set_volume,
             modules::volume_mixer::mixer_set_mute,
@@ -32,8 +35,11 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::keep_awake::keep_awake_set_display,
             modules::focus::focus_state,
             modules::focus::focus_set,
+            modules::focus::focus_start,
+            modules::focus::focus_control,
             modules::audio_devices::audio_devices_state,
             modules::audio_devices::audio_devices_set_output,
+            modules::audio_devices::audio_devices_set_input,
             modules::audio_devices::audio_devices_mute_mics,
             modules::system_monitor::system_monitor_state,
             modules::power::power_state,
@@ -59,7 +65,9 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
         ])
         .events(collect_events![
             shell::panel::PanelShown,
+            shell::panel::ShowSettings,
             updater::UpdateAvailable,
+            updater::UpdateProgress,
             modules::volume_mixer::MixerChanged,
             modules::keep_awake::KeepAwakeChanged,
             modules::focus::FocusChanged,
@@ -117,6 +125,7 @@ pub fn run() {
             let settings = settings::SettingsState::load(app.handle())?;
             let modules = module::Modules::new(app.handle());
             modules.apply(&settings.get());
+            shell::tray::apply_settings(app.handle(), &settings.get());
             app.manage(settings);
             app.manage(modules);
             app.manage(updater::UpdateState::default());

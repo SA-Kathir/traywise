@@ -1,6 +1,6 @@
 # Roadmap and status
 
-The single place to see where Traywise is and where it's going. Update it when a release ships, a PR lands, or a plan changes. Last updated: 2026-11-01.
+The single place to see where Traywise is and where it's going. Update it when a release ships, a PR lands, or a plan changes. Last updated: 2026-11-03.
 
 ## Released
 
@@ -8,30 +8,29 @@ The single place to see where Traywise is and where it's going. Update it when a
 |---|---|---|
 | 0.1.0 | 2026-10-26 | First release: tray panel, Liquid and Windows looks, mixer, audio devices, keep awake, system monitor, quick toggles, auto-updates |
 | 0.2.0 | 2026-10-31 | Dot look (the new default), customisable home board, Now playing, Wi-Fi, Bluetooth, opening from the screen edge |
+| 0.3.0 | 2026-11-03 | Displays, Power, Clock and Focus modules, per-app audio output, board pages, a new open and close animation, the Liquid look renamed Tint, a new app icon |
+| 0.3.1 | 2026-11-07 | Tray menu and accent icon, Esc, Pomodoro Focus (arc or hourglass), choose the microphone, Shortcuts in Settings, larger Project tiles, a calmer System monitor, in-app updates with progress |
 
 Details: `CHANGELOG.md`. Releases: https://github.com/SA-Kathir/traywise/releases
 
-## In progress: v0.3.0, "complete the Control Centre"
+## In progress
 
-Built in parallel, each in its own git worktree (a sibling folder next to `traywise/`) on its own branch, merged into `dev` by PR:
+**Glass look:** a fourth look, with real blur behind the panel (Windows' host backdrop brush; a throwaway test proved it works on the panel's window setup) and Apple-style translucent cards. The design is done in Figma and the build starts once 0.3.1 is on `dev`. Open question: its tint adapts to how bright the screen behind it is, which would extend the one narrow "never read the desktop" exception in CLAUDE.md; the owner decides.
 
-| Feature | Branch | Worktree | State (2026-11-01) |
-|---|---|---|---|
-| Displays + Power: brightness per display (WMI + DDC/CI), power mode, battery | `feature/displays-power` | `../tw-displays` | PR #5 open. External monitors and "Project to a second screen" are untested. |
-| Per-app audio output: a device picker per app in the mixer | `feature/per-app-output` | `../tw-audio-out` | PR #6 open. It conflicts with #5 in `Cargo.toml` and the mixer's `Panel.tsx`, so whichever merges second needs a rebase. |
-| Clock tile (dot-matrix, second time zone) + Focus / Do not disturb | `feature/clock-focus` | `../tw-clock` | Built and in owner review. Speed not measured yet; no PR yet. DND reading and switching work through a private Windows interface. |
-| Board pages: several swipeable boards, page dots, drop a tile on a dot to move it, up to 5 pages | `feature/board-pages` | `../tw-pages` | In progress. Settings save pages; a 0.2 board migrates to page 1. |
-| Design system synced with 0.2.0, plus the 0.3.0 designs | `docs/design-system-v0.3` | `../tw-design` | PR #7 open (only `docs/design-system.md`). |
-
-Once every PR is merged into `dev`, a release follows the usual steps (CONTRIBUTING.md › Branches): add a CHANGELOG section, merge `dev` into `main`, tag `v0.3.0`, and publish the draft release. After a branch is merged, remove its worktree with `git worktree remove ../tw-<name>`, and delete the branch.
+Otherwise nothing. Work goes on a `feature/<name>` or `fix/<name>` branch from `dev` and is merged by pull request; when several run at once, each gets its own git worktree (a sibling folder like `../tw-<name>`), removed once its branch is merged.
 
 ## Next: v0.4.0 (proposed, not started)
 
+- **The Glass look** (see In progress).
 - **Scenes:** one tap sets brightness, power mode, Do not disturb, volume and mic mute together ("Meeting", "Gaming", "Night").
 - **A privacy indicator:** which apps use the mic or camera now and recently (Windows' consent store).
 - **Display quick-switches:** HDR, refresh rate, resolution.
 - **Hotspot and airplane mode tiles.**
 - **`traywise://` links:** e.g. `traywise://toggle/wifi`, `traywise://scene/meeting`, so launchers and scripts can drive Traywise.
+- **GPU usage** in the System monitor (Windows' GPU engine counters, as Task Manager uses; measure the cost first).
+- **Keep awake triggers:** stay awake while an external display is connected or while chosen apps run.
+- **Open on the monitor under the mouse** (the panel and the edge strip are primary-monitor only today).
+- **Pinned tiles:** keep a tile (clock, now playing, Focus) on screen without the whole panel.
 
 ## Later: v0.5.0, then 1.0
 
@@ -40,7 +39,7 @@ Once every PR is merged into `dev`, a release follows the usual steps (CONTRIBUT
 
 ## Product boundaries (decided)
 
-- **No launcher features:** clipboard history, snippets, notes, timer/Pomodoro, calculator, web search, file search. Launchers can drive Traywise through `traywise://` links instead.
+- **No launcher features:** clipboard history, snippets, notes, calculator, web search, file search. (The Focus module's Pomodoro-style timer is in scope: it is Focus with focus/rest cycles, not a general timer app.) Launchers can drive Traywise through `traywise://` links instead.
 - **Out of scope:**
   - window snapping (PowerToys does it)
   - uninstallers/cleaners
@@ -50,5 +49,6 @@ Once every PR is merged into `dev`, a release follows the usual steps (CONTRIBUT
 
 ## Open owner decisions
 
-- Tint look (the old Liquid): **Background** Tinted or Transparent is still undecided (both are Settings options). **Tiles** is decided: Single hue is the default, Shaded stays a choice.
-- Clean-machine test in Windows Sandbox (`docs/testing-release.md`) hasn't been run yet.
+- Clean-machine test in Windows Sandbox (`docs/testing-release.md`) still hasn't been run: 0.3.0 shipped after a friend tried it on another laptop instead.
+- Volume and brightness widgets need a redesign, in every look: the 2 × 2 fills the whole tile with the level, which looks heavy and gives nothing to grab, and the 1 × 1 shows a value you cannot change. Designed for the Glass look (to apply to the other looks and build): the 1 × 1 is a ring at rest and a plus/value/minus stepper on hover, with scroll to change and click to mute; the 2 × 2 is a draggable dial for one device, and a set of vertical faders (one per app or display, main one outlined) when there are several. The 2 × 1 and 4 × 1 keep the filled bar for now.
+- Power mode and Battery both use the lightning-bolt icon, which is confusing as two 1 × 1 tiles. Power mode should get its own icon (a gauge in the Glass designs).

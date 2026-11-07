@@ -1,8 +1,9 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState, type ReactNode } from "react";
-import { commands, type Accent, type EdgeSide, type Look, type Preset, type Settings } from "../bindings";
+import { commands, events, type Accent, type EdgeSide, type Look, type Preset, type Settings } from "../bindings";
 import { ModulesPage } from "./ModulesPage";
 import { modules } from "../modules";
+import { useLive } from "./useLive";
 
 const LOOKS: { id: Look; label: string }[] = [
   { id: "dot", label: "Dot" },
@@ -34,6 +35,7 @@ const ACCENTS: { id: Accent; label: string }[] = [
 
 // Segoe Fluent Icons glyph.
 const CHEVRON = String.fromCodePoint(0xe76c);
+const INFO = String.fromCodePoint(0xe946);
 
 type Props = { settings: Settings; onChange: (next: Settings) => void };
 
@@ -73,6 +75,10 @@ export function SettingsPage(props: Props) {
     if (r.status === "ok") setAutostart(on);
     else setError(r.error);
   }
+
+  // The mute shortcut belongs to Audio devices: it only works, and can only fail, while that module is on.
+  const audioOn = settings.enabledModules.includes("audio-devices");
+  const audio = useLive(commands.audioDevicesState, events.audioDevicesChanged);
 
   const dotBackground = settings.transparent ? "transparent" : settings.plainBackground ? "plain" : "dots";
 
@@ -152,14 +158,6 @@ export function SettingsPage(props: Props) {
                 ))}
               </div>
             </Row>
-            <Row label="Background" stacked>
-              <Choice
-                label="Background"
-                options={["Tinted", "Transparent"]}
-                value={settings.transparent}
-                onChange={(transparent) => save({ ...settings, transparent })}
-              />
-            </Row>
             <Row label="Tiles" stacked>
               <Choice label="Tiles" options={["Shaded", "Single hue"]} value={settings.singleHue} onChange={(singleHue) => save({ ...settings, singleHue })} />
             </Row>
@@ -168,10 +166,7 @@ export function SettingsPage(props: Props) {
         {settings.look === "windows" && <p className="setting-desc">Follows Windows' light or dark mode and its colours.</p>}
       </Collapsible>
 
-      <Collapsible title="Opening" summary={settings.panelShortcut} open={open === "opening"} onToggle={toggle("opening")}>
-        <Row label="Shortcut" desc="Opens or closes Traywise">
-          <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
-        </Row>
+      <Collapsible title="Opening" summary={settings.edgeOpen ? "Screen edge on" : "Screen edge off"} open={open === "opening"} onToggle={toggle("opening")}>
         <SwitchRow
           label="Open from the screen edge"
           desc="Rest the mouse on its middle"
@@ -200,6 +195,29 @@ export function SettingsPage(props: Props) {
         )}
       </Collapsible>
 
+      <Collapsible
+        title="Shortcuts"
+        summary={audioOn ? `${settings.panelShortcut} · ${settings.micShortcut}` : settings.panelShortcut}
+        open={open === "shortcuts"}
+        onToggle={toggle("shortcuts")}
+      >
+        <Row label="Open Traywise" desc="Opens or closes the panel">
+          <ShortcutPicker keys={settings.panelShortcut} onChange={(panelShortcut) => save({ ...settings, panelShortcut })} />
+        </Row>
+        <Row label="Mute microphones" desc={audioOn ? "Mutes or unmutes every mic" : "Turn on Audio devices"}>
+          <ShortcutPicker
+            keys={settings.micShortcut}
+            disabled={!audioOn}
+            onChange={(micShortcut) => save({ ...settings, micShortcut })}
+          />
+        </Row>
+        {audioOn && audio?.shortcut?.error && (
+          <p className="error" title={audio.shortcut.error}>
+            {audio.shortcut.keys} is already used by another app: pick other keys.
+          </p>
+        )}
+      </Collapsible>
+
       <Collapsible title="System" summary={version && `Version ${version}`} open={open === "system"} onToggle={toggle("system")}>
         <SwitchRow label="Start with Windows" checked={autostart ?? false} disabled={autostart === null} onChange={toggleAutostart} />
         <SwitchRow
@@ -219,7 +237,7 @@ export function SettingsPage(props: Props) {
 }
 
 /** A settings section that opens and closes: its name and a summary of it, then what's inside. */
-function Collapsible(props: { title: string; summary: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+export function Collapsible(props: { title: string; summary: string; open: boolean; onToggle: () => void; children: ReactNode }) {
   return (
     <section>
       <button className="setting link" aria-expanded={props.open} onClick={props.onToggle}>
@@ -251,11 +269,18 @@ export function Row(props: { label: string; desc?: string; stacked?: boolean; ch
 }
 
 /** A setting that's on or off; the whole row toggles it. */
-export function SwitchRow(props: { label: string; desc?: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+export function SwitchRow(props: { label: string; desc?: string; info?: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
   return (
     <label className="setting">
       <span className="setting-text">
-        <span className="setting-label">{props.label}</span>
+        <span className="setting-label">
+          {props.label}
+          {props.info && (
+            <span className="icon info" tabIndex={0} role="img" title={props.info} aria-label={props.info} onClick={(e) => e.preventDefault()}>
+              {INFO}
+            </span>
+          )}
+        </span>
         {props.desc && <span className="setting-desc">{props.desc}</span>}
       </span>
       <input type="checkbox" checked={props.checked} disabled={props.disabled} onChange={(e) => props.onChange(e.target.checked)} />
@@ -264,7 +289,7 @@ export function SwitchRow(props: { label: string; desc?: string; checked: boolea
 }
 
 /** One of a few choices, as a segmented control. */
-function Pick<T extends string>(props: { label: string; options: { id: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+export function Pick<T extends string>(props: { label: string; options: { id: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   return (
     <div className="segmented" role="radiogroup" aria-label={props.label}>
       {props.options.map((o) => (
@@ -295,7 +320,7 @@ function Choice(props: { label: string; options: [string, string]; value: boolea
 const MODIFIER_KEYS = ["Control", "Alt", "Shift", "Meta"];
 
 /** Click, then press the new key combination (with Ctrl, Alt, Shift or Win). Esc cancels. */
-export function ShortcutPicker({ keys, onChange }: { keys: string; onChange: (keys: string) => void }) {
+export function ShortcutPicker({ keys, disabled, onChange }: { keys: string; disabled?: boolean; onChange: (keys: string) => void }) {
   const [listening, setListening] = useState(false);
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -313,6 +338,7 @@ export function ShortcutPicker({ keys, onChange }: { keys: string; onChange: (ke
   return (
     <button
       className={listening ? "on" : ""}
+      disabled={disabled}
       onClick={() => setListening(true)}
       onKeyDown={onKeyDown}
       onBlur={() => setListening(false)}

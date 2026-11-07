@@ -55,6 +55,8 @@ pub struct PanelState {
     reframed_at: Mutex<Option<Instant>>,
     /// Counts open/close animations: an animation stops when a newer one has started.
     anim: AtomicU32,
+    /// While the page waits to come in: the UI says (`panel_ready`) once its tiles have their data.
+    ready: Mutex<Option<std::sync::mpsc::Sender<()>>>,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
@@ -149,6 +151,16 @@ pub fn hide_panel(app: AppHandle) -> bool {
     true
 }
 
+/// Esc: closes the panel whatever the pointer is doing (unlike `hide_panel`, which keeps an edge-opened panel
+/// while the pointer is still on the edge).
+#[tauri::command]
+#[specta::specta]
+pub fn close_panel(app: AppHandle) {
+    if let Some(win) = app.get_webview_window(LABEL) {
+        hide(&win);
+    }
+}
+
 /// Over the panel or between it and the screen's edge it opened from, level with it.
 fn beside(panel: &RECT, p: POINT, side: EdgeSide) -> bool {
     let across = if side == EdgeSide::Left { p.x <= panel.right } else { p.x >= panel.left };
@@ -186,6 +198,18 @@ pub fn open(app: &AppHandle) {
     }
 }
 
+/// Opens the panel on its Settings page (the tray menu's Settings line).
+pub fn open_settings(app: &AppHandle) {
+    open(app);
+    if let Some(win) = app.get_webview_window(LABEL) {
+        let _ = ShowSettings {}.emit(&win);
+    }
+}
+
+/// Sent to the UI to go to its Settings page.
+#[derive(Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct ShowSettings {}
+
 /// Shown and not minimised (a minimised window still counts as visible to Windows). Asked of
 /// Windows itself: the edge shows the panel with ShowWindow, which Tauri doesn't track.
 fn is_open(win: &WebviewWindow) -> bool {
@@ -218,9 +242,17 @@ fn show(win: &WebviewWindow) {
     // waiting with nothing showing; once they're all in, it goes back to normal.
     let id = win.state::<PanelState>().anim.fetch_add(1, Ordering::Relaxed) + 1;
     if animations_on() {
-        page_state(win, Some("in"));
+        // The page keeps waiting ("pre") until its tiles have their data, so it never comes in half
+        // built, but not longer than HOLD_MS (a tile that never answers mustn't keep it blank).
+        let (tx, rx) = std::sync::mpsc::channel();
+        *win.state::<PanelState>().ready.lock().unwrap() = Some(tx);
         let w = win.clone();
         std::thread::spawn(move || {
+            let _ = rx.recv_timeout(HOLD_MS);
+            if w.state::<PanelState>().anim.load(Ordering::Relaxed) != id {
+                return;
+            }
+            page_state(&w, Some("in"));
             std::thread::sleep(IN_MS);
             if w.state::<PanelState>().anim.load(Ordering::Relaxed) == id {
                 page_state(&w, None);
@@ -330,6 +362,8 @@ fn hide_now(win: &WebviewWindow) {
 /// Shell/island.css has the same numbers.
 const IN_MS: Duration = Duration::from_millis(1000);
 const OUT_MS: Duration = Duration::from_millis(390);
+/// The longest the page waits for its tiles' data before coming in anyway.
+const HOLD_MS: Duration = Duration::from_millis(400);
 
 /// Sets which part of the open/close animation the page is in (`html[data-island]`: "pre", "in" or
 /// "out"), or none.
@@ -354,6 +388,30 @@ fn animations_on() -> bool {
 #[specta::specta]
 pub fn quit(app: AppHandle) {
     app.exit(0);
+}
+
+/// Called by the UI when every tile on the page has its data, so the tiles can come in.
+#[tauri::command]
+#[specta::specta]
+pub fn panel_ready(state: State<PanelState>) {
+    if let Some(tx) = state.ready.lock().unwrap().take() {
+        let _ = tx.send(());
+    }
+}
+
+/// The mouse has landed on the screen's edge (`shell::edge`) and the panel may open in a moment: wake the
+/// modules and the page now, so their data is there by the time it does. `on: false` undoes it if the
+/// mouse left without the panel opening.
+pub fn warm_up(app: &AppHandle, on: bool) {
+    let app2 = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        if let Some(win) = app2.get_webview_window(LABEL)
+            && !is_open(&win)
+        {
+            webview::set_active(&win, on);
+            win.state::<Modules>().panel_visible(on);
+        }
+    });
 }
 
 /// Called by the UI once it has drawn after `panel-shown`. Prints the click-to-drawn time,
@@ -449,10 +507,11 @@ fn just_reframed(win: &WebviewWindow) -> bool {
     win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
-/// Whether the window gets Windows 11's frame: every look except transparent Liquid or Dot, whose cards
-/// float over the desktop, where a frame would outline empty space.
+/// Whether the window gets Windows 11's frame: every look except transparent Dot, whose cards
+/// float over the desktop, where a frame would outline empty space. (Only Dot can be transparent;
+/// an old Tint file may still say so.)
 fn framed(settings: &Settings) -> bool {
-    settings.look == Look::Windows || !settings.transparent
+    settings.look != Look::Dot || !settings.transparent
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none

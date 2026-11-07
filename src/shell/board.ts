@@ -119,7 +119,7 @@ export function resize(tiles: Placed[], id: string, w: number, h: number, auto: 
 
 /** Adds a tile at the end (auto-arrange) or in the first free spot (free placement). */
 export function add(tiles: Placed[], id: string, w: number, h: number, auto: boolean): Placed[] {
-  const t = { id, w, h, x: 0, y: 0 };
+  const t = { id, w, h, x: 0, y: 0, readings: null };
   return auto ? pack([...tiles, t]) : [...tiles, firstFree(t, tiles)].sort(byPosition);
 }
 

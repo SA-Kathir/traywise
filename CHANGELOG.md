@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.1 (2026-11-07)
+
+A round of quality-of-life changes: a fuller tray, a smarter Focus, and a lot of small polish.
+
+**Heads-up for 0.3.0 users:** the update to 0.3.1 still shows Windows' installer window one last time. From 0.3.1 on, updates download inside Traywise with a progress bar and restart by themselves.
+
+- **Tray.** Right-click the tray icon for Settings, **Mute microphones** and **Keep awake** (each only when its module is on), above Quit. The icon's top left tile now takes your accent colour. Muted microphones show a slashed microphone on the icon and Keep awake a coffee cup, and the tooltip says what's going on, including a running Focus ("Focus until 3:40 PM").
+- **Esc.** In edit mode it steps out as before; otherwise it takes a page back to Home, and from Home it closes the panel.
+- **Opening from the screen edge.**
+  - The handle swells and brightens while you rest on it, so you can see the hover was noticed before the panel appears.
+  - Resting on the edge starts waking the panel (after 120 ms, so passing by costs nothing), and the tiles now wait to come in until each has its data, for at most 0.4 s, so the panel never opens half built.
+  - Coming back to Home from Settings shows the tiles straight away.
+- **Focus, now a Pomodoro.** Start a cycle of focus and rest rounds (25/5 and 50/10 to begin with, your own lengths too, a long rest after the fourth round). Do not disturb can follow the phases, and phases can start by themselves. The tile has two styles, an **arc** of dots or an **hourglass** that turns over at every phase; set up and start from the **Focus page** (folding sections, saved lengths, custom lengths from 1 to 480 minutes). An optional chime plays when a phase ends.
+- **Audio devices.**
+  - Choose the **microphone** (the default input), on the page and on the 2×2 Microphone tile, like the output.
+  - **Quiet on disconnect** (off by default): when the headphones you were using disconnect and Windows falls back to the speakers, they're lowered to 30% if they were louder.
+  - The microphone-mute shortcut moved to a new **Settings › Shortcuts** section, next to the one that opens Traywise.
+- **Volume mixer.** The device an app plays through is plain text under its name instead of a small pill.
+- **Power.** While Energy saver is on, Windows overrides the power mode, so the choices are dimmed and can't be clicked.
+- **Displays.** The Project tile has new sizes (2×2, 4×1 and 4×2, with labelled choices), a calmer 2×1 and clearer icons (laptop, two overlapping screens, two screens side by side, a monitor). The 1×1 and 2×1 open the Displays page. The module now says "Project" instead of "Win+P".
+- **System monitor.**
+  - Network shows how much was downloaded and uploaded since the PC started, and your local IP address, hidden until you click it (click again to copy).
+  - The page is calmer: Memory, Battery and Disk are compact, and the network details are behind a closed **Details** row.
+  - A wide tile's two readings are chosen on the tile itself in edit mode, instead of on the System page; names are spelled out (Download, Upload).
+- **Updates.** Installing an update shows its download progress inside Traywise and restarts the app by itself (see the heads-up above). After an update, a **What's new** card links to the release notes once.
+- **Tint look.** The Background choice (Tinted or Transparent) is gone: Tint is always its deep tinted background. Only Dot can be transparent.
+- **Fixes.** The edge handle no longer flickers when the pointer skims it; the Project tile's 2×1 spacing; the Local IP and network rows no longer sit in a pill.
+
 ## 0.3.0 (2026-11-02)
 
 - **Displays** module: a brightness slider for each screen (the laptop's own, and external monitors that have DDC/CI switched on in their menu), and a **Project** switch like Win+P: PC screen only, Duplicate, Extend or Second screen only. Tiles from 1×1 to 4×2; the page is in the System tab.

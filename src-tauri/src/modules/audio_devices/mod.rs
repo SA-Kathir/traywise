@@ -1,4 +1,4 @@
-//! Audio devices: pick the output device every app plays through, and mute every microphone at
+//! Audio devices: pick the output and input devices every app uses, and mute every microphone at
 //! once, from the panel or with a global shortcut.
 //!
 //! One background thread (`worker.rs`) owns the Windows audio objects. It sleeps until Windows
@@ -22,7 +22,9 @@ use crate::settings::Settings;
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioDevicesState {
-    pub outputs: Vec<OutputDevice>,
+    pub outputs: Vec<AudioDevice>,
+    /// Active microphones, and which one is the default.
+    pub inputs: Vec<AudioDevice>,
     /// Whether every microphone is muted. None when there are no microphones.
     pub mics_muted: Option<bool>,
     /// The mute-all shortcut. None until it has been set up.
@@ -39,7 +41,7 @@ pub struct ShortcutStatus {
 
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct OutputDevice {
+pub struct AudioDevice {
     /// Windows' id for the device. Stays the same across restarts.
     pub id: String,
     pub name: String,
@@ -52,10 +54,13 @@ pub struct OutputDevice {
 pub struct AudioDevicesChanged(pub AudioDevicesState);
 
 enum Msg {
-    SetOutput(String),
+    /// Makes this output or input device the default.
+    SetDefault(String),
     MuteMics(bool),
     ToggleMics,
     Shortcut(ShortcutStatus),
+    /// The "lower the volume when headphones disconnect" setting.
+    LowerOnUnplug(bool),
     /// Something changed in Windows: re-read and publish.
     Refresh,
     Stop,
@@ -121,6 +126,7 @@ impl Module for AudioDevices {
     }
 
     fn apply_settings(&mut self, settings: &Settings) {
+        let _ = send(&self.app.state::<Shared>(), Msg::LowerOnUnplug(settings.lower_volume_on_unplug));
         let keys = &settings.mic_shortcut;
         if self.shortcut.as_ref() == Some(keys) {
             return;
@@ -155,7 +161,14 @@ pub fn audio_devices_state(shared: State<Shared>) -> AudioDevicesState {
 #[tauri::command]
 #[specta::specta]
 pub fn audio_devices_set_output(shared: State<Shared>, id: String) -> Result<(), String> {
-    send(&shared, Msg::SetOutput(id))
+    send(&shared, Msg::SetDefault(id))
+}
+
+/// Makes this microphone the default for everything: apps, games, and calls.
+#[tauri::command]
+#[specta::specta]
+pub fn audio_devices_set_input(shared: State<Shared>, id: String) -> Result<(), String> {
+    send(&shared, Msg::SetDefault(id))
 }
 
 /// Mutes or unmutes every microphone.
