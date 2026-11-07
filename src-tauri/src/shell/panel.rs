@@ -60,9 +60,9 @@ pub struct PanelState {
     ready: Mutex<Option<std::sync::mpsc::Sender<()>>>,
     /// The Glass look's blur, while that look is on.
     glass: Mutex<Option<Glass>>,
-    /// Energy saver was on when the app started or since: Windows draws no blur then, and doesn't
-    /// bring it back until the app restarts (made anew or not, it stays a solid fill). The UI paints
-    /// a solid tint instead.
+    /// Energy saver was on when the app started: Windows draws no blur for the whole run (made anew
+    /// or not, it stays a solid fill), so the UI paints a solid tint. (Turning it on later leaves the
+    /// blur alone.) Once it's off again the app restarts when the panel hides (`hide_now`).
     no_blur: AtomicBool,
 }
 
@@ -274,11 +274,7 @@ fn show(win: &WebviewWindow) {
         page_state(win, None);
     }
     win.state::<Modules>().panel_visible(true);
-    let state = win.state::<PanelState>();
-    if crate::modules::power::energy_saver() {
-        state.no_blur.store(true, Ordering::Relaxed);
-    }
-    let no_blur = state.no_blur.load(Ordering::Relaxed);
+    let no_blur = win.state::<PanelState>().no_blur.load(Ordering::Relaxed);
     let _ = PanelShown { backdrop, hover, no_blur }.emit(win);
 }
 
@@ -375,6 +371,22 @@ fn hide_now(win: &WebviewWindow) {
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
+    restart_for_blur(win);
+}
+
+/// The blur is lost for the whole run when Energy saver was on at launch. When it has since been
+/// switched off, restart (the panel has just closed) to get the blur back, unless a Focus cycle or
+/// Keep awake is running, which a restart would end.
+fn restart_for_blur(win: &WebviewWindow) {
+    let app = win.app_handle();
+    if win.state::<PanelState>().no_blur.load(Ordering::Relaxed)
+        && win.state::<SettingsState>().get().look == Look::Glass
+        && !crate::modules::power::energy_saver()
+        && !crate::modules::focus::running(app)
+        && !crate::modules::keep_awake::running(app)
+    {
+        app.restart();
+    }
 }
 
 /// How long the tiles take to come in (the last one starts about 0.5 s in), and to blur away.

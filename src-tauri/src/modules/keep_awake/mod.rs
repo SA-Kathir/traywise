@@ -143,6 +143,11 @@ fn send(shared: &Shared, msg: Msg) -> Result<(), String> {
     tx.as_ref().ok_or("keep awake is off")?.send(msg).map_err(|e| e.to_string())
 }
 
+/// Whether Windows is being kept awake right now.
+pub fn running(app: &AppHandle) -> bool {
+    app.try_state::<Shared>().is_some_and(|s| s.state.lock().unwrap().active)
+}
+
 /// The latest state. Default (off) while the module is switched off.
 #[tauri::command]
 #[specta::specta]
