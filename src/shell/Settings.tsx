@@ -237,7 +237,7 @@ export function SettingsPage(props: Props) {
 }
 
 /** A settings section that opens and closes: its name and a summary of it, then what's inside. */
-function Collapsible(props: { title: string; summary: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+export function Collapsible(props: { title: string; summary: string; open: boolean; onToggle: () => void; children: ReactNode }) {
   return (
     <section>
       <button className="setting link" aria-expanded={props.open} onClick={props.onToggle}>

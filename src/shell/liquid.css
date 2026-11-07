@@ -1781,6 +1781,26 @@ button.pomo-main:hover {
   height: 76px;
   fill: rgb(var(--ink) / 0.2);
 }
+/* A phase change turns the glass over: it starts upside down, where the finished glass left off, and
+   rolls upright with the new phase's full top. Only on that event, never continuously. */
+.pomo-glass.turn {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pomo-turn 650ms ease-in-out;
+}
+@keyframes pomo-turn {
+  from {
+    transform: rotate(180deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pomo-glass.turn {
+    animation: none;
+  }
+}
 .pomo.size-4x2 .pomo-glass {
   width: 75px;
   height: 89px;
@@ -1821,10 +1841,22 @@ button.pomo-main:hover {
   font-weight: 300;
   line-height: 1;
 }
-.pomo.glass.size-2x2 .pomo-read .num {
-  font-size: 36px;
-  line-height: 1.05;
+/* The small hourglass has its readout under it, in every state (idle, running, paused). */
+.pomo.glass.size-2x2 .pomo-main {
+  flex-direction: column;
+  gap: 4px;
 }
+.pomo.glass.size-2x2 .pomo-glass {
+  width: 38px;
+  height: 45px;
+}
+.pomo.glass.size-2x2 .pomo-read {
+  align-items: center;
+}
+.pomo.glass.size-2x2 .pomo-read .num {
+  font-size: 24px;
+}
+
 .pomo.size-4x2 .pomo-read .num {
   font-size: 56px;
 }

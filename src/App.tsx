@@ -181,6 +181,12 @@ function App() {
     save({ ...settings, pages: next });
     setPage(show);
   };
+  const showTile = (id: string) => {
+    const i = pages.findIndex((p) => p.some((t) => t.id === id));
+    if (i < 0) return;
+    setView("home");
+    setPage(i);
+  };
   const editHome = view === "home" && editing;
   const tabbed = view !== "settings" && view !== "modules" && !editHome;
   // The welcome screen shows the name large instead.
@@ -207,7 +213,7 @@ function App() {
   }
 
   return (
-    <SettingsContext.Provider value={{ settings, save }}>
+    <SettingsContext.Provider value={{ settings, save, showTile }}>
     <main className={`${panelClass} fixed`}>
       <header className="row">
         {!tabbed && !editHome && (

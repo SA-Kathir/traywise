@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { commands, events, type FocusAction, type FocusMode, type FocusPreset } from "../../bindings";
 import { Num, Tile } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
@@ -13,6 +14,7 @@ const PAUSE = String.fromCodePoint(0xe769);
 const PLAY = String.fromCodePoint(0xe768);
 const NEXT = String.fromCodePoint(0xe893);
 const STOP = String.fromCodePoint(0xe71a);
+const GEAR = String.fromCodePoint(0xe713);
 
 const FALLBACK: FocusPreset = { focus: 25, rest: 5 };
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -32,6 +34,14 @@ export default function Tiles({ kind, size, open }: TileProps) {
   const timed = state?.phase != null;
   const running = timed && state.leftMs == null;
   const now = useNow(running);
+  // The hourglass is turned over each time the phase changes (a skip included), not when it first appears.
+  const phaseKey = state?.phase ? `${state.phase}${state.round}` : null;
+  const lastKey = useRef(phaseKey);
+  const [turns, setTurns] = useState(0);
+  useEffect(() => {
+    if (phaseKey && lastKey.current && phaseKey !== lastKey.current) setTurns((n) => n + 1);
+    lastKey.current = phaseKey;
+  }, [phaseKey]);
   if (!state) return null;
 
   if (!state.available)
@@ -63,7 +73,6 @@ export default function Tiles({ kind, size, open }: TileProps) {
   const lit = !timed ? 0 : Math.ceil((rest ? 1 - left / total : left / total) * 19);
   const time = clock(left);
   const glass = settings.focusStyle === "hourglass";
-  const [mm, ss] = time.split(":");
   const round = state.round ?? 0;
   return (
     <div className={`tile pomo size-${size} ${glass ? "glass" : "arc"}${timed ? " on" : ""}${rest ? " rest" : ""}`}>
@@ -81,17 +90,10 @@ export default function Tiles({ kind, size, open }: TileProps) {
         )}
       </span>
       <button className="pomo-main" onClick={toggle} title={timed ? (running ? "Pause" : "Resume") : `Start ${preset.focus} focus, ${preset.rest} rest`}>
-        {glass ? <Hourglass elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
+        {glass ? <Hourglass key={turns} turned={turns > 0} elapsed={total - left} total={total || 1} off={!timed} /> : <Arc lit={lit} />}
         {timed ? (
           <span className="pomo-read">
-            {glass && size === "2x2" ? (
-              <>
-                <Num text={mm} />
-                <Num text={ss} />
-              </>
-            ) : (
-              <Num text={time} />
-            )}
+            <Num text={time} />
             {(size === "4x2" || !glass) && (
               <span className="tile-detail">{size === "4x2" ? `${word} · round ${round} of 4` : running ? word : "Paused"}</span>
             )}
@@ -120,13 +122,11 @@ export default function Tiles({ kind, size, open }: TileProps) {
           </>
         ) : (
           <>
-            {settings.focusPresets.slice(0, 2).map((p) => (
-              <button key={`${p.focus}/${p.rest}`} title={`${p.focus} focus, ${p.rest} rest`} onClick={() => start(p)}>
-                {p.focus}/{p.rest}
-              </button>
-            ))}
-            <button aria-label="More lengths" title="More lengths" onClick={open}>
-              +
+            <button className="glyph" aria-label="Start" title={`Start ${preset.focus} focus, ${preset.rest} rest`} onClick={toggle}>
+              {PLAY}
+            </button>
+            <button className="glyph" aria-label="Set up" title="Set up lengths and options" onClick={open}>
+              {GEAR}
             </button>
           </>
         )}
