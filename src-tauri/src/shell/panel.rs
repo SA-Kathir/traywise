@@ -18,7 +18,7 @@ use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetCursorPos, GetForegroundWindow, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
+    GetCursorPos, GetForegroundWindow, GetWindowLongPtrW, GetWindowRect, GWL_STYLE, SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SetWindowLongPtrW, WS_CAPTION, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
     SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
 };
 use windows::core::BOOL;
@@ -60,10 +60,17 @@ pub struct PanelState {
     ready: Mutex<Option<std::sync::mpsc::Sender<()>>>,
     /// The Glass look's blur, while that look is on.
     glass: Mutex<Option<Glass>>,
+    /// Energy saver was on when the app started or since: Windows draws no blur then, and doesn't
+    /// bring it back until the app restarts (made anew or not, it stays a solid fill). The UI paints
+    /// a solid tint instead.
+    no_blur: AtomicBool,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(PanelState::default());
+    if crate::modules::power::energy_saver() {
+        app.state::<PanelState>().no_blur.store(true, Ordering::Relaxed);
+    }
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::default())
         .title("Traywise")
         .inner_size(WIDTH, HEIGHT)
@@ -267,7 +274,12 @@ fn show(win: &WebviewWindow) {
         page_state(win, None);
     }
     win.state::<Modules>().panel_visible(true);
-    let _ = PanelShown { backdrop, hover }.emit(win);
+    let state = win.state::<PanelState>();
+    if crate::modules::power::energy_saver() {
+        state.no_blur.store(true, Ordering::Relaxed);
+    }
+    let no_blur = state.no_blur.load(Ordering::Relaxed);
+    let _ = PanelShown { backdrop, hover, no_blur }.emit(win);
 }
 
 /// Sent to the UI each time the panel opens.
@@ -278,6 +290,8 @@ pub struct PanelShown {
     pub backdrop: Option<u8>,
     /// Opened from the screen's edge: the UI closes it when the mouse leaves.
     pub hover: bool,
+    /// The Glass look has no blur to show (see `PanelState::no_blur`).
+    pub no_blur: bool,
 }
 
 /// How bright the screen is where the panel will appear: Windows shrinks that area to an 8 × 8
@@ -557,6 +571,15 @@ fn sync_glass(win: &WebviewWindow) {
 fn frame(win: &WebviewWindow, framed: bool) {
     let _ = win.set_shadow(framed);
     let Ok(hwnd) = win.hwnd() else { return };
+    if !framed {
+        // Windows draws a title bar for any window with this style bit, and the window library can leave
+        // it set on a borderless window (it was seen on a cold start with the Glass look).
+        unsafe {
+            let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+            SetWindowLongPtrW(hwnd, GWL_STYLE, style & !(WS_CAPTION.0 as isize));
+            let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        }
+    }
     let corners = if framed { DWMWCP_ROUND } else { DWMWCP_DONOTROUND };
     let color = if framed { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
     unsafe {

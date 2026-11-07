@@ -7,6 +7,8 @@
 .look-glass {
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
   --tw-glass-frost: rgb(14 17 22 / 0.4);
+  /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
+  --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
   --tw-glass-slab: rgb(255 255 255 / 0.07);
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
@@ -34,6 +36,7 @@
 @media (prefers-color-scheme: light) {
   .look-glass {
     --tw-glass-frost: rgb(245 247 250 / 0.46);
+    --tw-glass-frost-solid: rgb(232 236 242 / 0.95);
     --tw-glass-slab: rgb(255 255 255 / 0.4);
     --tw-glass-slab-on: rgb(255 255 255 / 0.72);
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
@@ -69,6 +72,9 @@ html.look-glass::after {
 html.look-glass::before {
   z-index: -1;
   background: var(--tw-glass-frost);
+}
+html.look-glass[data-solid]::before {
+  background: var(--tw-glass-frost-solid);
 }
 html.look-glass::after {
   z-index: 100;

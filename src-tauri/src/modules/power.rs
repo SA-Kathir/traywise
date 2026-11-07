@@ -134,6 +134,11 @@ fn switched_on() -> bool {
     status.is_ok() && value == 1
 }
 
+/// Whether Energy saver is on right now (Glass asks: Windows draws no blur under it).
+pub fn energy_saver() -> bool {
+    read().energy_saver
+}
+
 fn publish(app: &AppHandle) {
     let _ = PowerChanged(read()).emit(app);
 }

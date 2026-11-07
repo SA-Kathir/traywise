@@ -92,7 +92,9 @@ function App() {
     const back = () => clearTimeout(leave);
     const root = document.documentElement;
     const unlisten = events.panelShown.listen((e) => {
-      const { backdrop, hover } = e.payload;
+      const { backdrop, hover, no_blur } = e.payload;
+      // Glass: Energy saver took the blur away (until the app restarts), so the tint goes solid.
+      if (no_blur) root.dataset.solid = "1";
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
       if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
       clearTimeout(leave);

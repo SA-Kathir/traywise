@@ -407,6 +407,8 @@ export type PanelShown = {
 	backdrop: number | null,
 	/**  Opened from the screen's edge: the UI closes it when the mouse leaves. */
 	hover: boolean,
+	/**  The Glass look has no blur to show (see `PanelState::no_blur`). */
+	no_blur: boolean,
 };
 
 /**  Which part of the cycle is running. */
