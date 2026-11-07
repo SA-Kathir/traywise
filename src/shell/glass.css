@@ -1,0 +1,49 @@
+/* The Glass look: frosted glass over a blurred desktop. Windows draws the blur behind the transparent
+   panel (src-tauri/src/shell/glass.rs); this file paints only what sits on top of it: a thin tint,
+   lit rims, soft shadows. Tokens are the Figma file's "Glass" variables, dark and light, and
+   follow Windows' mode. Tiles can't blur the desktop themselves (the page has nothing behind it),
+   so they are translucent sheets over the panel's blur.
+
+   Tokens only for now. The panel and tile rules come once the look is hooked in. */
+
+.look-glass {
+  /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
+  --tw-glass-frost: rgb(14 17 22 / 0.4);
+  /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
+  --tw-glass-slab: rgb(255 255 255 / 0.07);
+  --tw-glass-slab-on: rgb(255 255 255 / 0.15);
+  --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
+  --tw-glass-slab-track: rgb(255 255 255 / 0.14);
+  /* The one soft accent, and the wash an active tile takes. */
+  --tw-glass-accent: #8ec1ff;
+  --tw-glass-accent-wash: rgb(142 193 255 / 0.2);
+  /* The lit rim: a 1 px gradient edge, bright at the top left and bottom right. */
+  --tw-glass-rim-0: rgb(255 255 255 / 0.55);
+  --tw-glass-rim-1: rgb(255 255 255 / 0.1);
+  --tw-glass-rim-2: rgb(255 255 255 / 0.05);
+  --tw-glass-rim-3: rgb(255 255 255 / 0.28);
+  --tw-glass-shadow: rgb(0 0 0 / 0.34);
+  --tw-glass-text: #f7f8fa;
+  --tw-glass-text-2: rgb(255 255 255 / 0.78);
+  --tw-glass-text-3: rgb(255 255 255 / 0.62);
+}
+
+@media (prefers-color-scheme: light) {
+  .look-glass {
+    --tw-glass-frost: rgb(245 247 250 / 0.46);
+    --tw-glass-slab: rgb(255 255 255 / 0.4);
+    --tw-glass-slab-on: rgb(255 255 255 / 0.72);
+    --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
+    --tw-glass-slab-track: rgb(11 16 32 / 0.1);
+    --tw-glass-accent: #2f6fd0;
+    --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
+    --tw-glass-rim-0: rgb(255 255 255 / 0.95);
+    --tw-glass-rim-1: rgb(255 255 255 / 0.45);
+    --tw-glass-rim-2: rgb(255 255 255 / 0.3);
+    --tw-glass-rim-3: rgb(255 255 255 / 0.7);
+    --tw-glass-shadow: rgb(30 40 70 / 0.18);
+    --tw-glass-text: #0e1116;
+    --tw-glass-text-2: rgb(14 17 22 / 0.7);
+    --tw-glass-text-3: rgb(14 17 22 / 0.55);
+  }
+}
