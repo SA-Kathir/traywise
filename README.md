@@ -11,7 +11,7 @@ One tray icon, one panel, and a handful of small Windows 11 tools you can switch
 Pick a look when you first start it, and change it any time in Settings:
 
 - **Dot** (the default): monochrome tiles on a plain background, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
-- **Tint**: tiles tinted in one of six colours, on a tinted background or floating over your desktop.
+- **Tint**: tiles tinted in one of six colours, on a deep shade of the same colour.
 - **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
 
 ## Modules
@@ -20,14 +20,18 @@ Each module can be switched on or off in **Settings → Modules**. A module that
 
 - **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume.
 - **Now playing**: what any app is playing (Spotify, a browser tab, a video player), with its cover art, play/pause, skip, a seek bar, shuffle and repeat. The Sound tab lists every app with media.
-- **Audio devices**: pick the default speakers or headphones in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default, set on its page).
+- **Audio devices**: pick the default speakers or headphones, and the default microphone, in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default, set in **Settings → Shortcuts**). Optionally lowers the speakers when your headphones disconnect.
 - **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, or while plugged in. Can keep the screen on too.
-- **System monitor**: CPU, memory, network speed, battery and free disk space, with a 60-second graph. It only measures while the panel is open.
+- **System monitor**: CPU, memory, network speed (and totals since the PC started), your local IP (hidden until you click it), battery and free disk space, with a 60-second graph. It only measures while the panel is open.
 - **Wi-Fi**: switch it on or off, see the network you're on, and join another (a new network's password goes straight to Windows). Showing network names counts as location use in Windows 11.
 - **Bluetooth**: switch it on or off, see your paired devices, and connect or disconnect headphones and speakers.
 - **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
+- **Displays**: a brightness slider for each screen, and **Project**: PC screen only, Duplicate, Extend or Second screen only.
+- **Power**: Windows' power mode, the battery with time left, and whether Energy saver is on.
+- **Clock**: the time and date as a digital or analogue tile, with an optional second time zone.
+- **Focus**: Do not disturb with a Pomodoro-style cycle of focus and rest rounds, shown as an arc or an hourglass, with an optional chime.
 
-Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
+Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel (Esc closes it too). Right-click the tray icon for Settings, mute microphones, Keep awake and Quit. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
 
 **Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
