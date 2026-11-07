@@ -31,7 +31,7 @@ Nothing. Work goes on a `feature/<name>` or `fix/<name>` branch from `dev` and i
 
 ## Product boundaries (decided)
 
-- **No launcher features:** clipboard history, snippets, notes, timer/Pomodoro, calculator, web search, file search. Launchers can drive Traywise through `traywise://` links instead.
+- **No launcher features:** clipboard history, snippets, notes, calculator, web search, file search. (The Focus module's Pomodoro-style timer is in scope: it is Focus with focus/rest cycles, not a general timer app.) Launchers can drive Traywise through `traywise://` links instead.
 - **Out of scope:**
   - window snapping (PowerToys does it)
   - uninstallers/cleaners

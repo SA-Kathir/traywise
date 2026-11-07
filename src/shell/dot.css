@@ -1050,6 +1050,96 @@
   font-size: 16px;
 }
 
+/* ---- Focus 2×2 and 4×2 (Pomodoro) --------------------------------------------------------- */
+
+/* Phase colours. A running tile is the inverted plate, so it takes the other theme's accent and green
+   to keep their contrast (the pale ones are too faint on the light plate). With the Green accent, focus
+   stays red: green is the rest colour. */
+.look-dot .pomo {
+  --pomo-focus: var(--tw-accent-base);
+  --pomo-rest: var(--tw-status-success);
+}
+.look-dot .pomo.on {
+  --pomo-focus: var(--tw-accent-strong);
+  --pomo-rest: #137f4b;
+}
+.look-dot.accent-green .pomo {
+  --pomo-focus: #d92b24;
+}
+.look-dot.accent-green .pomo.on {
+  --pomo-focus: #b81f19;
+}
+@media (prefers-color-scheme: light) {
+  .look-dot .pomo.on {
+    --pomo-focus: var(--tw-accent-base);
+    --pomo-rest: #34c77b;
+  }
+  .look-dot.accent-green .pomo.on {
+    --pomo-focus: #d92b24;
+  }
+}
+.look-dot .pomo.on::after {
+  display: none;
+}
+.look-dot .pomo-arc,
+.look-dot .pomo-glass {
+  fill: var(--tw-control-track);
+}
+.look-dot .pomo.on :is(.pomo-arc, .pomo-glass) {
+  fill: color-mix(in srgb, var(--tw-text-inverse) 14%, transparent);
+}
+.look-dot .pomo-glass .pile {
+  fill: var(--tw-icon-secondary);
+}
+.look-dot .pomo.on .pomo-glass .pile {
+  fill: color-mix(in srgb, var(--tw-text-inverse) 55%, transparent);
+}
+.look-dot .pomo .tile-title .tile-label {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+.look-dot .pomo .tile-icon,
+.look-dot .pomo.on .tile-icon {
+  width: auto;
+  height: auto;
+  background: none;
+}
+.look-dot .pomo-read .num {
+  font-family: var(--tw-font-display);
+  font-weight: 900;
+}
+.look-dot .pomo-rounds i {
+  background: var(--tw-control-track);
+}
+.look-dot .pomo-rounds .done {
+  background: var(--tw-text-primary);
+}
+.look-dot .pomo.on .pomo-rounds i {
+  background: color-mix(in srgb, var(--tw-text-inverse) 14%, transparent);
+}
+.look-dot .pomo.on .pomo-rounds .done {
+  background: var(--tw-text-inverse);
+}
+.look-dot .pomo-rounds .cur,
+.look-dot .pomo.on .pomo-rounds .cur {
+  background: var(--focus);
+}
+.look-dot .pomo.on .tile-detail,
+.look-dot .pomo.on .pomo-keys button {
+  color: color-mix(in srgb, var(--tw-text-inverse) 72%, transparent);
+}
+.look-dot .pomo.on .pomo-keys button {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-text-inverse) 25%, transparent);
+}
+.look-dot .pomo-keys button {
+  min-height: 22px;
+  padding: 0 8px;
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--tw-glass-edge-strong);
+}
+
 /* ---- Clock ------------------------------------------------------------------------------- */
 
 .look-dot .clock-time .num {

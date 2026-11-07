@@ -54,10 +54,39 @@ pub struct Settings {
     /// Clock: a second time zone its wider tiles show, like "Europe/London". None for none.
     pub clock_zone: Option<String>,
     pub clock_style: ClockStyle,
-    /// Focus: play a soft chime when a timed Do not disturb runs out.
+    /// Focus: play a soft chime when a focus or rest phase ends.
     pub focus_chime: bool,
     /// The version whose "What's new" note was last shown (or that was first installed). None on a fresh install.
     pub last_seen_version: Option<String>,
+    /// Focus: how its tiles draw the countdown.
+    pub focus_style: FocusStyle,
+    /// Focus: saved "focus / rest" lengths in minutes; the tile shows the first two, the first is the default.
+    pub focus_presets: Vec<FocusPreset>,
+    /// Focus: the long rest after the fourth round, in minutes.
+    pub focus_long_rest: u32,
+    /// Focus: start each phase by itself, instead of waiting for a tap.
+    pub focus_auto_next: bool,
+    /// Focus: switch Do not disturb on while focusing (and off when the phase ends).
+    pub focus_dnd_focus: bool,
+    /// Focus: keep Do not disturb on during rests too.
+    pub focus_dnd_rest: bool,
+}
+
+/// How the Focus tiles draw the countdown.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum FocusStyle {
+    /// A half ring of dots.
+    Arc,
+    /// An hourglass of dots.
+    Hourglass,
+}
+
+/// A saved focus and rest length, in minutes.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
+pub struct FocusPreset {
+    pub focus: u32,
+    pub rest: u32,
 }
 
 /// A reading the system monitor graphs.
@@ -120,6 +149,12 @@ impl Default for Settings {
             clock_style: ClockStyle::Digital,
             focus_chime: true,
             last_seen_version: None,
+            focus_style: FocusStyle::Arc,
+            focus_presets: vec![FocusPreset { focus: 25, rest: 5 }, FocusPreset { focus: 50, rest: 10 }],
+            focus_long_rest: 15,
+            focus_auto_next: true,
+            focus_dnd_focus: true,
+            focus_dnd_rest: false,
         }
     }
 }
@@ -311,6 +346,12 @@ mod tests {
             clock_style: ClockStyle::Analogue,
             focus_chime: false,
             last_seen_version: Some("0.3.0".into()),
+            focus_style: FocusStyle::Hourglass,
+            focus_presets: vec![FocusPreset { focus: 45, rest: 10 }],
+            focus_long_rest: 20,
+            focus_auto_next: false,
+            focus_dnd_focus: false,
+            focus_dnd_rest: true,
         };
         write(&path, &custom).unwrap();
         assert_eq!(read(&path), custom, "saved and read back");
