@@ -6,7 +6,7 @@
 
 .look-glass {
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
-  --tw-glass-frost: rgb(14 17 22 / 0.4);
+  --tw-glass-frost: rgb(14 17 22 / 0.64);
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
   --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
@@ -37,7 +37,7 @@
 
 @media (prefers-color-scheme: light) {
   .look-glass {
-    --tw-glass-frost: rgb(245 247 250 / 0.46);
+    --tw-glass-frost: rgb(245 247 250 / 0.56);
     --tw-glass-frost-solid: rgb(232 236 242 / 0.95);
     --tw-glass-slab: rgb(255 255 255 / 0.4);
     --tw-glass-slab-on: rgb(255 255 255 / 0.72);
@@ -63,13 +63,13 @@
 
 /* The classes are on html too, so its two pseudo-elements frame the whole window: the tint under
    everything, and the lit rim (a 1 px gradient edge, cut out with a mask) over it. The window itself
-   is transparent; Windows draws the blur behind the tint. 20px matches GLASS_RADIUS in panel.rs. */
+   is transparent; Windows draws the blur behind the tint. 28px matches GLASS_RADIUS in panel.rs. */
 html.look-glass::before,
 html.look-glass::after {
   content: "";
   position: fixed;
   inset: 0;
-  border-radius: 20px;
+  border-radius: 28px;
   pointer-events: none;
 }
 html.look-glass::before {
@@ -111,7 +111,7 @@ html.look-glass::after {
    top left and bottom right, fading between), cut out with a mask; no white fill, no glow. */
 .look-glass :is(section, .tile, .stats) {
   border: none;
-  border-radius: 16px;
+  border-radius: 22px;
   background: var(--tw-glass-slab);
   box-shadow: none;
 }

@@ -551,7 +551,7 @@ fn framed(settings: &Settings) -> bool {
 }
 
 /// Glass look's corner radius, in logical pixels (the CSS uses the same).
-const GLASS_RADIUS: f32 = 20.0;
+const GLASS_RADIUS: f32 = 28.0;
 
 /// The Glass look's blur exists while that look is on, and fills the window. It has to be made on
 /// the thread that owns the window, hence the main thread.
