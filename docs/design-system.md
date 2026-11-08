@@ -21,7 +21,7 @@ Decisions with the owner:
 | Words | **OCR-A** (public domain, bundled, one weight, no faux bold), a size smaller than the Segoe ramp because it's wide. |
 | Modes | **Dark and light**, following Windows' app mode. |
 | Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. |
-| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
+| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent (and the Glass look) samples an 8 × 8 brightness once as the panel opens, then deletes it. |
 | On tiles | **Inverted plate** (white in dark, black in light) with a 6 px accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
 | Board pages (0.3) | As built: **plain dots** at the panel bottom, a **page bar** in edit mode, and tiles move by **dropping them on a page's dot**. (The owner kept their own picks over the Figma pill and Move to bar.) |
