@@ -16,6 +16,7 @@ import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
 import "./shell/glass.css";
+import { trackGlassHoles } from "./shell/glassHoles";
 import "./shell/island.css";
 import { Pending, settled } from "./shell/useLive";
 
@@ -153,6 +154,10 @@ function App() {
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
+
+  // Glass: the tint is cut out under every card (shell/glassHoles.ts).
+  const glass = settings?.look === "glass";
+  useEffect(() => (glass ? trackGlassHoles() : undefined), [glass]);
 
   const { save, error } = useSave({ settings: settings!, onChange: setSettings });
 
