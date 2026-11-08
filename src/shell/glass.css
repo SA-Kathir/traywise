@@ -107,21 +107,47 @@ html.look-glass::after {
 
 /* ---- Cards and tiles ----------------------------------------------------------------------- */
 
-/* A translucent sheet; the rim is two inset edges, bright at the top left and bottom right. */
+/* A translucent sheet. The lit rim is the same 1 px gradient edge as the panel's (bright only at the
+   top left and bottom right, fading between), cut out with a mask; no white fill, no glow. */
 .look-glass :is(section, .tile, .stats) {
   border: none;
   border-radius: 16px;
   background: var(--tw-glass-slab);
-  box-shadow:
-    inset 1px 1px 0 var(--tw-glass-rim-0),
-    inset -1px -1px 0 var(--tw-glass-rim-3),
-    inset 0 0 0 1px var(--tw-glass-rim-2);
+  box-shadow: none;
 }
-/* Switched on: the accent as tinted glass, with an accent rim and glyph. */
+.look-glass :is(section, .tile, .stats)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    var(--tw-glass-rim-1) 35%,
+    var(--tw-glass-rim-2) 65%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass .tile.on {
   background: var(--tw-glass-accent-wash);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-accent) 55%, transparent);
   color: var(--tw-glass-accent);
+}
+.look-glass .tile.on::after {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 80%, transparent),
+    color-mix(in srgb, var(--tw-glass-accent) 25%, transparent) 40%,
+    color-mix(in srgb, var(--tw-glass-accent) 15%, transparent) 65%,
+    color-mix(in srgb, var(--tw-glass-accent) 45%, transparent)
+  );
 }
 .look-glass .tile.on .tile-detail {
   color: color-mix(in srgb, var(--tw-glass-accent) 80%, transparent);
@@ -134,9 +160,7 @@ html.look-glass::after {
   border: none;
   border-radius: 12px;
   background: var(--tw-glass-slab-track);
-  box-shadow:
-    inset 1px 1px 0 var(--tw-glass-rim-1),
-    inset -1px -1px 0 var(--tw-glass-rim-2);
+  box-shadow: none;
 }
 .look-glass button:hover {
   background: var(--tw-glass-slab-on);
@@ -189,7 +213,7 @@ html.look-glass::after {
 /* Switches: a glass pill, the accent when on, a white knob. */
 .look-glass input[type="checkbox"] {
   background: var(--tw-glass-well);
-  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-1);
+  box-shadow: none;
 }
 .look-glass input[type="checkbox"]::before {
   background: #fff;
