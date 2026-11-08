@@ -14,6 +14,11 @@
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
   --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
   --tw-glass-slab-track: rgb(255 255 255 / 0.14);
+  /* The gloss on tiles: how bright the top edge and the soft band under it are, and how dark the
+     bottom is. One dial per mode, to tune it. */
+  --tw-glass-gloss-edge: rgb(255 255 255 / 0.26);
+  --tw-glass-gloss-band: rgb(255 255 255 / 0.16);
+  --tw-glass-gloss-shade: rgb(0 0 0 / 0.32);
   /* A recessed well (the tab bar, segmented controls). */
   --tw-glass-well: rgb(0 0 0 / 0.22);
   /* The one soft accent, and the wash an active tile takes. */
@@ -44,6 +49,9 @@
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
     --tw-glass-slab-track: rgb(11 16 32 / 0.1);
     --tw-glass-well: rgb(11 16 32 / 0.08);
+    --tw-glass-gloss-edge: rgb(255 255 255 / 0.9);
+    --tw-glass-gloss-band: rgb(255 255 255 / 0.55);
+    --tw-glass-gloss-shade: rgb(30 40 70 / 0.14);
     --tw-glass-accent: #2f6fd0;
     --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
     --tw-glass-rim-0: rgb(255 255 255 / 0.95);
@@ -112,8 +120,15 @@ html.look-glass::after {
 .look-glass :is(section, .tile, .stats) {
   border: none;
   border-radius: 22px;
-  background: var(--tw-glass-slab);
-  box-shadow: none;
+  /* Glossy: a little brighter at the top, fading down; a bright line along the top edge, a soft band
+     of light just under it, a shade at the bottom, and a gentle lift. Nothing is white across the
+     whole tile. */
+  background: linear-gradient(180deg, var(--tw-glass-slab-on), var(--tw-glass-slab) 45%, var(--tw-glass-slab));
+  box-shadow:
+    inset 0 1px 0 var(--tw-glass-gloss-edge),
+    inset 0 14px 16px -14px var(--tw-glass-gloss-band),
+    inset 0 -12px 14px -12px var(--tw-glass-gloss-shade),
+    0 10px 22px -8px var(--tw-glass-shadow);
 }
 .look-glass :is(section, .tile, .stats)::after {
   content: "";
@@ -137,7 +152,11 @@ html.look-glass::after {
 }
 /* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass .tile.on {
-  background: var(--tw-glass-accent-wash);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tw-glass-accent) 30%, transparent),
+    var(--tw-glass-accent-wash) 50%
+  );
   color: var(--tw-glass-accent);
 }
 .look-glass .tile.on::after {
