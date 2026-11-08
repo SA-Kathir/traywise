@@ -14,6 +14,8 @@
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
   --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
   --tw-glass-slab-track: rgb(255 255 255 / 0.14);
+  /* A recessed well (the tab bar, segmented controls). */
+  --tw-glass-well: rgb(0 0 0 / 0.22);
   /* The one soft accent, and the wash an active tile takes. */
   --tw-glass-accent: #8ec1ff;
   --tw-glass-accent-wash: rgb(142 193 255 / 0.2);
@@ -41,6 +43,7 @@
     --tw-glass-slab-on: rgb(255 255 255 / 0.72);
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
     --tw-glass-slab-track: rgb(11 16 32 / 0.1);
+    --tw-glass-well: rgb(11 16 32 / 0.08);
     --tw-glass-accent: #2f6fd0;
     --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
     --tw-glass-rim-0: rgb(255 255 255 / 0.95);
@@ -122,4 +125,79 @@ html.look-glass::after {
 }
 .look-glass .tile.on .tile-detail {
   color: color-mix(in srgb, var(--tw-glass-accent) 80%, transparent);
+}
+
+/* ---- Controls ------------------------------------------------------------------------------ */
+
+/* Buttons: small glass pills with the same two lit edges as a tile. */
+.look-glass button {
+  border: none;
+  border-radius: 12px;
+  background: var(--tw-glass-slab-track);
+  box-shadow:
+    inset 1px 1px 0 var(--tw-glass-rim-1),
+    inset -1px -1px 0 var(--tw-glass-rim-2);
+}
+.look-glass button:hover {
+  background: var(--tw-glass-slab-on);
+}
+.look-glass button:active {
+  background: var(--tw-glass-slab);
+}
+/* Picked: accent glass, like an active tile. */
+.look-glass button.on,
+.look-glass .segmented button.on,
+.look-glass .tabs button.on {
+  background: var(--tw-glass-accent-wash);
+  color: var(--tw-glass-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-accent) 50%, transparent);
+}
+/* The tab bar and segmented controls sit in a recessed well; their buttons are flat until picked. */
+.look-glass :is(.tabs, .segmented) {
+  background: var(--tw-glass-well);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-2);
+}
+.look-glass :is(.tabs, .segmented) button:not(.on) {
+  background: transparent;
+  box-shadow: none;
+}
+.look-glass :is(.tabs, .segmented) button:not(.on):hover {
+  background: var(--tw-glass-slab);
+}
+.look-glass .icon-button {
+  border-radius: 50%;
+}
+.look-glass button.primary {
+  background: color-mix(in srgb, var(--tw-glass-accent) 55%, transparent);
+  color: var(--tw-glass-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-accent) 70%, transparent);
+}
+
+/* Sliders: a thin track, filled with the accent as frosted glass, a white knob. */
+.look-glass input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent) var(--fill, 0%),
+    var(--tw-glass-slab-track) var(--fill, 0%)
+  );
+}
+.look-glass input[type="range"]::-webkit-slider-thumb,
+.look-glass input[type="range"]:hover::-webkit-slider-thumb {
+  background: #fff;
+}
+
+/* Switches: a glass pill, the accent when on, a white knob. */
+.look-glass input[type="checkbox"] {
+  background: var(--tw-glass-well);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-1);
+}
+.look-glass input[type="checkbox"]::before {
+  background: #fff;
+}
+.look-glass input[type="checkbox"]:checked {
+  background: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+  box-shadow: none;
+}
+.look-glass input[type="checkbox"]:checked::before {
+  background: #fff;
 }
