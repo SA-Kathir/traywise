@@ -155,21 +155,21 @@ html.look-glass::after {
 
 /* ---- Controls ------------------------------------------------------------------------------ */
 
-/* Buttons: small glass pills with the same two lit edges as a tile. */
-.look-glass button {
+/* Buttons: small glass pills. :where keeps this at plain `button` strength, so the tiles' own parts
+   (titles, rows, the arrow) that are buttons too keep their transparent look. */
+:where(.look-glass) button {
   border: none;
   border-radius: 12px;
   background: var(--tw-glass-slab-track);
   box-shadow: none;
 }
-.look-glass button:hover {
+:where(.look-glass) button:hover {
   background: var(--tw-glass-slab-on);
 }
-.look-glass button:active {
+:where(.look-glass) button:active {
   background: var(--tw-glass-slab);
 }
 /* Picked: accent glass, like an active tile. */
-.look-glass button.on,
 .look-glass .segmented button.on,
 .look-glass .tabs button.on {
   background: var(--tw-glass-accent-wash);
