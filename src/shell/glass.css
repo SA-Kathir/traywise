@@ -123,8 +123,7 @@ html.look-glass::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    -5px -5px 14px -9px rgb(255 255 255 / 0.22),
-    5px 5px 14px -9px rgb(255 255 255 / 0.14),
+    0 0 16px -6px rgb(255 255 255 / 0.2),
     0 6px 18px rgb(0 0 0 / 0.16);
 }
 .look-glass :is(section, .tile, .stats)::after {
@@ -135,12 +134,11 @@ html.look-glass::after {
   padding: 1px;
   pointer-events: none;
   opacity: 0.9;
-  /* Two lit corners only: it fades out before the middle of each side. */
   background: linear-gradient(
     135deg,
     var(--tw-glass-rim-0),
-    transparent 30%,
-    transparent 70%,
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
     var(--tw-glass-rim-3)
   );
   -webkit-mask:
@@ -152,8 +150,7 @@ html.look-glass::after {
 /* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass :is(.tile.on, .tabs button.on, .segmented button.on) {
   /* Lit blue glass, for everything that is switched on or picked: the blue is in the edge, the lip, the
-     glow and the text; the body is the same dark glass as the rest, with only a trace of blue. The
-     edge and the lip are lit at the top left and bottom right only. */
+     glow and the text; the body is the same dark glass as the rest, with only a trace of blue. */
   position: relative;
   background:
     linear-gradient(
@@ -165,8 +162,9 @@ html.look-glass::after {
   box-shadow:
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    -6px -6px 16px -8px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent),
-    6px 6px 16px -8px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent),
+    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
+    0 0 30px -2px color-mix(in srgb, var(--tw-glass-blue) 62%, transparent),
+    0 0 8px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
@@ -178,14 +176,13 @@ html.look-glass::after {
   pointer-events: none;
   opacity: 1;
   padding: 2px;
-  /* Hot at the two corners, where light catches the glass; nothing along the sides. */
+  /* Hot at the two corners, where light catches the glass, fading to a soft blue along the sides. */
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 22%,
-    transparent 40%,
-    transparent 60%,
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 78%,
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 20%,
+    color-mix(in srgb, var(--tw-glass-blue) 22%, transparent) 50%,
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 80%,
     color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
   );
   -webkit-mask:
