@@ -19,6 +19,8 @@
   /* The one soft accent, and the wash an active tile takes. */
   --tw-glass-accent: #8ec1ff;
   --tw-glass-accent-wash: rgb(142 193 255 / 0.2);
+  /* A deeper, more saturated blue for lit glass bodies and rims, so the blue itself pops. */
+  --tw-glass-blue: #3d8bff;
   /* The lit rim: a 1 px gradient edge, bright at the top left and bottom right. */
   --tw-glass-rim-0: rgb(255 255 255 / 0.55);
   --tw-glass-rim-1: rgb(255 255 255 / 0.1);
@@ -46,6 +48,7 @@
     --tw-glass-well: rgb(11 16 32 / 0.08);
     --tw-glass-accent: #2f6fd0;
     --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
+    --tw-glass-blue: #2f6fd0;
     --tw-glass-rim-0: rgb(255 255 255 / 0.95);
     --tw-glass-rim-1: rgb(255 255 255 / 0.45);
     --tw-glass-rim-2: rgb(255 255 255 / 0.3);
@@ -145,27 +148,51 @@ html.look-glass::after {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+/* The second, fainter edge a little inside the first, as on the clear glass in the references. */
+.look-glass :is(section, .tile, .stats)::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: calc(24px - 3px);
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.22;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    transparent 30%,
+    transparent 70%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
 /* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass .tile.on {
-  /* Lit accent glass: a brighter blue body, a soft glare from the top left (the accent lightened, not
-     white), and a glow around it. */
-  background:
-    radial-gradient(120% 90% at 16% 0%, color-mix(in srgb, var(--tw-glass-accent) 55%, #fff 45%) 0, transparent 62%) top / 100% 100% no-repeat,
-    linear-gradient(180deg, color-mix(in srgb, var(--tw-glass-accent) 36%, transparent), color-mix(in srgb, var(--tw-glass-accent) 20%, transparent));
+  /* Lit blue glass: a saturated, see-through blue body with a bright blue rim and a blue glow, like the
+     coloured tiles in the references. No white. */
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--tw-glass-blue) 52%, transparent),
+    color-mix(in srgb, var(--tw-glass-blue) 26%, transparent)
+  );
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--tw-glass-accent) 50%, #fff 50%),
-    0 0 22px -4px color-mix(in srgb, var(--tw-glass-accent) 45%, transparent),
+    0 0 24px -4px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
-  color: color-mix(in srgb, var(--tw-glass-accent) 70%, #fff 30%);
+  color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
 .look-glass .tile.on::after {
   opacity: 1;
+  padding: 1.5px;
   background: linear-gradient(
     135deg,
-    var(--tw-glass-accent),
-    color-mix(in srgb, var(--tw-glass-accent) 12%, transparent) 35%,
-    color-mix(in srgb, var(--tw-glass-accent) 10%, transparent) 70%,
-    var(--tw-glass-accent)
+    color-mix(in srgb, var(--tw-glass-blue) 55%, var(--tw-glass-accent)),
+    color-mix(in srgb, var(--tw-glass-blue) 35%, transparent) 32%,
+    color-mix(in srgb, var(--tw-glass-blue) 30%, transparent) 68%,
+    color-mix(in srgb, var(--tw-glass-blue) 55%, var(--tw-glass-accent))
   );
 }
 .look-glass .tile.on .tile-detail {
