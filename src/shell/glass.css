@@ -6,11 +6,11 @@
 
 .look-glass {
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
-  --tw-glass-frost: rgb(14 17 22 / 0.4);
+  --tw-glass-frost: rgb(14 17 22 / 0.2);
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
   --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
-  --tw-glass-slab: rgb(255 255 255 / 0.07);
+  --tw-glass-slab: rgb(14 17 22 / 0.5);
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
   --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
   --tw-glass-slab-track: rgb(255 255 255 / 0.14);
@@ -39,9 +39,9 @@
 
 @media (prefers-color-scheme: light) {
   .look-glass {
-    --tw-glass-frost: rgb(245 247 250 / 0.56);
+    --tw-glass-frost: rgb(245 247 250 / 0.3);
     --tw-glass-frost-solid: rgb(232 236 242 / 0.95);
-    --tw-glass-slab: rgb(255 255 255 / 0.4);
+    --tw-glass-slab: rgb(255 255 255 / 0.55);
     --tw-glass-slab-on: rgb(255 255 255 / 0.72);
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
     --tw-glass-slab-track: rgb(11 16 32 / 0.1);
@@ -78,16 +78,9 @@ html.look-glass::after {
 html.look-glass::before {
   z-index: -1;
   background: var(--tw-glass-frost);
-  /* Holes under the cards (shell/glassHoles.ts sets the mask); without it, the tint is whole. */
-  mask-image: var(--tw-glass-holes);
-  mask-mode: luminance;
-  mask-size: 100% 100%;
-  -webkit-mask-image: var(--tw-glass-holes);
 }
 html.look-glass[data-solid]::before {
   background: var(--tw-glass-frost-solid);
-  mask-image: none;
-  -webkit-mask-image: none;
 }
 html.look-glass::after {
   z-index: 100;
@@ -157,11 +150,13 @@ html.look-glass::after {
 .look-glass .tile.on {
   /* Clear glass with a little deep blue in it. The blue is strongest in the two lit corners of the
      edge, in the glow and in the text. */
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--tw-glass-blue) 20%, #000 8%),
-    color-mix(in srgb, var(--tw-glass-blue) 9%, #000 6%)
-  );
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tw-glass-blue) 26%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 12%, transparent)
+    ),
+    var(--tw-glass-slab);
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 75%, #fff),
     inset -1.5px -1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
@@ -255,4 +250,40 @@ html.look-glass::after {
 }
 .look-glass input[type="checkbox"]:checked::before {
   background: #fff;
+}
+
+/* ---- Legibility on a bright desktop ------------------------------------------------------- */
+
+/* The header sits on the lightly tinted panel, not on a tile: a soft shadow keeps its text readable
+   over white. */
+.look-glass .panel > header h1,
+.look-glass h1 {
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.4);
+}
+@media (prefers-color-scheme: light) {
+  .look-glass h1 {
+    text-shadow: none;
+  }
+}
+
+/* ---- Keep awake and Focus, switched on ----------------------------------------------------- */
+
+/* On a lit glass tile the dots and arcs take the bright accent, like the tile's text, not the dark
+   on-accent colour the filled looks use. */
+html .panel.look-glass .awake.on .awake-ring,
+html .panel.look-glass .pomo.on :is(.pomo-arc, .pomo-glass) {
+  fill: rgb(var(--ink) / 0.22);
+}
+html .panel.look-glass .awake.on .awake-ring .lit,
+html .panel.look-glass .pomo.on :is(.lit, .sand, .grain, .dim) {
+  fill: var(--tw-glass-accent);
+}
+html .panel.look-glass .pomo.on .pile {
+  fill: color-mix(in srgb, var(--tw-glass-accent) 60%, transparent);
+}
+html .panel.look-glass .pomo.on .pomo-rounds i {
+  background: rgb(var(--ink) / 0.25);
+}
+html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
+  background: var(--tw-glass-accent);
 }
