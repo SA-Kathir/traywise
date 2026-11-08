@@ -149,18 +149,19 @@ html.look-glass::after {
 }
 /* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass .tile.on {
-  /* Lit blue glass: the blue is in the edge, the lip, the glow and the text; the body stays clear. */
+  /* Lit blue glass: the blue is in the edge, the lip, the glow and the text; the body is the same dark
+     glass as any tile, with only a trace of blue. */
   background:
     linear-gradient(
       160deg,
-      color-mix(in srgb, var(--tw-glass-blue) 26%, transparent),
-      color-mix(in srgb, var(--tw-glass-blue) 12%, transparent)
+      color-mix(in srgb, var(--tw-glass-blue) 9%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 3%, transparent)
     ),
     var(--tw-glass-slab);
   box-shadow:
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent),
+    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
     0 0 30px -2px color-mix(in srgb, var(--tw-glass-blue) 62%, transparent),
     0 0 8px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
