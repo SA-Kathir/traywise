@@ -125,7 +125,13 @@ html.look-glass::after {
   /* As in the design: a 7% sheet, no blur and no gloss of its own (it sits on the panel's blur), a
      soft lift shadow, and the rim below. */
   background: var(--tw-glass-slab);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.16);
+  /* The glass lip: a soft, thicker light along the top-left and bottom-right edges only, where light
+     would catch the thickness of the glass (the references' clear glass), and a faint glow inside. */
+  box-shadow:
+    inset 2px 2px 5px -2px rgb(255 255 255 / 0.4),
+    inset -2px -2px 5px -2px rgb(255 255 255 / 0.26),
+    inset 0 0 18px rgb(255 255 255 / 0.035),
+    0 6px 18px rgb(0 0 0 / 0.16);
 }
 .look-glass :is(section, .tile, .stats)::after {
   content: "";
@@ -152,16 +158,16 @@ html.look-glass::after {
 .look-glass :is(section, .tile, .stats)::before {
   content: "";
   position: absolute;
-  inset: 3px;
-  border-radius: calc(24px - 3px);
+  inset: 5px;
+  border-radius: calc(24px - 5px);
   padding: 1px;
   pointer-events: none;
-  opacity: 0.22;
+  opacity: 0.4;
   background: linear-gradient(
     135deg,
     var(--tw-glass-rim-0),
-    transparent 30%,
-    transparent 70%,
+    transparent 38%,
+    transparent 62%,
     var(--tw-glass-rim-3)
   );
   -webkit-mask:
@@ -172,17 +178,28 @@ html.look-glass::after {
 }
 /* Switched on: the accent as glass, with an accent rim and glyph. */
 .look-glass .tile.on {
-  /* Lit blue glass: a saturated, see-through blue body with a bright blue rim and a blue glow, like the
-     coloured tiles in the references. No white. */
+  /* Still clear glass: only a faint blue in the body. The blue lives in the edge, the glow and the text. */
   background: linear-gradient(
     160deg,
-    color-mix(in srgb, var(--tw-glass-blue) 52%, transparent),
-    color-mix(in srgb, var(--tw-glass-blue) 26%, transparent)
+    color-mix(in srgb, var(--tw-glass-blue) 17%, transparent),
+    color-mix(in srgb, var(--tw-glass-blue) 7%, transparent)
   );
   box-shadow:
+    inset 2px 2px 5px -2px color-mix(in srgb, var(--tw-glass-blue) 80%, #fff),
+    inset -2px -2px 5px -2px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--tw-glass-blue) 14%, transparent),
     0 0 24px -4px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
+}
+.look-glass .tile.on::before {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-blue) 90%, #fff),
+    transparent 38%,
+    transparent 62%,
+    color-mix(in srgb, var(--tw-glass-blue) 90%, #fff)
+  );
 }
 .look-glass .tile.on::after {
   opacity: 1;
