@@ -6,19 +6,14 @@
 
 .look-glass {
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
-  --tw-glass-frost: rgb(14 17 22 / 0.5);
+  --tw-glass-frost: rgb(14 17 22 / 0.4);
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
   --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
-  --tw-glass-slab: rgb(255 255 255 / 0.045);
+  --tw-glass-slab: rgb(255 255 255 / 0.07);
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
   --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
   --tw-glass-slab-track: rgb(255 255 255 / 0.14);
-  /* The gloss on tiles: how bright the top edge and the soft band under it are, and how dark the
-     bottom is. One dial per mode, to tune it. */
-  --tw-glass-gloss-edge: rgb(255 255 255 / 0.26);
-  --tw-glass-gloss-band: rgb(255 255 255 / 0.16);
-  --tw-glass-gloss-shade: rgb(0 0 0 / 0.32);
   /* A recessed well (the tab bar, segmented controls). */
   --tw-glass-well: rgb(0 0 0 / 0.22);
   /* The one soft accent, and the wash an active tile takes. */
@@ -49,9 +44,6 @@
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
     --tw-glass-slab-track: rgb(11 16 32 / 0.1);
     --tw-glass-well: rgb(11 16 32 / 0.08);
-    --tw-glass-gloss-edge: rgb(255 255 255 / 0.9);
-    --tw-glass-gloss-band: rgb(255 255 255 / 0.55);
-    --tw-glass-gloss-shade: rgb(30 40 70 / 0.14);
     --tw-glass-accent: #2f6fd0;
     --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
     --tw-glass-rim-0: rgb(255 255 255 / 0.95);
@@ -71,13 +63,13 @@
 
 /* The classes are on html too, so its two pseudo-elements frame the whole window: the tint under
    everything, and the lit rim (a 1 px gradient edge, cut out with a mask) over it. The window itself
-   is transparent; Windows draws the blur behind the tint. 28px matches GLASS_RADIUS in panel.rs. */
+   is transparent; Windows draws the blur behind the tint. 32px matches GLASS_RADIUS in panel.rs. */
 html.look-glass::before,
 html.look-glass::after {
   content: "";
   position: fixed;
   inset: 0;
-  border-radius: 28px;
+  border-radius: 32px;
   pointer-events: none;
 }
 html.look-glass::before {
@@ -89,12 +81,12 @@ html.look-glass[data-solid]::before {
 }
 html.look-glass::after {
   z-index: 100;
-  padding: 1px;
+  padding: 1.5px;
   background: linear-gradient(
     135deg,
     var(--tw-glass-rim-0),
-    var(--tw-glass-rim-1) 35%,
-    var(--tw-glass-rim-2) 65%,
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
     var(--tw-glass-rim-3)
   );
   -webkit-mask:
@@ -119,13 +111,11 @@ html.look-glass::after {
    top left and bottom right, fading between), cut out with a mask; no white fill, no glow. */
 .look-glass :is(section, .tile, .stats) {
   border: none;
-  border-radius: 22px;
-  /* Clear glass: almost no fill, so the blurred colour behind shows through. Depth comes from a dark
-     shade at the bottom and a lift shadow, never from white. */
+  border-radius: 24px;
+  /* As in the design: a 7% sheet, no blur and no gloss of its own (it sits on the panel's blur), a
+     soft lift shadow, and the rim below. */
   background: var(--tw-glass-slab);
-  box-shadow:
-    inset 0 -14px 16px -14px var(--tw-glass-gloss-shade),
-    0 10px 22px -8px var(--tw-glass-shadow);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.16);
 }
 .look-glass :is(section, .tile, .stats)::after {
   content: "";
@@ -134,11 +124,12 @@ html.look-glass::after {
   border-radius: inherit;
   padding: 1px;
   pointer-events: none;
+  opacity: 0.65;
   background: linear-gradient(
     135deg,
     var(--tw-glass-rim-0),
-    var(--tw-glass-rim-1) 35%,
-    var(--tw-glass-rim-2) 65%,
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
     var(--tw-glass-rim-3)
   );
   -webkit-mask:
@@ -153,12 +144,13 @@ html.look-glass::after {
   color: var(--tw-glass-accent);
 }
 .look-glass .tile.on::after {
+  opacity: 1;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 80%, transparent),
-    color-mix(in srgb, var(--tw-glass-accent) 25%, transparent) 40%,
-    color-mix(in srgb, var(--tw-glass-accent) 15%, transparent) 65%,
-    color-mix(in srgb, var(--tw-glass-accent) 45%, transparent)
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 12%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 10%, transparent) 70%,
+    var(--tw-glass-accent)
   );
 }
 .look-glass .tile.on .tile-detail {
