@@ -69,28 +69,17 @@
    is transparent; Windows draws the blur behind the tint. 32px matches GLASS_RADIUS in panel.rs. */
 html.look-glass::before,
 html.look-glass::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  border-radius: 32px;
-  pointer-events: none;
-}
-html.look-glass::before {
-  z-index: -1;
-  background: var(--tw-glass-frost);
-}
-html.look-glass[data-solid]::before {
-  background: var(--tw-glass-frost-solid);
-}
-html.look-glass::after {
   z-index: 100;
   padding: 1.5px;
+  /* Lit like the selected tiles: the accent, hot at the top left and bottom right, fading to a soft
+     accent along the sides. */
   background: linear-gradient(
     135deg,
-    var(--tw-glass-rim-0),
-    var(--tw-glass-rim-1) 30%,
-    var(--tw-glass-rim-2) 70%,
-    var(--tw-glass-rim-3)
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 20%,
+    color-mix(in srgb, var(--tw-glass-blue) 16%, transparent) 50%,
+    color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 80%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
