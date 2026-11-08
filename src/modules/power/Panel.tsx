@@ -13,6 +13,13 @@ const MODES: { mode: PowerMode; label: string; short: string; icon: string }[] =
   { mode: "performance", label: "Performance", short: "Max", icon: BOLT },
 ];
 
+/** The Power mode tile's own icon (the design's gauge), so it never looks like the Battery's charging bolt. */
+const MODE_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden>
+    <path d="M4 16a8 8 0 0 1 16 0M12 16l4-5" />
+  </svg>
+);
+
 const usePower = () => useLive(commands.powerState, events.powerChanged);
 
 /** "4h 10m", "35m", "Charging": the battery's second line, short enough for a 2×1 tile. */
@@ -69,7 +76,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   return (
     <Tile
       size={size}
-      icon={(current ?? MODES[1]).icon}
+      icon={MODE_ICON}
       label="Power mode"
       detail={current ? (size === "1x1" ? current.short : current.label) : "None"}
       onToggle={next && !state.energySaver ? () => commands.powerSetMode(next.mode) : undefined}
