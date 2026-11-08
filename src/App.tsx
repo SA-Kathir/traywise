@@ -97,7 +97,10 @@ function App() {
       // Glass: Energy saver took the blur away (until the app restarts), so the tint goes solid.
       if (no_blur) root.dataset.solid = "1";
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
-      if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
+      if (backdrop !== null) {
+        root.style.setProperty("--backdrop", String(backdrop / 100));
+        window.dispatchEvent(new Event("tw-backdrop"));
+      }
       clearTimeout(leave);
       clicked = false;
       root.removeEventListener("mouseleave", left);

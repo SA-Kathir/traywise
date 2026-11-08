@@ -5,8 +5,9 @@
    so they are translucent sheets over the panel's blur. */
 
 .look-glass {
-  /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
-  --tw-glass-frost: rgb(14 17 22 / 0.4);
+  /* Panel. Darker over a bright desktop: --backdrop (0 to 1) is the brightness measured as the panel
+     opens (8 x 8 pixels, averaged to one number, deleted at once; see CLAUDE.md). */
+  --tw-glass-frost: rgb(14 17 22 / calc(0.4 + var(--backdrop, 0) * 0.25));
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
   --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
@@ -281,10 +282,11 @@ html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
 
 /* ---- Legibility on a bright desktop ------------------------------------------------------- */
 
-/* Text on a clear tile carries its own soft shadow, so white stays readable when the desktop behind is
-   white (the same job the shadow does under iOS glass labels). Light mode doesn't need it. */
+/* Text on a clear tile carries a soft shadow that grows with the brightness behind the panel, so white
+   stays readable over a white desktop (the job the shadow does under iOS glass labels). Light mode
+   doesn't need it. */
 .look-glass :is(.tile, section, .stats) {
-  text-shadow: 0 1px 6px rgb(0 0 0 / 0.4);
+  text-shadow: 0 1px 6px rgb(0 0 0 / calc(var(--backdrop, 0) * 0.55));
 }
 @media (prefers-color-scheme: light) {
   .look-glass :is(.tile, section, .stats) {

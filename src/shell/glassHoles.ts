@@ -6,9 +6,10 @@
 
 const CARDS = ".tile, section, .stats";
 const RADIUS = 24;
-/** How much of the tint the hole takes out: not all of it, so white text keeps some ground on a bright
- *  desktop. 1 is fully clear. */
-const CLEARNESS = 0.72;
+/** How much of the tint the hole takes out: all of it over a dark desktop, less over a bright one
+ *  (`--backdrop`, 0 to 1, from the brightness sample taken as the panel opens), so white text keeps some
+ *  ground. */
+const MAX_RESTORED = 0.5;
 
 /** How visible an element is: its own opacity times its parents'. */
 function visibility(el: Element | null): number {
@@ -33,7 +34,8 @@ function draw(root: HTMLElement) {
     const bottom = Math.min(r.bottom, clip?.bottom ?? h);
     if (right - left < 1 || bottom - top < 1) continue;
     // White keeps the tint, black cuts it out completely, grey in between while a tile fades in.
-    const grey = Math.round(255 * (1 - CLEARNESS * visibility(card)));
+    const brightness = Number(getComputedStyle(root).getPropertyValue("--backdrop")) || 0;
+    const grey = Math.round(255 * (1 - (1 - MAX_RESTORED * brightness) * visibility(card)));
     const rx = Math.min(RADIUS, (right - left) / 2, (bottom - top) / 2);
     holes += `<rect x="${left}" y="${top}" width="${right - left}" height="${bottom - top}" rx="${rx}" fill="rgb(${grey},${grey},${grey})"/>`;
   }
@@ -56,6 +58,8 @@ export function trackGlassHoles(): () => void {
   const watch = new MutationObserver(update);
   watch.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "data-island"] });
   window.addEventListener("resize", update);
+  // The panel just measured the desktop behind it (App.tsx).
+  window.addEventListener("tw-backdrop", update);
   // Scrolling doesn't bubble, but it can be caught on the way down.
   document.addEventListener("scroll", update, { capture: true, passive: true });
   document.addEventListener("animationstart", update, true);
@@ -65,6 +69,7 @@ export function trackGlassHoles(): () => void {
     cancelAnimationFrame(queued);
     watch.disconnect();
     window.removeEventListener("resize", update);
+    window.removeEventListener("tw-backdrop", update);
     document.removeEventListener("scroll", update, true);
     document.removeEventListener("animationstart", update, true);
     document.removeEventListener("transitionstart", update, true);
