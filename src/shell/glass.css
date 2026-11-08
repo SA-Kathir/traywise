@@ -75,9 +75,16 @@ html.look-glass::after {
 html.look-glass::before {
   z-index: -1;
   background: var(--tw-glass-frost);
+  /* Holes under the cards (shell/glassHoles.ts sets the mask); without it, the tint is whole. */
+  mask-image: var(--tw-glass-holes);
+  mask-mode: luminance;
+  mask-size: 100% 100%;
+  -webkit-mask-image: var(--tw-glass-holes);
 }
 html.look-glass[data-solid]::before {
   background: var(--tw-glass-frost-solid);
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 html.look-glass::after {
   z-index: 100;
