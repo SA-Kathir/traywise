@@ -475,6 +475,8 @@ export type Settings = {
 	preset: Preset,
 	/**  Dot: the accent colour. */
 	accent: Accent,
+	/**  Glass: the accent colour (its own choice, so Dot's default red doesn't leak in; blue by default). */
+	glassAccent?: Accent,
 	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */

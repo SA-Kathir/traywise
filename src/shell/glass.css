@@ -296,3 +296,25 @@ html .panel.look-glass .pomo.on .pomo-rounds i {
 html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
   background: var(--tw-glass-accent);
 }
+
+/* ---- Accent colours ------------------------------------------------------------------------ */
+
+/* The accent is its own choice for this look (Settings › Appearance). --tw-glass-accent is the soft
+   colour for text and rims, --tw-glass-blue the deeper one for lit glass (the names are from when blue
+   was the only one). Dark first; light mode takes the deeper colour for both. */
+.look-glass.accent-green { --tw-glass-accent: #8fe3c0; --tw-glass-blue: #2fc58a; --tw-glass-accent-wash: rgb(143 227 192 / 0.2); }
+.look-glass.accent-amber { --tw-glass-accent: #f6cf8b; --tw-glass-blue: #f2a33a; --tw-glass-accent-wash: rgb(246 207 139 / 0.2); }
+.look-glass.accent-violet { --tw-glass-accent: #c3a7ff; --tw-glass-blue: #8a63ff; --tw-glass-accent-wash: rgb(195 167 255 / 0.2); }
+.look-glass.accent-red { --tw-glass-accent: #ff9a9a; --tw-glass-blue: #f0524f; --tw-glass-accent-wash: rgb(255 154 154 / 0.2); }
+@media (prefers-color-scheme: light) {
+  .look-glass.accent-green { --tw-glass-accent: #12875a; --tw-glass-blue: #12875a; --tw-glass-accent-wash: rgb(18 135 90 / 0.16); }
+  .look-glass.accent-amber { --tw-glass-accent: #b9720a; --tw-glass-blue: #b9720a; --tw-glass-accent-wash: rgb(185 114 10 / 0.16); }
+  .look-glass.accent-violet { --tw-glass-accent: #6a48db; --tw-glass-blue: #6a48db; --tw-glass-accent-wash: rgb(106 72 219 / 0.16); }
+  .look-glass.accent-red { --tw-glass-accent: #c93a3a; --tw-glass-blue: #c93a3a; --tw-glass-accent-wash: rgb(201 58 58 / 0.16); }
+}
+/* Settings' round swatches show the soft colour. */
+.glass-swatch.accent-blue { background: #8ec1ff; }
+.glass-swatch.accent-green { background: #8fe3c0; }
+.glass-swatch.accent-amber { background: #f6cf8b; }
+.glass-swatch.accent-violet { background: #c3a7ff; }
+.glass-swatch.accent-red { background: #ff9a9a; }
