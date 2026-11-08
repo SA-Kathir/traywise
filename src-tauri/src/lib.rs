@@ -130,6 +130,7 @@ pub fn run() {
             app.manage(modules);
             app.manage(updater::UpdateState::default());
             updater::check(app.handle());
+            modules::power::watch_energy_saver();
             shell::panel::create(app)?;
             shell::edge::apply(app.handle(), &app.state::<settings::SettingsState>().get());
             let keys = app.state::<settings::SettingsState>().get().panel_shortcut;
