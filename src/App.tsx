@@ -16,7 +16,6 @@ import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
 import "./shell/glass.css";
-import { trackGlassHoles } from "./shell/glassHoles";
 import "./shell/island.css";
 import { Pending, settled } from "./shell/useLive";
 
@@ -97,10 +96,7 @@ function App() {
       // Glass: Energy saver took the blur away (until the app restarts), so the tint goes solid.
       if (no_blur) root.dataset.solid = "1";
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
-      if (backdrop !== null) {
-        root.style.setProperty("--backdrop", String(backdrop / 100));
-        window.dispatchEvent(new Event("tw-backdrop"));
-      }
+      if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
       clearTimeout(leave);
       clicked = false;
       root.removeEventListener("mouseleave", left);
@@ -157,10 +153,6 @@ function App() {
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
-
-  // Glass: the tint is cut out under every card (shell/glassHoles.ts).
-  const glass = settings?.look === "glass";
-  useEffect(() => (glass ? trackGlassHoles() : undefined), [glass]);
 
   const { save, error } = useSave({ settings: settings!, onChange: setSettings });
 
