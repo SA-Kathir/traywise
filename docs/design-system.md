@@ -303,6 +303,17 @@ The same layouts and sizes in Tint and Windows. What changes:
 - **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
 - **Analogue clock:** line ticks and solid hands instead of dots.
 
+### Glass look
+
+Figma: v0.4 › Glass look. Styles in `src/shell/glass.css`; the blur is `src-tauri/src/shell/glass.rs`.
+
+- **The panel:** a transparent window. Windows draws a blurred copy of the desktop behind it (a host backdrop brush); the page adds a dark tint over it (40 %, up to 65 % over a bright desktop, see below), a 1.5 px rim lit with the accent at the top left and bottom right, and a 32 px radius. No frame, shadow or title bar of Windows' own.
+- **Tiles and cards:** a dark translucent sheet (50 % of #0E1116), 24 px radius, a 1 px gradient rim lit at the top left and bottom right (at 90 % strength) and a light lip just inside it; no blur of their own (they sit on the panel's blur) and no white fill or glare.
+- **Selected or on** (tiles, the tab bar's current tab, the picked segment): the accent in the rim (hot at the two lit corners), a soft glow and the text and icons; the body stays the same dark glass with a trace of the accent. Switches turn lit accent glass; slider fills are the accent as frosted glass with a glowing white knob.
+- **Accent:** its own choice in Settings (blue by default; green, amber, violet, red). `--tw-glass-accent` is the soft colour for text and rims, `--tw-glass-blue` the deeper one for lit glass.
+- **Bright desktops:** the one 8 × 8 brightness sample (also used by transparent Dot) raises the tint and the tile text's shadow over bright wallpapers. See the privacy note in CLAUDE.md.
+- **Energy saver:** Windows draws no blur while it's on, so the page switches to a solid frosted grey. Windows decides this when the app starts: Traywise restarts itself when it's switched off again (when the panel closes, and not while a Focus cycle or Keep awake is running).
+
 ## Open questions
 
 1. **Fonts in Figma.** Install OCR-A for Figma (from `src/assets/fonts`), then set the `font/ui` variable so the mockups use the real face.
