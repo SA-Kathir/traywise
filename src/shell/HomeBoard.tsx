@@ -4,7 +4,8 @@ import type { ModuleId } from "../bindings";
 import { defaultBoard, modules, tileModule, type Size } from "../modules";
 import { cycle, pairOrDefault, READING_CHOICES } from "../modules/system-monitor/readings";
 import { useSettings } from "./SettingsContext";
-import { add, COLUMNS, compact, move, pack, remove, resize, shift, type Placed } from "./board";
+import { add, COLUMNS, compact, move, pack, remove, shift, type Placed } from "./board";
+import { groupOf, optionsOf } from "./options";
 import { Pending } from "./useLive";
 
 // Segoe Fluent Icons glyphs.
@@ -98,6 +99,8 @@ type BoardProps = {
   /** Auto-arrange (fill gaps) rather than free placement. */
   auto: boolean;
   onChange: (tiles: Placed[]) => void;
+  /** The resize button: open the gallery for this tile (its sizes and variants). */
+  onChangeTile: (tile: Placed) => void;
   /** A tile was held down: start edit mode. */
   onLongPress: () => void;
   /** How many pages there are, which one this is, and whether there's room for another. */
@@ -139,7 +142,7 @@ type Drag = {
 
 /** The home board: each tile in its cells of the 4-column grid, drawn by its module. In edit mode
  *  the tiles stop working and can be dragged (or moved with the arrow keys), resized and removed. */
-export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages, page, canAddPage, onMoveToPage }: BoardProps) {
+export function Board({ tiles, open, editing, auto, onChange, onChangeTile, onLongPress, pages, page, canAddPage, onMoveToPage }: BoardProps) {
   const { settings } = useSettings();
   const board = useRef<HTMLDivElement>(null);
   // The drag lives in a ref, read by the pointer handlers: several pointer events can arrive before
@@ -358,12 +361,6 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
     onChange(tiles.map((o) => (o.id === t.id ? { ...o, readings: next } : o)));
   }
 
-  function nextSize(t: Placed) {
-    const { sizes } = info(t.id);
-    const [w, h] = cells(sizes[(sizes.indexOf(sizeOf(t)) + 1) % sizes.length]);
-    onChange(resize(tiles, t.id, w, h, auto));
-  }
-
   return (
     <>
     <div
@@ -377,7 +374,8 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
       {shown.map((t) => {
         const module = tileModule(t.id);
         const { Tiles } = modules[module];
-        const { name, sizes } = info(t.id);
+        const { name } = info(t.id);
+        const choices = optionsOf(module, groupOf(module, kindOf(t.id))).length;
         const size = sizeOf(t);
         const label = size.replace("x", "×");
         return (
@@ -430,12 +428,12 @@ export function Board({ tiles, open, editing, auto, onChange, onLongPress, pages
                       </button>
                     );
                   })}
-                {sizes.length > 1 && (
+                {choices > 1 && (
                   <button
                     className="tile-badge tile-resize"
-                    aria-label={`Resize ${name}, now ${label}`}
-                    title={`Size: ${label}`}
-                    onClick={() => nextSize(t)}
+                    aria-label={`Change ${name}, now ${label}`}
+                    title="Change size or look"
+                    onClick={() => onChangeTile(t)}
                   >
                     {RESIZE}
                   </button>
