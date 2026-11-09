@@ -2,8 +2,8 @@ import { getVersion } from "@tauri-apps/api/app";
 import { Suspense, useEffect, useState } from "react";
 import { commands, events, type ModuleId, type Settings } from "./bindings";
 import { categories, modules, type Category, type Size } from "./modules";
-import { AddTiles } from "./shell/AddTiles";
-import { add, moveToPage, pack, type Placed } from "./shell/board";
+import { AddTiles, ChangeTile } from "./shell/AddTiles";
+import { add, moveToPage, pack, resize, type Placed } from "./shell/board";
 import { Board, pagesToShow } from "./shell/HomeBoard";
 import { ModulesPage } from "./shell/ModulesPage";
 import { PageDots, Pages } from "./shell/Pages";
@@ -44,6 +44,8 @@ function App() {
   // Edit mode on Home, its list of tiles to add, and its overview of pages.
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  /** The id of the tile whose gallery (the resize button) is open. */
+  const [changing, setChanging] = useState<string | null>(null);
   const [overview, setOverview] = useState(false);
   // Reset asks once more before it throws the layout away.
   const [confirmReset, setConfirmReset] = useState(false);
@@ -112,6 +114,7 @@ function App() {
       setPage(0);
       setEditing(false);
       setAdding(false);
+      setChanging(null);
       setOverview(false);
       // Report click-to-drawn time: two animation frames means the browser has really drawn.
       requestAnimationFrame(() => requestAnimationFrame(() => commands.panelPainted()));
@@ -137,13 +140,14 @@ function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (editing) (adding ? setAdding : overview ? setOverview : setEditing)(false);
+      if (editing && changing) setChanging(null);
+      else if (editing) (adding ? setAdding : overview ? setOverview : setEditing)(false);
       else if (view !== "home") setView("home");
       else commands.closePanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, adding, overview, view]);
+  }, [editing, adding, changing, overview, view]);
 
   // The look's classes: on the panel, so cards and controls can use its colours (--accent), and on
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
@@ -340,6 +344,7 @@ function App() {
                 editing={editing}
                 auto={auto}
                 onChange={setBoard}
+                onChangeTile={(t) => setChanging(t.id)}
                 onLongPress={() => setEditing(true)}
                 pages={pages.length}
                 page={i}
@@ -374,6 +379,17 @@ function App() {
           }}
           onClose={() => setAdding(false)}
           openModules={() => setView("modules")}
+        />
+      )}
+      {editHome && changing && tiles.some((t) => t.id === changing) && (
+        <ChangeTile
+          tile={tiles.find((t) => t.id === changing)!}
+          onPick={({ id, size }) => {
+            const [w, h] = size.split("x").map(Number);
+            setBoard(resize(tiles, changing, w, h, auto, id));
+            setChanging(null);
+          }}
+          onClose={() => setChanging(null)}
         />
       )}
       {view === "home" && error && <p className="error">{error}</p>}
