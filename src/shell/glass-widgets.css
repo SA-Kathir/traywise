@@ -1,0 +1,80 @@
+/* The Glass look's volume and brightness widgets (src/shell/Dial.tsx, structure in liquid.css): the
+   1×1 ring and stepper, the 2×2 dial and faders. Kept apart from glass.css. Fills are the accent as
+   translucent glass with a soft glow; rims light up in the accent on hover, like a selected tile. */
+
+/* The arc: a glass track, an accent fill that glows, a white knob (hover only, as in every look). */
+.look-glass .dial-track {
+  stroke: rgb(255 255 255 / 0.14);
+}
+.look-glass .dial-fill {
+  stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent));
+}
+.look-glass .dial-thumb {
+  fill: #fff;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
+}
+.look-glass .dial.off .dial-icon,
+.look-glass .dial.off .dial-big {
+  color: var(--tw-glass-text-3);
+}
+
+/* 1×1: the − and + are small glass pills with the lit lip; the value is light text. */
+.look-glass .dial-step {
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28);
+}
+.look-glass .dial-step:hover {
+  background: color-mix(in srgb, var(--tw-glass-blue) 20%, transparent);
+  color: var(--tw-glass-accent);
+}
+.look-glass .dial-value {
+  color: var(--tw-glass-text);
+}
+
+/* Hovered: the tile's rim lights up in the accent, with a soft glow. */
+.look-glass .dial:hover {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    -6px -6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
+    6px 6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+.look-glass .dial:hover::after {
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
+    transparent 45%,
+    transparent 55%,
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+  );
+}
+
+/* 2×2 faders: a glass track, the fill is frosted accent glass lit along its top edge, and the main
+   one is outlined in the accent with a glow. */
+.look-glass .fader-track {
+  background: var(--tw-glass-slab-track);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.look-glass .fader-fill {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tw-glass-accent) 85%, transparent),
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tw-glass-accent) 55%, #fff);
+}
+.look-glass .fader.main {
+  border-color: color-mix(in srgb, var(--tw-glass-blue) 70%, var(--tw-glass-accent));
+  box-shadow: 0 0 12px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
+}
+.look-glass .fader-value {
+  color: var(--tw-glass-text);
+}

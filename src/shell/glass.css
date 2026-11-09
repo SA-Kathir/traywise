@@ -336,3 +336,48 @@ html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
 .glass-swatch.accent-amber { background: #f6cf8b; }
 .glass-swatch.accent-violet { background: #c3a7ff; }
 .glass-swatch.accent-red { background: #ff9a9a; }
+
+/* ---- Add tiles and the gallery ------------------------------------------------------------- */
+
+/* The Add tiles tray floats over the board: it blurs the tiles under it (they are page content, so
+   this one the page can do) and is darker, so a sheet never sits half-seen on another. */
+.look-glass .tray {
+  background: rgb(14 17 22 / 0.78);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+@media (prefers-color-scheme: light) {
+  .look-glass .tray {
+    background: rgb(245 247 250 / 0.8);
+  }
+}
+/* The gallery: the live tile sits in a recessed well, "Current" is a lit chip, and the pick button is
+   lit like a primary button. */
+.look-glass .gallery-stage {
+  border-radius: 18px;
+  background: var(--tw-glass-well);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-2);
+}
+.look-glass .gallery-current {
+  color: var(--tw-glass-accent);
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  border: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
+    0 0 10px -3px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
+}
+.look-glass .gallery-dots i.on {
+  background: var(--tw-glass-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent);
+}
+.look-glass .gallery-action {
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
+    0 0 16px -3px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
+}
+.look-glass .gallery-action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
+}
