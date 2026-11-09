@@ -35,28 +35,6 @@
   color: var(--tw-glass-text);
 }
 
-/* Hovered: the tile's rim lights up in the accent, with a soft glow. */
-.look-glass .dial:hover {
-  box-shadow:
-    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
-    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    -6px -6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
-    6px 6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
-    0 6px 18px rgb(0 0 0 / 0.16);
-}
-.look-glass .dial:hover::after {
-  opacity: 1;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
-    transparent 45%,
-    transparent 55%,
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
-  );
-}
-
 /* 2×2 faders: a glass track, the fill is frosted accent glass lit along its top edge, and the main
    one is outlined in the accent with a glow. */
 .look-glass .fader-track {
@@ -71,10 +49,57 @@
   );
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tw-glass-accent) 55%, #fff);
 }
+/* No outline on the main fader: it was more than the tile needs. */
 .look-glass .fader.main {
-  border-color: color-mix(in srgb, var(--tw-glass-blue) 70%, var(--tw-glass-accent));
-  box-shadow: 0 0 12px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
+  border-color: transparent;
 }
 .look-glass .fader-value {
   color: var(--tw-glass-text);
+}
+
+/* The analogue clock in lines: fine ticks, solid glass hands, the minute hand lit with the accent. */
+.look-glass .face-dots {
+  display: none;
+}
+.look-glass .face-lines {
+  display: inline;
+}
+.look-glass .ltick,
+.look-glass .lmajor,
+.look-glass .lhand,
+.look-glass .lminute {
+  stroke-linecap: round;
+  fill: none;
+}
+.look-glass .ltick {
+  stroke: rgb(255 255 255 / 0.3);
+  stroke-width: 1;
+}
+.look-glass .lmajor {
+  stroke: rgb(255 255 255 / 0.75);
+  stroke-width: 1.8;
+}
+.look-glass .lhand {
+  stroke: rgb(255 255 255 / 0.95);
+  stroke-width: 3.4;
+}
+.look-glass .lminute {
+  stroke: var(--tw-glass-accent);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
+}
+.look-glass .lcap {
+  fill: var(--tw-glass-accent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
+}
+@media (prefers-color-scheme: light) {
+  .look-glass .ltick {
+    stroke: rgb(14 17 22 / 0.3);
+  }
+  .look-glass .lmajor {
+    stroke: rgb(14 17 22 / 0.7);
+  }
+  .look-glass .lhand {
+    stroke: rgb(14 17 22 / 0.9);
+  }
 }

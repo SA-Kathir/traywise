@@ -381,3 +381,35 @@ html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
 .look-glass .gallery-action:hover:not(:disabled) {
   background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
 }
+
+/* ---- Hover ---------------------------------------------------------------------------------- */
+
+/* A tile's whole-area buttons (the title, the arrow, the main button) show no box when hovered; the tile
+   itself says it can be clicked, below. */
+.look-glass :is(.tile-main, .tile-title, .tile-more, .clock-main, .media-text, .vol-icon, .awake-main, .pomo-main, .dial-ring, .dial-center, .fader-icon):hover {
+  background: transparent;
+}
+.look-glass .tile-more:hover {
+  color: var(--tw-glass-accent);
+}
+/* Hovering any tile lights its rim in the accent with a soft glow, whatever state it is in. */
+.look-glass .tile:hover {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    -6px -6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent),
+    6px 6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+.look-glass .tile:hover::after {
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
+    transparent 45%,
+    transparent 55%,
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+  );
+}
