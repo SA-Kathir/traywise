@@ -29,6 +29,9 @@ const board = pack([tile("a", 1, 1), tile("b", 4, 2), tile("c", 1, 1), tile("d",
 check("pack", board, "ac.. bbbb bbbb dd.. dd..");
 check("pack is stable", pack(board), "ac.. bbbb bbbb dd.. dd..");
 
+// A variant swap keeps the place (and takes the new size).
+check("resize as another id, ids", resize(board, "d", 2, 2, true, "e"), "ac.. bbbb bbbb ee.. ee..");
+
 // Auto-arrange: dropping d on a's cell puts d first in the order.
 check("move, auto", move(board, "d", 0, 0, true), "ddac dd.. bbbb bbbb");
 // Free placement swaps: c dropped on a's cell, and a dropped on c's, trade places.
