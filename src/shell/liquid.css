@@ -1442,7 +1442,11 @@ button.vol-icon:hover {
   display: flex;
   justify-content: space-evenly;
   align-items: stretch;
-  padding: 24px 8px 12px;
+  padding: 14px 8px;
+}
+/* At rest the faders sit centred; hovering the tile slides them down to make room for the levels. */
+.dial.faders:hover .fader {
+  translate: 0 7px;
 }
 .fader {
   position: relative;
@@ -1454,6 +1458,7 @@ button.vol-icon:hover {
   padding: 5px 0 6px;
   border: 1.5px solid transparent;
   border-radius: 16px;
+  transition: translate 0.18s ease;
 }
 .fader.main {
   border-color: var(--accent);
@@ -1463,7 +1468,7 @@ button.vol-icon:hover {
 }
 .fader-value {
   position: absolute;
-  top: -19px;
+  top: -16px;
   left: 50%;
   translate: -50% 0;
   font-size: 11px;
@@ -1471,7 +1476,7 @@ button.vol-icon:hover {
   pointer-events: none;
   transition: opacity 0.15s;
 }
-.fader:hover .fader-value {
+.dial.faders:hover .fader-value {
   opacity: 1;
 }
 .fader-track {
