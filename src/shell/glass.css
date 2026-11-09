@@ -186,19 +186,31 @@ html.look-glass::after {
 
 /* ---- Controls ------------------------------------------------------------------------------ */
 
-/* Buttons: small glass pills. :where keeps this at plain `button` strength, so the tiles' own parts
-   (titles, rows, the arrow) that are buttons too keep their transparent look. */
+/* Buttons: small pieces of glass, like a tile: a faint sheet and a light lip at the top left and
+   bottom right. :where keeps this at plain `button` strength, so the tiles' own parts (titles, rows,
+   the arrow) that are buttons too keep their transparent look. */
 :where(.look-glass) button {
   border: none;
   border-radius: 12px;
-  background: var(--tw-glass-slab-track);
-  box-shadow: none;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 :where(.look-glass) button:hover {
-  background: var(--tw-glass-slab-on);
+  background: rgb(255 255 255 / 0.13);
 }
 :where(.look-glass) button:active {
-  background: var(--tw-glass-slab);
+  background: rgb(255 255 255 / 0.04);
+}
+@media (prefers-color-scheme: light) {
+  :where(.look-glass) button {
+    background: rgb(255 255 255 / 0.5);
+  }
+  :where(.look-glass) button:hover {
+    background: rgb(255 255 255 / 0.7);
+  }
 }
 /* The tab bar and segmented controls sit in a recessed well; their buttons are flat until picked. */
 .look-glass :is(.tabs, .segmented) {
@@ -215,36 +227,53 @@ html.look-glass::after {
 .look-glass .icon-button {
   border-radius: 50%;
 }
+/* The main button of a card (Connect, Start): lit like a selected tile, with a glow. */
 .look-glass button.primary {
-  background: color-mix(in srgb, var(--tw-glass-accent) 55%, transparent);
-  color: var(--tw-glass-text);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
+    0 0 16px -3px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
+}
+.look-glass button.primary:hover {
+  background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
 }
 
-/* Sliders: a thin track, filled with the accent as frosted glass, a white knob. */
+/* Sliders: a thin track, filled with the accent as frosted glass, a white knob that glows. */
 .look-glass input[type="range"]::-webkit-slider-runnable-track {
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent) var(--fill, 0%),
+    color-mix(in srgb, var(--tw-glass-accent) 80%, transparent) var(--fill, 0%),
     var(--tw-glass-slab-track) var(--fill, 0%)
   );
 }
 .look-glass input[type="range"]::-webkit-slider-thumb,
 .look-glass input[type="range"]:hover::-webkit-slider-thumb {
   background: #fff;
+  box-shadow:
+    0 0 10px -1px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent),
+    0 1px 3px rgb(0 0 0 / 0.4);
 }
 
-/* Switches: a glass pill, the accent when on, a white knob. */
+/* Switches: dark glass when off; lit accent glass when on, with a glow; a white knob. */
 .look-glass input[type="checkbox"] {
   background: var(--tw-glass-well);
-  box-shadow: none;
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.18);
 }
 .look-glass input[type="checkbox"]::before {
   background: #fff;
 }
 .look-glass input[type="checkbox"]:checked {
-  background: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--tw-glass-blue) 38%, transparent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent),
+    0 0 14px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
 }
 .look-glass input[type="checkbox"]:checked::before {
   background: #fff;
