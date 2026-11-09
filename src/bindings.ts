@@ -414,6 +414,8 @@ export type Phase = "focus" | "rest" |
 
 export type Point = {
 	cpu: number,
+	/**  Percent, 0 when the GPU isn't being measured. */
+	gpu: number,
 	/**  Memory in use, percent. */
 	memory: number,
 	/**  Bytes a second. */
@@ -457,7 +459,7 @@ export type QuickTogglesState = {
 };
 
 /**  A reading the system monitor graphs. */
-export type Reading = "cpu" | "memory" | "download" | "upload";
+export type Reading = "cpu" | "memory" | "download" | "upload" | "gpu";
 
 export type Repeat = "off" | "track" | "list";
 
@@ -551,6 +553,11 @@ export type SystemSample = {
 	cpu: number | null,
 	/**  The processor's current clock speed in MHz, as Task Manager's "Speed". */
 	cpuMhz: number | null,
+	/**
+	 *  Percent of the busiest GPU engine, as Task Manager. Only measured while a GPU reading is on the
+	 *  board; None otherwise (and for the first second after opening).
+	 */
+	gpu: number | null,
 	/**  MiB. */
 	memoryUsed: number,
 	memoryTotal: number,
