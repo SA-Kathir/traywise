@@ -98,6 +98,14 @@ const READINGS: Record<
     value: (s) => (s.download === null ? "–" : rate(s.download)),
     history: (p) => p.download,
   },
+  gpu: {
+    label: "GPU",
+    unit: "%",
+    floor: CPU_FLOOR,
+    sub: () => "",
+    value: (s) => (s.gpu === null ? "–" : String(s.gpu)),
+    history: (p) => p.gpu,
+  },
   upload: {
     label: "Upload",
     unit: "",
