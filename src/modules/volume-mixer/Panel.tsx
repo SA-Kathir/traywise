@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { commands, events, type AppAudio, type AudioDevice, type Target } from "../../bindings";
-import { DialTile } from "../../shell/Dial";
+import { DialTile, FaderTile } from "../../shell/Dial";
 import { Num, Tile } from "../../shell/Tile";
 import { Slider as VolumeSlider } from "../../shell/Slider";
 import { useLive } from "../../shell/useLive";
@@ -32,6 +32,33 @@ export function Tiles({ size, open }: TileProps) {
   const level = master.muted ? 0 : master.volume;
   const mute = () => commands.mixerSetMute("master", !master.muted);
   const device = state.device && shortName(state.device);
+  // 2×2 with apps playing: faders (the master and up to two apps) instead of the dial.
+  const playing = state.apps.filter((a) => !a.systemSounds).slice(0, 2);
+  if (size === "2x2" && playing.length > 0)
+    return (
+      <FaderTile
+        items={[
+          {
+            key: "master",
+            name: "Volume",
+            icon: <span className="dial-icon">{master.muted ? MUTED : SPEAKER}</span>,
+            level: master.volume,
+            off: master.muted,
+            onChange: (v) => commands.mixerSetVolume("master", v),
+            onToggle: mute,
+          },
+          ...playing.map((app) => ({
+            key: app.pid,
+            name: app.name,
+            icon: app.icon ? <img className="fader-img" src={app.icon} alt="" /> : <span className="dial-icon">{APP}</span>,
+            level: app.volume,
+            off: app.muted,
+            onChange: (v: number) => commands.mixerSetVolume({ app: app.pid }, v),
+            onToggle: () => commands.mixerSetMute({ app: app.pid }, !app.muted),
+          })),
+        ]}
+      />
+    );
   if (size === "1x1" || size === "2x2")
     return (
       <DialTile

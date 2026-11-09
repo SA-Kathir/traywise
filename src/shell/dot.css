@@ -597,6 +597,39 @@
 .look-dot .dial .num {
   font-size: 14px;
 }
+/* Faders in Dot: a column of dots, lit from the bottom, the lead dot growing on hover. */
+.look-dot .fader.main {
+  border-color: var(--tw-accent-base);
+}
+.look-dot .fader-track {
+  overflow: visible;
+  background: none;
+}
+.look-dot .fader-fill {
+  display: none;
+}
+.look-dot .fader-dots {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 3px 0;
+}
+.look-dot .fader-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tw-control-track);
+  transition: scale 0.15s;
+}
+.look-dot .fader-dots i.lit {
+  background: var(--tw-control-fill);
+}
+.look-dot .fader:hover .fader-dots i.lead {
+  background: var(--tw-accent-base);
+  scale: 1.9;
+}
 .look-dot .dial-big .num {
   font-size: 34px;
 }

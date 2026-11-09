@@ -1436,6 +1436,74 @@ button.vol-icon:hover {
   white-space: nowrap;
 }
 
+/* 2×2 with several apps or screens: a fader each, the first (main) one outlined; the level shows
+   above a fader while the pointer is over it. */
+.dial.faders {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: stretch;
+  padding: 24px 8px 12px;
+}
+.fader {
+  position: relative;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0 6px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+}
+.fader.main {
+  border-color: var(--accent);
+}
+.fader.off {
+  opacity: 0.55;
+}
+.fader-value {
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.fader:hover .fader-value {
+  opacity: 1;
+}
+.fader-track {
+  position: relative;
+  flex: 1;
+  width: 18px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgb(var(--ink) / 0.16);
+  touch-action: none;
+  cursor: pointer;
+}
+.fader-fill {
+  position: absolute;
+  inset: auto 0 0;
+  background: var(--accent);
+}
+.fader-dots {
+  display: none;
+}
+.fader-icon {
+  display: grid;
+  place-items: center;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+}
+.fader-img {
+  width: 16px;
+  height: 16px;
+}
+
 /* ---- Keep awake 2×2 -------------------------------------------------------------------- */
 
 /* The title, then the ring with the time left beside it, a status line and the shortcuts. */

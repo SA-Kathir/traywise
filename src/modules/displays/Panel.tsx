@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { commands, events, type Display, type Project } from "../../bindings";
-import { DialTile } from "../../shell/Dial";
+import { DialTile, FaderTile } from "../../shell/Dial";
 import { Slider } from "../../shell/Slider";
 import { Num, Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
@@ -66,11 +66,24 @@ export function Tiles({ kind, size, open }: TileProps) {
   const main = state.displays.find((d) => d.brightness !== null);
   if (!main) return <Tile size={size} icon={SUN} label="Brightness" detail="Can't change" onOpen={open} />;
   const level = main.brightness!;
+  const changeable = state.displays.filter((d) => d.brightness !== null);
+  // 2×2 with several screens: a fader each (three fit) instead of the dial.
+  if (size === "2x2" && changeable.length > 1)
+    return (
+      <FaderTile
+        items={changeable.slice(0, 3).map((d) => ({
+          key: d.id,
+          name: d.name,
+          icon: <span className="dial-icon">{d.internal ? LAPTOP : MONITOR}</span>,
+          level: d.brightness!,
+          onChange: setBrightness(d),
+        }))}
+      />
+    );
   if (size === "1x1" || size === "2x2")
     return (
       <DialTile size={size} noun="Brightness" icon={SUN} level={level} detail={main.name} onChange={setBrightness(main)} open={open} />
     );
-  const changeable = state.displays.filter((d) => d.brightness !== null);
   // 4×2 with one screen: the old 2×2 layout, wider, rather than one row and a gap.
   const big = size === "4x2" && changeable.length === 1;
   if (size !== "4x2" || big)

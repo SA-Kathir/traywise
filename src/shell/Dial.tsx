@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { useSend } from "./Slider";
 import { Num } from "./Tile";
 
@@ -36,6 +36,27 @@ function Arc({ level, dots }: { level: number; dots: number }) {
   );
 }
 
+/** Scrolling over `root`: one step per 50 px of wheel, and whatever it sits in doesn't scroll. */
+function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: number) => void) {
+  const now = useRef(level);
+  now.current = level;
+  const tick = useRef(0);
+  useEffect(() => {
+    const el = root.current!;
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault();
+      tick.current -= e.deltaY / 50;
+      const step = Math.trunc(tick.current);
+      if (step === 0) return;
+      tick.current -= step;
+      now.current = clamp(now.current + step);
+      send(now.current);
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  }, [root, send]);
+}
+
 /** A volume or brightness tile at 1×1 or 2×2. `onToggle` (mute) is optional: without it, clicking
  *  the ring or the number opens the module's page, as the other tiles do. */
 export function DialTile({
@@ -67,25 +88,7 @@ export function DialTile({
   const send = useSend(onChange);
   const shown = off ? 0 : (dragged ?? level);
   const root = useRef<HTMLDivElement>(null);
-  const now = useRef(level);
-  now.current = level;
-  const tick = useRef(0);
-
-  // Scrolling over the tile: one step per 50 px, and the panel doesn't scroll under it.
-  useEffect(() => {
-    const el = root.current!;
-    const wheel = (e: WheelEvent) => {
-      e.preventDefault();
-      tick.current -= e.deltaY / 50;
-      const step = Math.trunc(tick.current);
-      if (step === 0) return;
-      tick.current -= step;
-      now.current = clamp(now.current + step);
-      send(now.current);
-    };
-    el.addEventListener("wheel", wheel, { passive: false });
-    return () => el.removeEventListener("wheel", wheel);
-  }, [send]);
+  useWheel(root, level, send);
 
   // The pointer's angle around the arc's centre; the gap at the bottom snaps to the nearer end.
   const pick = (e: PointerEvent<HTMLDivElement>) => {
@@ -149,6 +152,77 @@ export function DialTile({
         </button>
       </div>
       {detail && <span className="tile-detail">{detail}</span>}
+    </div>
+  );
+}
+
+export type FaderItem = {
+  key: string | number;
+  name: string;
+  /** A Segoe Fluent Icons glyph or an app's icon image; clicking it mutes. */
+  icon: ReactNode;
+  level: number;
+  off?: boolean;
+  onChange: (v: number) => void;
+  onToggle?: () => void;
+};
+
+const FADER_DOTS = 13;
+
+function Fader({ item, main }: { item: FaderItem; main: boolean }) {
+  const [dragged, setDragged] = useState<number | null>(null);
+  const send = useSend(item.onChange);
+  const root = useRef<HTMLDivElement>(null);
+  useWheel(root, item.level, send);
+  const shown = item.off ? 0 : (dragged ?? item.level);
+  const pick = (e: PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const v = clamp(((r.bottom - e.clientY) / r.height) * 100);
+    setDragged(v);
+    send(v);
+  };
+  const lit = Math.round((shown / 100) * FADER_DOTS);
+  return (
+    <div ref={root} className={`fader${main ? " main" : ""}${item.off ? " off" : ""}`} title={item.name}>
+      <span className="fader-value">
+        <Num text={String(shown)} />
+      </span>
+      <div
+        className="fader-track"
+        role="slider"
+        aria-label={item.name}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={shown}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          pick(e);
+        }}
+        onPointerMove={(e) => e.currentTarget.hasPointerCapture(e.pointerId) && pick(e)}
+        onPointerUp={() => setDragged(null)}
+        onPointerCancel={() => setDragged(null)}
+      >
+        <div className="fader-fill" style={{ height: `${shown}%` }} />
+        <div className="fader-dots">
+          {Array.from({ length: FADER_DOTS }, (_, i) => (
+            <i key={i} className={i < lit ? (i === lit - 1 ? "lit lead" : "lit") : undefined} />
+          ))}
+        </div>
+      </div>
+      <button className="fader-icon" aria-label={`Mute ${item.name}`} onClick={item.onToggle}>
+        {item.icon}
+      </button>
+    </div>
+  );
+}
+
+/** A 2×2 tile of two or three faders, one per audio app or screen; the first is outlined as the main one. */
+export function FaderTile({ items }: { items: FaderItem[] }) {
+  return (
+    <div className="tile dial faders size-2x2">
+      {items.map((item, i) => (
+        <Fader key={item.key} item={item} main={i === 0} />
+      ))}
     </div>
   );
 }
