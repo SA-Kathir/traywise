@@ -36,7 +36,7 @@ function Arc({ level, dots }: { level: number; dots: number }) {
   );
 }
 
-/** Scrolling over `root`: one step per 50 px of wheel, and whatever it sits in doesn't scroll. */
+/** Scrolling over `root`: one step per 50 px of wheel, and whatever it sits in doesn't scroll. Sideways scrolling is left alone, so swiping to another page works over these tiles. */
 function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: number) => void) {
   const now = useRef(level);
   now.current = level;
@@ -44,6 +44,8 @@ function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: 
   useEffect(() => {
     const el = root.current!;
     const wheel = (e: WheelEvent) => {
+      // A sideways swipe (or Shift + wheel) is the page's: it carries on to the pages' own scrolling.
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
       tick.current -= e.deltaY / 50;
       const step = Math.trunc(tick.current);
