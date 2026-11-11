@@ -413,3 +413,40 @@ html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
     color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
   );
 }
+
+/* ---- The rest of the sweep ---------------------------------------------------------------- */
+
+/* The 2×2 tiles' own switch: the same glass switch as the others. */
+.look-glass .tile-switch {
+  background: var(--tw-glass-well);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.18);
+}
+.look-glass .tile-switch::before,
+.look-glass .tile-switch.on::before {
+  background: #fff;
+}
+.look-glass .tile-switch.on {
+  background: color-mix(in srgb, var(--tw-glass-blue) 38%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent),
+    0 0 14px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
+}
+/* Edit mode: the dashed outline and the badges are glass too, not solid accent. */
+.look-glass .board.editing .board-tile {
+  border-radius: 24px;
+  outline-color: color-mix(in srgb, var(--tw-glass-accent) 45%, transparent);
+}
+.look-glass .board-slot.dragging .board-tile,
+.look-glass .board.editing .board-slot:focus-visible .board-tile {
+  outline-color: var(--tw-glass-accent);
+}
+.look-glass .board .tile-badge,
+.look-glass .panel .page-remove {
+  background: color-mix(in srgb, var(--tw-glass-blue) 35%, rgb(14 17 22 / 0.8));
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
+    0 0 10px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
+}
