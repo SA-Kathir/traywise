@@ -172,10 +172,10 @@ impl Glass {
         Ok(Piece { sprite, shape })
     }
 
-    /// Shows or hides the blur without tearing it down. A window can only be given its composition
-    /// target once, so the blur is made once and hidden when the look doesn't use it.
+    /// Hides the blur by making it fully transparent, or shows it again. It keeps being drawn at its full
+    /// size either way: a blur that starts hidden, shrunk or moved away may never draw when shown later.
     pub fn set_visible(&self, visible: bool) -> Result<()> {
-        self.sprite.SetIsVisible(visible)
+        self.sprite.SetOpacity(if visible { 1.0 } else { 0.0 })
     }
 }
 

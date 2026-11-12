@@ -299,7 +299,7 @@ pub fn set_settings(
     // panel, so don't do it for every other save (like each tile moved on the home board).
     let reframe = {
         let mut current = state.current.lock().unwrap();
-        let reframe = current.look != settings.look || current.transparent != settings.transparent;
+        let reframe = current.look != settings.look || current.transparent != settings.transparent || current.glass_clear != settings.glass_clear;
         *current = settings;
         reframe
     };
