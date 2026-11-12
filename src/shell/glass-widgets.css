@@ -271,3 +271,26 @@ html .panel.look-glass .pomo.on .pomo-rounds .done {
     color-mix(in srgb, var(--pomo-rest) 70%, #fff)
   );
 }
+
+/* 1×1 stepper: the − and + sit clear of the round corners, not pressed into them. */
+.look-glass .dial-row {
+  inset: auto 12px 10px;
+}
+.look-glass .dial-step {
+  width: 17px;
+  height: 17px;
+  font-size: 14px;
+}
+.look-glass .dial:hover .dial-ring {
+  translate: -50% calc(-50% - 12px);
+}
+
+/* Power mode and other icon-only segments: the glyphs are drawn large for their box, so they get a
+   smaller size and a bit more room in the pill. */
+.look-glass .segmented.icons button {
+  padding: 5px 4px;
+}
+.look-glass .segmented.icons button .icon {
+  font-size: 11.5px;
+  line-height: 1;
+}
