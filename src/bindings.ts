@@ -84,6 +84,8 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	quickTogglesSetAirplane: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_airplane", { on })),
+	quickTogglesSetHotspot: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_hotspot", { on })),
 	/**  The latest state. Empty while the module is switched off. */
 	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
 	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
@@ -454,6 +456,16 @@ export type QuickTogglesState = {
 	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
 	dark: boolean,
 	desktopIcons: boolean,
+	/**
+	 *  Every radio off. None until read (it waits on Windows, so it comes a moment after the rest),
+	 *  or if this PC has no radios.
+	 */
+	airplane: boolean | null,
+	/**
+	 *  Windows' Mobile hotspot, shared from the internet connection. None until read, or if this PC
+	 *  can't share one.
+	 */
+	hotspot: boolean | null,
 };
 
 /**  A reading the system monitor graphs. */
