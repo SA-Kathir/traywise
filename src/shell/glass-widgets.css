@@ -306,3 +306,7 @@ html .panel.look-glass .pomo.on .pomo-rounds .done {
   font-size: 11.5px;
   line-height: 1;
 }
+/* Muted: the word is longer than a number, so it is a little smaller to fit between − and +. */
+.look-glass .dial.off .dial-value {
+  font-size: 9.5px;
+}
