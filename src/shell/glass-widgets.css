@@ -130,3 +130,121 @@
     color: rgb(14 17 22 / 0.5);
   }
 }
+
+/* ---- Keep awake and Focus ------------------------------------------------------------------- */
+
+/* Focus has two phase colours: the accent while focusing and a clearly different one for a break
+   (soft green; blue when the accent is green). */
+.look-glass {
+  --pomo-focus: var(--tw-glass-accent);
+  --pomo-rest: #8fe3c0;
+  --pomo-rest-deep: #2fc58a;
+}
+.look-glass.accent-green {
+  --pomo-rest: #8ec1ff;
+  --pomo-rest-deep: #3d8bff;
+}
+@media (prefers-color-scheme: light) {
+  .look-glass {
+    --pomo-rest: #12875a;
+    --pomo-rest-deep: #12875a;
+  }
+  .look-glass.accent-green {
+    --pomo-rest: #2f6fd0;
+    --pomo-rest-deep: #2f6fd0;
+  }
+}
+.look-glass .pomo {
+  --glow: var(--tw-glass-blue);
+}
+.look-glass .pomo.rest {
+  --glow: var(--pomo-rest-deep);
+}
+
+/* The Keep awake ring and the Focus arc: smooth glass instead of dots. The track is a faint glass
+   line; the fill is frosted colour with a glow. */
+.look-glass :is(.awake-ring, .pomo-arc) .dots {
+  display: none;
+}
+.look-glass :is(.awake-ring, .pomo-arc) .smooth {
+  display: inline;
+}
+.look-glass :is(.awake-ring, .pomo-arc) :is(.smooth-track, .smooth-fill) {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 5;
+}
+.look-glass :is(.awake-ring, .pomo-arc) .smooth-track {
+  stroke: rgb(255 255 255 / 0.14);
+}
+.look-glass .awake-ring .smooth-fill {
+  stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent));
+}
+.look-glass .pomo-arc .smooth-fill {
+  stroke: color-mix(in srgb, var(--focus) 88%, transparent);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--glow) 75%, transparent));
+}
+@media (prefers-color-scheme: light) {
+  .look-glass :is(.awake-ring, .pomo-arc) .smooth-track {
+    stroke: rgb(14 17 22 / 0.14);
+  }
+}
+/* Keep awake's quick buttons are glass chips already (plain buttons); the lit one is the accent. */
+.look-glass .awake-quick button {
+  border-radius: 10px;
+}
+
+/* Focus's hourglass and rounds: the phase colour, glowing; the sand of a break takes the break colour. */
+.look-glass .pomo-glass :is(.sand, .grain, .dim) {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--glow) 70%, transparent));
+}
+.look-glass .pomo-rounds .cur {
+  background: var(--focus);
+  box-shadow: 0 0 6px var(--glow);
+}
+.look-glass .pomo-rounds .done {
+  background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
+}
+.look-glass .pomo-read .num,
+.look-glass .awake-state .num {
+  font-weight: 300;
+}
+/* Lit (on): the phase colour for the time, so a break reads differently from a focus round. */
+.look-glass .pomo.on {
+  color: var(--focus);
+}
+.look-glass .pomo.on :is(.sand, .grain, .dim, .lit) {
+  fill: var(--focus);
+}
+.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
+  fill: rgb(255 255 255 / 0.14);
+}
+.look-glass .pomo.on .pile {
+  fill: color-mix(in srgb, var(--focus) 55%, transparent);
+}
+.look-glass .awake.on {
+  color: var(--tw-glass-accent);
+}
+/* A break lights the whole tile in the break colour too: rim, glow and body. */
+.look-glass .tile.pomo.rest.on {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
+    var(--tw-glass-slab);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 85%, #fff 15%),
+    inset 0 0 22px -6px color-mix(in srgb, var(--pomo-rest-deep) 18%, transparent),
+    0 0 30px -2px color-mix(in srgb, var(--pomo-rest-deep) 62%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+.look-glass .tile.pomo.rest.on::after {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff),
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 20%,
+    color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent) 50%,
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 80%,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff)
+  );
+}

@@ -2630,7 +2630,8 @@ section > .setting:last-child {
 .gauge .lit {
   fill: rgb(var(--ink));
 }
-.gauge-bar {
+.gauge-bar,
+.smooth {
   display: none;
 }
 .battery.size-1x1 {

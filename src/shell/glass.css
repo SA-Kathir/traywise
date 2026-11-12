@@ -293,28 +293,6 @@ html.look-glass::after {
   }
 }
 
-/* ---- Keep awake and Focus, switched on ----------------------------------------------------- */
-
-/* On a lit glass tile the dots and arcs take the bright accent, like the tile's text, not the dark
-   on-accent colour the filled looks use. */
-html .panel.look-glass .awake.on .awake-ring,
-html .panel.look-glass .pomo.on :is(.pomo-arc, .pomo-glass) {
-  fill: rgb(var(--ink) / 0.22);
-}
-html .panel.look-glass .awake.on .awake-ring .lit,
-html .panel.look-glass .pomo.on :is(.lit, .sand, .grain, .dim) {
-  fill: var(--tw-glass-accent);
-}
-html .panel.look-glass .pomo.on .pile {
-  fill: color-mix(in srgb, var(--tw-glass-accent) 60%, transparent);
-}
-html .panel.look-glass .pomo.on .pomo-rounds i {
-  background: rgb(var(--ink) / 0.25);
-}
-html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
-  background: var(--tw-glass-accent);
-}
-
 /* ---- Accent colours ------------------------------------------------------------------------ */
 
 /* The accent is its own choice for this look (Settings › Appearance). --tw-glass-accent is the soft
