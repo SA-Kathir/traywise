@@ -111,12 +111,22 @@ pub fn watch_energy_saver() {
     // shortcut: never unregistered; it lives as long as the app does.
     let registered = unsafe { PowerRegisterForEffectivePowerModeNotifications(EFFECTIVE_POWER_MODE_V2, Some(on_effective_mode), None, &mut handle) };
     if registered.is_ok() {
-        for _ in 0..30 {
+        for _ in 0..150 {
             if SAVER.load(Ordering::Relaxed) != 0 {
                 break;
             }
             std::thread::sleep(Duration::from_millis(10));
         }
+    }
+}
+
+/// What Windows itself last said about Energy saver, or None before it has said anything. The Glass
+/// look decides by this alone: a guess (battery level) could be wrong and restart the app for nothing.
+pub fn energy_saver_state() -> Option<bool> {
+    match SAVER.load(Ordering::Relaxed) {
+        1 => Some(false),
+        2 => Some(true),
+        _ => None,
     }
 }
 
@@ -167,11 +177,6 @@ fn switched_on() -> bool {
         )
     };
     status.is_ok() && value == 1
-}
-
-/// Whether Energy saver is on right now (Glass asks: Windows draws no blur under it).
-pub fn energy_saver() -> bool {
-    read().energy_saver
 }
 
 fn publish(app: &AppHandle) {

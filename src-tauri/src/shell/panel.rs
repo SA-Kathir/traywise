@@ -68,7 +68,7 @@ pub struct PanelState {
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(PanelState::default());
-    if crate::modules::power::energy_saver() {
+    if crate::modules::power::energy_saver_state() == Some(true) {
         app.state::<PanelState>().no_blur.store(true, Ordering::Relaxed);
     }
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::default())
@@ -382,7 +382,7 @@ fn restart_for_blur(win: &WebviewWindow) {
     if win.state::<PanelState>().no_blur.load(Ordering::Relaxed)
         && win.state::<SettingsState>().get().look == Look::Glass
         && !win.state::<SettingsState>().get().glass_clear
-        && !crate::modules::power::energy_saver()
+        && crate::modules::power::energy_saver_state() == Some(false)
         && !crate::modules::focus::running(app)
         && !crate::modules::keep_awake::running(app)
     {
@@ -543,6 +543,49 @@ fn just_reframed(win: &WebviewWindow) -> bool {
     win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
+/// A piece of the clear variant in the page's pixels: a tile, the header or the tab bar.
+#[derive(Clone, Copy, serde::Deserialize, specta::Type)]
+pub struct ShapeRect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    radius: f64,
+    opacity: f64,
+}
+
+/// The clear variant has no blur behind the panel, only under its tiles: the page says where they are
+/// (and again whenever they move), an empty list removes it all.
+#[tauri::command]
+#[specta::specta]
+pub fn glass_shapes(app: AppHandle, shapes: Vec<ShapeRect>) {
+    let Some(win) = app.get_webview_window(LABEL) else { return };
+    let w = win.clone();
+    let _ = win.run_on_main_thread(move || {
+        let state = w.state::<PanelState>();
+        let mut glass = state.glass.lock().unwrap();
+        let Some(g) = glass.as_mut() else {
+            eprintln!("glass shapes: no blur made yet");
+            return;
+        };
+        let scale = w.scale_factor().unwrap_or(1.0) as f32;
+        let list: Vec<glass::Shape> = shapes
+            .iter()
+            .map(|s| glass::Shape {
+                x: s.x as f32 * scale,
+                y: s.y as f32 * scale,
+                width: s.width as f32 * scale,
+                height: s.height as f32 * scale,
+                radius: s.radius as f32 * scale,
+                opacity: s.opacity as f32,
+            })
+            .collect();
+        if let Err(e) = g.set_shapes(&list) {
+            eprintln!("glass shapes failed: {e}");
+        }
+    });
+}
+
 /// Whether the window gets Windows 11's frame: every look except transparent Dot, whose cards
 /// float over the desktop, where a frame would outline empty space, and Glass, which draws its own
 /// rim over the blur. (Only Dot can be transparent; an old Tint file may still say so.)
@@ -571,8 +614,11 @@ fn sync_glass(win: &WebviewWindow) {
         // The blur is made once and then only shown or hidden (see `Glass::set_visible`): hidden for the
         // other looks, and for the clear variant, where the tiles float straight over the desktop.
         if settings.look != Look::Glass || settings.glass_clear {
-            if let Some(g) = glass.as_ref() {
+            if let Some(g) = glass.as_mut() {
                 let _ = g.set_visible(false);
+                if settings.look != Look::Glass {
+                    let _ = g.set_shapes(&[]);
+                }
             }
             // Made at start-up even when clear, so switching to the blur later has one to show.
             if glass.is_some() || settings.look != Look::Glass {
@@ -581,10 +627,13 @@ fn sync_glass(win: &WebviewWindow) {
         }
         let (Ok(hwnd), Ok(size), Ok(scale)) = (w.hwnd(), w.inner_size(), w.scale_factor()) else { return };
         let rect = glass::inset(size.width as f32, size.height as f32, GLASS_PAD as f32 * scale as f32, GLASS_RADIUS * scale as f32);
-        match glass.as_ref() {
+        match glass.as_mut() {
             Some(g) => {
                 let _ = g.set_rect(rect);
                 let _ = g.set_visible(!settings.glass_clear);
+                if !settings.glass_clear {
+                    let _ = g.set_shapes(&[]);
+                }
             }
             None => match Glass::attach(hwnd, rect) {
                 Ok(g) => {

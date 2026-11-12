@@ -38,11 +38,29 @@ const USE_HOST_BACKDROP_BRUSH: DWMWINDOWATTRIBUTE = DWMWINDOWATTRIBUTE(17);
 pub struct Glass {
     // Held only so they live as long as the sprite.
     _queue: Option<DispatcherQueueController>,
-    _compositor: Compositor,
+    compositor: Compositor,
     _target: DesktopWindowTarget,
-    _root: ContainerVisual,
+    root: ContainerVisual,
     sprite: SpriteVisual,
     shape: CompositionRoundedRectangleGeometry,
+    /// The clear variant's blurred pieces, one under each tile (made as needed, then reused).
+    pieces: Vec<Piece>,
+}
+
+struct Piece {
+    sprite: SpriteVisual,
+    shape: CompositionRoundedRectangleGeometry,
+}
+
+/// One blurred piece of the clear variant: a tile, the header or the tab bar, in physical pixels in the window.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Shape {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub radius: f32,
+    pub opacity: f32,
 }
 
 // shortcut: the composition objects are free-threaded, but Traywise only touches them from the
@@ -103,7 +121,7 @@ impl Glass {
             root.Children()?.InsertAtTop(&sprite)?;
             target.SetRoot(&root)?;
 
-            let glass = Self { _queue: queue, _compositor: compositor, _target: target, _root: root, sprite, shape };
+            let glass = Self { _queue: queue, compositor, _target: target, root, sprite, shape, pieces: Vec::new() };
             glass.set_rect(rect)?;
             Ok(glass)
         }
@@ -116,6 +134,42 @@ impl Glass {
         self.sprite.SetSize(size)?;
         self.shape.SetSize(size)?;
         self.shape.SetCornerRadius(Vector2 { X: rect.radius, Y: rect.radius })
+    }
+
+    /// The clear variant: blur only under these shapes (and none anywhere else). Pieces are made as
+    /// needed and reused; the ones not needed are hidden. An empty list shows no blur at all.
+    pub fn set_shapes(&mut self, shapes: &[Shape]) -> Result<()> {
+        while self.pieces.len() < shapes.len() {
+            let piece = self.new_piece()?;
+            self.pieces.push(piece);
+        }
+        for (i, piece) in self.pieces.iter().enumerate() {
+            let Some(s) = shapes.get(i) else {
+                piece.sprite.SetIsVisible(false)?;
+                continue;
+            };
+            let size = Vector2 { X: s.width, Y: s.height };
+            piece.sprite.SetOffset(Vector3 { X: s.x, Y: s.y, Z: 0.0 })?;
+            piece.sprite.SetSize(size)?;
+            piece.sprite.SetOpacity(s.opacity)?;
+            piece.shape.SetSize(size)?;
+            let r = s.radius.min(s.width / 2.0).min(s.height / 2.0);
+            piece.shape.SetCornerRadius(Vector2 { X: r, Y: r })?;
+            piece.sprite.SetIsVisible(true)?;
+        }
+        Ok(())
+    }
+
+    fn new_piece(&self) -> Result<Piece> {
+        let sprite = self.compositor.CreateSpriteVisual()?;
+        sprite.SetBrush(&self.compositor.CreateHostBackdropBrush()?)?;
+        let shape = self.compositor.CreateRoundedRectangleGeometry()?;
+        let clip = self.compositor.CreateGeometricClip()?;
+        clip.SetGeometry(&shape)?;
+        sprite.SetClip(&clip)?;
+        sprite.SetIsVisible(false)?;
+        self.root.Children()?.InsertAtTop(&sprite)?;
+        Ok(Piece { sprite, shape })
     }
 
     /// Shows or hides the blur without tearing it down. A window can only be given its composition

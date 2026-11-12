@@ -18,6 +18,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             shell::panel::close_panel,
             shell::panel::quit,
             shell::panel::hide_panel,
+            shell::panel::glass_shapes,
             settings::get_settings,
             settings::set_settings,
             settings::get_autostart,

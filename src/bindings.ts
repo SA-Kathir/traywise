@@ -25,6 +25,11 @@ export const commands = {
 	 *  it was opened from, say): false then, and the UI asks again a moment later.
 	 */
 	hidePanel: () => __TAURI_INVOKE<boolean>("hide_panel"),
+	/**
+	 *  The clear variant has no blur behind the panel, only under its tiles: the page says where they are
+	 *  (and again whenever they move), an empty list removes it all.
+	 */
+	glassShapes: (shapes: ShapeRect[]) => __TAURI_INVOKE<void>("glass_shapes", { shapes }),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
@@ -542,6 +547,16 @@ export type SettingsPage =
 "bluetooth" | 
 /**  Power & battery › Energy saver, which apps can read but not switch. */
 "energySaver";
+
+/**  A piece of the clear variant in the page's pixels: a tile, the header or the tab bar. */
+export type ShapeRect = {
+	x: number | null,
+	y: number | null,
+	width: number | null,
+	height: number | null,
+	radius: number | null,
+	opacity: number | null,
+};
 
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */
