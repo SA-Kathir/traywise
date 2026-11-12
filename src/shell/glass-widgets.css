@@ -272,17 +272,29 @@ html .panel.look-glass .pomo.on .pomo-rounds .done {
   );
 }
 
-/* 1×1 stepper: the − and + sit clear of the round corners, not pressed into them. */
+/* 1×1 stepper: the ring shrinks a little and moves up, and the row gets the room it needs: − and +
+   small and clear of the round corners, the value between them. */
 .look-glass .dial-row {
-  inset: auto 12px 10px;
+  inset: auto 10px 9px;
 }
 .look-glass .dial-step {
-  width: 17px;
-  height: 17px;
-  font-size: 14px;
+  width: 15px;
+  height: 15px;
+  font-size: 13px;
+  border-radius: 7px;
+}
+.look-glass .dial-value {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.look-glass .dial.size-1x1 .dial-ring {
+  transition:
+    translate 0.18s ease,
+    scale 0.18s ease;
 }
 .look-glass .dial:hover .dial-ring {
-  translate: -50% calc(-50% - 12px);
+  translate: -50% calc(-50% - 17px);
+  scale: 0.82;
 }
 
 /* Power mode and other icon-only segments: the glyphs are drawn large for their box, so they get a
