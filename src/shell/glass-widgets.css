@@ -196,8 +196,11 @@
 }
 
 /* Focus's hourglass and rounds: the phase colour, glowing; the sand of a break takes the break colour. */
-.look-glass .pomo-glass :is(.sand, .grain, .dim) {
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--glow) 70%, transparent));
+.look-glass .pomo-glass {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--glow) 55%, transparent));
+}
+.look-glass .pomo-glass .dim {
+  opacity: 0.7;
 }
 .look-glass .pomo-rounds .cur {
   background: var(--focus);
@@ -214,11 +217,12 @@
 .look-glass .pomo.on {
   color: var(--focus);
 }
-.look-glass .pomo.on :is(.sand, .grain, .dim, .lit) {
-  fill: var(--focus);
-}
 .look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
   fill: rgb(255 255 255 / 0.14);
+}
+.look-glass .pomo.on .pomo-glass :is(.sand, .grain, .dim),
+.look-glass .pomo.on .lit {
+  fill: var(--focus);
 }
 .look-glass .pomo.on .pile {
   fill: color-mix(in srgb, var(--focus) 55%, transparent);
