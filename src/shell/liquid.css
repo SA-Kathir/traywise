@@ -2630,6 +2630,9 @@ section > .setting:last-child {
 .gauge .lit {
   fill: rgb(var(--ink));
 }
+.gauge-bar {
+  display: none;
+}
 .battery.size-1x1 {
   display: flex;
   flex-direction: column;

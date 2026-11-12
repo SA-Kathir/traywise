@@ -450,3 +450,18 @@ html .panel.look-glass .pomo.on .pomo-rounds :is(.done, .cur) {
     inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
     0 0 10px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
 }
+
+/* ---- Room for the round corners ----------------------------------------------------------- */
+
+/* The tiles' corners are rounder (24 px) than the padding was drawn for, so names and the arrow sat
+   too close to the curve. A little more room on the left and top. */
+.look-glass .board {
+  --tile-pad: 12px 16px;
+}
+.look-glass .tile-more {
+  top: 9px;
+  right: 10px;
+}
+.look-glass :is(section, .stats) {
+  padding: 16px 18px;
+}

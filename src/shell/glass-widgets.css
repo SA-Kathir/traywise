@@ -103,3 +103,30 @@
     stroke: rgb(14 17 22 / 0.9);
   }
 }
+
+/* Battery: a glass cell filled with the accent, glowing; amber when low, orange when critical. */
+.look-glass .gauge {
+  fill: none;
+  color: rgb(255 255 255 / 0.55);
+}
+.look-glass .gauge-dots {
+  display: none;
+}
+.look-glass .gauge-bar {
+  display: inline;
+  fill: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent));
+}
+.look-glass :is(.low, .critical) .gauge-bar {
+  fill: currentColor;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+.look-glass .battery-big .num,
+.look-glass .battery .num {
+  font-weight: 300;
+}
+@media (prefers-color-scheme: light) {
+  .look-glass .gauge {
+    color: rgb(14 17 22 / 0.5);
+  }
+}
