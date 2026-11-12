@@ -2703,6 +2703,17 @@ section > .setting:last-child {
   min-width: 0;
   padding: 0 4px;
 }
+/* An icon on its own: no gap on its right (`.icon` leaves room for a label) and no baseline drop, so it is
+   centred in its pill. */
+.segmented.icons button .icon {
+  margin: 0;
+  vertical-align: baseline;
+}
+/* The gauge glyph (Balanced) is drawn high in its box: nudge it down to sit in the middle of the pill. */
+.segmented.icons button:nth-child(2) .icon {
+  position: relative;
+  top: 2px;
+}
 .project-icon * {
   vector-effect: non-scaling-stroke;
 }

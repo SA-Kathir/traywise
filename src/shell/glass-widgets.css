@@ -217,15 +217,34 @@
 .look-glass .pomo.on {
   color: var(--focus);
 }
-.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
-  fill: rgb(255 255 255 / 0.14);
+/* `html .panel` outranks liquid.css's rules for a filled tile, which paint these in the dark on-accent
+   colour (invisible on glass). */
+html .panel.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
+  fill: rgb(255 255 255 / 0.3);
 }
-.look-glass .pomo.on .pomo-glass :is(.sand, .grain, .dim),
-.look-glass .pomo.on .lit {
+html .panel.look-glass .pomo.on .pomo-glass :is(.sand, .grain, .dim),
+html .panel.look-glass .pomo.on .lit {
   fill: var(--focus);
 }
-.look-glass .pomo.on .pile {
-  fill: color-mix(in srgb, var(--focus) 55%, transparent);
+html .panel.look-glass .pomo.on .pile {
+  fill: color-mix(in srgb, var(--focus) 60%, transparent);
+}
+html .panel.look-glass .pomo.on .pomo-rounds i {
+  background: rgb(255 255 255 / 0.35);
+}
+html .panel.look-glass .pomo.on .pomo-rounds .cur {
+  background: var(--focus);
+}
+html .panel.look-glass .pomo.on .pomo-rounds .done {
+  background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
+}
+@media (prefers-color-scheme: light) {
+  html .panel.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
+    fill: rgb(14 17 22 / 0.22);
+  }
+  html .panel.look-glass .pomo.on .pomo-rounds i {
+    background: rgb(14 17 22 / 0.3);
+  }
 }
 .look-glass .awake.on {
   color: var(--tw-glass-accent);
