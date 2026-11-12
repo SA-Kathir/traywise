@@ -10,7 +10,7 @@
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
   --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
   /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
-  --tw-glass-slab: rgb(14 17 22 / 0.5);
+  --tw-glass-slab: rgb(14 17 22 / 0.36);
   --tw-glass-slab-on: rgb(255 255 255 / 0.15);
   --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
   --tw-glass-slab-track: rgb(255 255 255 / 0.14);
@@ -41,7 +41,7 @@
   .look-glass {
     --tw-glass-frost: rgb(245 247 250 / 0.3);
     --tw-glass-frost-solid: rgb(232 236 242 / 0.95);
-    --tw-glass-slab: rgb(255 255 255 / 0.55);
+    --tw-glass-slab: rgb(255 255 255 / 0.45);
     --tw-glass-slab-on: rgb(255 255 255 / 0.72);
     --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
     --tw-glass-slab-track: rgb(11 16 32 / 0.1);
@@ -72,15 +72,18 @@ html.look-glass::after {
   z-index: 100;
   padding: 1.5px;
   /* Lit like the selected tiles: the accent, hot at the top left and bottom right, fading to a soft
-     accent along the sides. */
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 20%,
-    color-mix(in srgb, var(--tw-glass-blue) 16%, transparent) 50%,
-    color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 80%,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
-  );
+     accent along the sides. Under it, a thin even edge all round, so the panel's outline never
+     disappears into the blur. */
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+      color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 20%,
+      color-mix(in srgb, var(--tw-glass-blue) 16%, transparent) 50%,
+      color-mix(in srgb, var(--tw-glass-blue) 50%, transparent) 80%,
+      color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+    ),
+    linear-gradient(rgb(255 255 255 / 0.22) 0 0);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -152,8 +155,6 @@ html.look-glass::after {
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
     inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
-    0 0 30px -2px color-mix(in srgb, var(--tw-glass-blue) 62%, transparent),
-    0 0 8px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
@@ -234,8 +235,7 @@ html.look-glass::after {
   box-shadow:
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
-    0 0 16px -3px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent);
 }
 .look-glass button.primary:hover {
   background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
@@ -253,7 +253,6 @@ html.look-glass::after {
 .look-glass input[type="range"]:hover::-webkit-slider-thumb {
   background: #fff;
   box-shadow:
-    0 0 10px -1px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent),
     0 1px 3px rgb(0 0 0 / 0.4);
 }
 
@@ -272,8 +271,7 @@ html.look-glass::after {
   box-shadow:
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent),
-    0 0 14px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent);
 }
 .look-glass input[type="checkbox"]:checked::before {
   background: #fff;
@@ -340,12 +338,11 @@ html.look-glass::after {
   background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
   border: none;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
-    0 0 10px -3px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
 }
 .look-glass .gallery-dots i.on {
   background: var(--tw-glass-accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent);
+  
 }
 .look-glass .gallery-action {
   background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
@@ -353,8 +350,7 @@ html.look-glass::after {
   box-shadow:
     inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent),
-    0 0 16px -3px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent);
 }
 .look-glass .gallery-action:hover:not(:disabled) {
   background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
@@ -375,8 +371,6 @@ html.look-glass::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    -6px -6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent),
-    6px 6px 16px -9px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
 }
 .look-glass .tile:hover::after {
@@ -408,8 +402,7 @@ html.look-glass::after {
 .look-glass .tile-switch.on {
   background: color-mix(in srgb, var(--tw-glass-blue) 38%, transparent);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent),
-    0 0 14px -3px color-mix(in srgb, var(--tw-glass-blue) 65%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent);
 }
 /* Edit mode: the dashed outline and the badges are glass too, not solid accent. */
 .look-glass .board.editing .board-tile {
@@ -425,8 +418,7 @@ html.look-glass::after {
   background: color-mix(in srgb, var(--tw-glass-blue) 35%, rgb(14 17 22 / 0.8));
   color: var(--tw-glass-accent);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
-    0 0 10px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
 }
 
 /* ---- Room for the round corners ----------------------------------------------------------- */

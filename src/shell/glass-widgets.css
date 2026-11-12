@@ -8,11 +8,9 @@
 }
 .look-glass .dial-fill {
   stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tw-glass-blue) 70%, transparent));
 }
 .look-glass .dial-thumb {
   fill: #fff;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
 }
 .look-glass .dial.off .dial-icon,
 .look-glass .dial.off .dial-big {
@@ -86,11 +84,9 @@
 .look-glass .lminute {
   stroke: var(--tw-glass-accent);
   stroke-width: 2.4;
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
 }
 .look-glass .lcap {
   fill: var(--tw-glass-accent);
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 80%, transparent));
 }
 @media (prefers-color-scheme: light) {
   .look-glass .ltick {
@@ -115,11 +111,9 @@
 .look-glass .gauge-bar {
   display: inline;
   fill: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent));
 }
 .look-glass :is(.low, .critical) .gauge-bar {
   fill: currentColor;
-  filter: drop-shadow(0 0 3px currentColor);
 }
 .look-glass .battery-big .num,
 .look-glass .battery .num {
@@ -179,11 +173,9 @@
 }
 .look-glass .awake-ring .smooth-fill {
   stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tw-glass-blue) 75%, transparent));
 }
 .look-glass .pomo-arc .smooth-fill {
   stroke: color-mix(in srgb, var(--focus) 88%, transparent);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--glow) 75%, transparent));
 }
 @media (prefers-color-scheme: light) {
   .look-glass :is(.awake-ring, .pomo-arc) .smooth-track {
@@ -197,14 +189,13 @@
 
 /* Focus's hourglass and rounds: the phase colour, glowing; the sand of a break takes the break colour. */
 .look-glass .pomo-glass {
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--glow) 55%, transparent));
 }
 .look-glass .pomo-glass .dim {
   opacity: 0.7;
 }
 .look-glass .pomo-rounds .cur {
   background: var(--focus);
-  box-shadow: 0 0 6px var(--glow);
+  
 }
 .look-glass .pomo-rounds .done {
   background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
@@ -258,7 +249,6 @@ html .panel.look-glass .pomo.on .pomo-rounds .done {
     inset 2px 2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 55%, #fff),
     inset -2px -2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 85%, #fff 15%),
     inset 0 0 22px -6px color-mix(in srgb, var(--pomo-rest-deep) 18%, transparent),
-    0 0 30px -2px color-mix(in srgb, var(--pomo-rest-deep) 62%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
 }
 .look-glass .tile.pomo.rest.on::after {
