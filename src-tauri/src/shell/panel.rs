@@ -381,6 +381,7 @@ fn restart_for_blur(win: &WebviewWindow) {
     let app = win.app_handle();
     if win.state::<PanelState>().no_blur.load(Ordering::Relaxed)
         && win.state::<SettingsState>().get().look == Look::Glass
+        && !win.state::<SettingsState>().get().glass_clear
         && !crate::modules::power::energy_saver()
         && !crate::modules::focus::running(app)
         && !crate::modules::keep_awake::running(app)
@@ -479,6 +480,9 @@ fn place(win: &WebviewWindow, edge: bool) {
     let area = monitor.work_area();
     let margin = (12.0 * scale) as i32;
     let max_height = area.size.height as i32 - 2 * margin;
+    // Glass: the window is bigger than the panel by a clear margin all round, where the panel's shadow
+    // falls; the panel itself stays where it always was.
+    let pad = if win.state::<SettingsState>().get().look == Look::Glass { (GLASS_PAD * scale).round() as i32 } else { 0 };
     let set = |width: i32, height: i32| {
         let height = height.min(max_height);
         // An edge-opened panel sits at the edge it opened from.
@@ -492,7 +496,7 @@ fn place(win: &WebviewWindow, edge: bool) {
         } else {
             area.position.y + area.size.height as i32 - height - margin
         };
-        let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };
+        let _ = unsafe { SetWindowPos(hwnd, None, x - pad, y - pad, width + 2 * pad, height + 2 * pad, SWP_NOZORDER | SWP_NOACTIVATE) };
     };
     let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
     set(width, height);
@@ -552,6 +556,9 @@ fn framed(settings: &Settings) -> bool {
 
 /// Glass look's corner radius, in logical pixels (the CSS uses the same).
 const GLASS_RADIUS: f32 = 32.0;
+/// Glass look: the clear margin round the panel, in logical pixels, for its shadow (`html.look-glass body`
+/// in glass.css has the same number).
+const GLASS_PAD: f64 = 16.0;
 
 /// The Glass look's blur exists while that look is on, and fills the window. It has to be made on
 /// the thread that owns the window, hence the main thread.
@@ -560,18 +567,30 @@ fn sync_glass(win: &WebviewWindow) {
     let _ = win.run_on_main_thread(move || {
         let state = w.state::<PanelState>();
         let mut glass = state.glass.lock().unwrap();
-        if w.state::<SettingsState>().get().look != Look::Glass {
-            *glass = None;
-            return;
+        let settings = w.state::<SettingsState>().get();
+        // The blur is made once and then only shown or hidden (see `Glass::set_visible`): hidden for the
+        // other looks, and for the clear variant, where the tiles float straight over the desktop.
+        if settings.look != Look::Glass || settings.glass_clear {
+            if let Some(g) = glass.as_ref() {
+                let _ = g.set_visible(false);
+            }
+            // Made at start-up even when clear, so switching to the blur later has one to show.
+            if glass.is_some() || settings.look != Look::Glass {
+                return;
+            }
         }
         let (Ok(hwnd), Ok(size), Ok(scale)) = (w.hwnd(), w.inner_size(), w.scale_factor()) else { return };
-        let rect = glass::inset(size.width as f32, size.height as f32, 0.0, GLASS_RADIUS * scale as f32);
+        let rect = glass::inset(size.width as f32, size.height as f32, GLASS_PAD as f32 * scale as f32, GLASS_RADIUS * scale as f32);
         match glass.as_ref() {
             Some(g) => {
                 let _ = g.set_rect(rect);
+                let _ = g.set_visible(!settings.glass_clear);
             }
             None => match Glass::attach(hwnd, rect) {
-                Ok(g) => *glass = Some(g),
+                Ok(g) => {
+                    let _ = g.set_visible(!settings.glass_clear);
+                    *glass = Some(g);
+                }
                 Err(e) => eprintln!("glass blur failed: {e}"),
             },
         }

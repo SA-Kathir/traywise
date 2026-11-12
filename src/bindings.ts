@@ -477,6 +477,8 @@ export type Settings = {
 	accent: Accent,
 	/**  Glass: the accent colour (its own choice, so Dot's default red doesn't leak in; blue by default). */
 	glassAccent?: Accent,
+	/**  Glass: no blur behind the panel; only the tiles, the header and the tab bar are glass, floating over the desktop. */
+	glassClear?: boolean,
 	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */

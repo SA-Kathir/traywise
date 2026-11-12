@@ -45,6 +45,21 @@
    is transparent; Windows draws the blur behind the tint. 32px matches GLASS_RADIUS in panel.rs. */
 html.look-glass::before,
 html.look-glass::after {
+  content: "";
+  position: fixed;
+  inset: 16px;
+  border-radius: 32px;
+  pointer-events: none;
+}
+html.look-glass::before {
+  z-index: -1;
+  background: var(--tw-glass-frost);
+}
+/* Energy saver took the blur away (until the app restarts): a solid frosted grey instead. */
+html.look-glass[data-solid]::before {
+  background: var(--tw-glass-frost-solid);
+}
+html.look-glass::after {
   z-index: 100;
   padding: 1.5px;
   /* Lit like the selected tiles: the accent, hot at the top left and bottom right, fading to a soft
@@ -386,4 +401,123 @@ html.look-glass::after {
 }
 .look-glass :is(section, .stats) {
   padding: 16px 18px;
+}
+
+/* ---- The window's margin, the panel's shadow and a defined edge --------------------------------- */
+
+/* The window is 16 px bigger than the panel all round (GLASS_PAD in panel.rs), clear, for the panel's
+   shadow. Everything lives inside that margin. */
+html.look-glass body {
+  box-sizing: border-box;
+  padding: 16px;
+}
+/* The same shadow the tiles have, round the whole panel; and a dark outline and soft inner shadow on
+   its own edge, so it stays defined against any desktop. */
+html.look-glass::before {
+  box-shadow:
+    inset 0 0 0 1.5px rgb(0 0 0 / 0.55),
+    inset 0 0 26px rgb(0 0 0 / 0.38),
+    inset 3px 3px 10px -5px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
+    inset -3px -3px 10px -5px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent),
+    0 4px 14px -2px rgb(0 0 0 / 0.6),
+    0 1px 3px rgb(0 0 0 / 0.35);
+}
+html.look-glass::after {
+  inset: 17.5px;
+  border-radius: 30.5px;
+}
+/* Tiles, the tab bar and the round buttons at the top lift off the panel with deeper shadows. */
+.look-glass :is(section, .tile, .stats) {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    0 12px 24px -6px rgb(0 0 0 / 0.6),
+    0 2px 5px rgb(0 0 0 / 0.3);
+}
+.look-glass .tabs {
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px var(--tw-glass-rim-2),
+    0 8px 18px -6px rgb(0 0 0 / 0.55),
+    0 1px 4px rgb(0 0 0 / 0.3);
+}
+.look-glass .icon-button {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28),
+    0 6px 12px -4px rgb(0 0 0 / 0.55),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+/* The Add tiles tray and its dimmer sit inside the panel, not the margin. */
+.look-glass .scrim {
+  inset: 16px;
+  border-radius: 32px;
+}
+.look-glass .tray {
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+}
+
+/* ---- Clear variant: no panel, only glass floating over the desktop ------------------------------- */
+
+/* No tint, no outline and no shadow for the panel itself; the tiles carry the look, a little darker
+   (and darker still over a bright desktop, from the one brightness sample) so they stay readable
+   without a blur behind them. */
+html.look-glass.glass-clear::before,
+html.look-glass.glass-clear::after {
+  display: none;
+}
+.look-glass.glass-clear {
+  --tw-glass-slab: rgb(14 17 22 / calc(0.5 + var(--backdrop, 0) * 0.3));
+}
+/* The name of the app and the buttons share one big pill, like the tab bar below it. */
+.glass-clear.panel > header {
+  position: relative;
+  padding: 5px 6px 5px 18px;
+  border-radius: 999px;
+  background: var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    0 12px 24px -6px rgb(0 0 0 / 0.6),
+    0 2px 5px rgb(0 0 0 / 0.3);
+}
+.glass-clear.panel > header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.glass-clear.panel > header .icon-button {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28);
+}
+.glass-clear.panel .tabs {
+  background: var(--tw-glass-slab);
+}
+/* The tray's dimmer has nothing to dim in a clear window. */
+.look-glass.glass-clear .scrim {
+  background: transparent;
+}
+/* Without a blur, text behind a settings card would show through it: cards are mostly solid. Tiles keep
+   the lighter sheet. */
+.look-glass.glass-clear :is(section, .stats) {
+  background: rgb(14 17 22 / 0.86);
 }

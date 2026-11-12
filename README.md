@@ -13,7 +13,7 @@ Pick a look when you first start it, and change it any time in Settings:
 - **Dot** (the default): monochrome tiles on a plain background, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
 - **Tint**: tiles tinted in one of six colours, on a deep shade of the same colour.
 - **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
-- **Glass**: Windows blurs the desktop behind a transparent panel, and the tiles are dark translucent glass with a lit rim and one soft accent colour (blue, green, amber, violet or red). Following Windows' light or dark mode. While Windows' Energy saver is on, Windows draws no blur, so the panel shows a solid frosted grey instead.
+- **Glass**: Windows blurs the desktop behind a transparent panel, and the tiles are dark translucent glass with a lit rim and one soft accent colour (blue, green, amber, violet or red). Always dark, in Windows' light mode too. A **Clear** background option drops the blur and the panel, leaving the tiles, the header and the tab bar floating over the desktop. While Windows' Energy saver is on, Windows draws no blur, so the panel shows a solid frosted grey instead.
 
 ## Modules
 

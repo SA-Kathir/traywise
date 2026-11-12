@@ -26,6 +26,9 @@ pub struct Settings {
     /// Glass: the accent colour (its own choice, so Dot's default red doesn't leak in; blue by default).
     #[serde(default = "glass_accent_default")]
     pub glass_accent: Accent,
+    /// Glass: no blur behind the panel; only the tiles, the header and the tab bar are glass, floating over the desktop.
+    #[serde(default)]
+    pub glass_clear: bool,
     /// Dot: a plain gradient behind the tiles instead of the dot grid.
     pub plain_background: bool,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
@@ -140,6 +143,7 @@ impl Default for Settings {
             preset: Preset::Ocean,
             accent: Accent::Red,
             glass_accent: Accent::Blue,
+            glass_clear: false,
             plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
             lower_volume_on_unplug: false,
@@ -340,6 +344,7 @@ mod tests {
             preset: Preset::Graphite,
             accent: Accent::Blue,
             glass_accent: Accent::Violet,
+            glass_clear: true,
             plain_background: true,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             lower_volume_on_unplug: true,

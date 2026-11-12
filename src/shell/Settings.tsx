@@ -104,6 +104,19 @@ export function SettingsPage(props: Props) {
           <Pick label="Look" options={LOOKS} value={settings.look} onChange={(look) => save({ ...settings, look })} />
         </Row>
         {settings.look === "glass" && (
+          <Row label="Background" stacked>
+            <Pick
+              label="Background"
+              options={[
+                { id: "blur", label: "Blurred" },
+                { id: "clear", label: "Clear" },
+              ]}
+              value={settings.glassClear ? "clear" : "blur"}
+              onChange={(b) => save({ ...settings, glassClear: b === "clear" })}
+            />
+          </Row>
+        )}
+        {settings.look === "glass" && (
           <Row label="Accent">
             <div className="colour-pick" role="radiogroup" aria-label="Accent">
               {ACCENTS.map((a) => (

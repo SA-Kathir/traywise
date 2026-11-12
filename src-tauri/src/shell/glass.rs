@@ -117,6 +117,12 @@ impl Glass {
         self.shape.SetSize(size)?;
         self.shape.SetCornerRadius(Vector2 { X: rect.radius, Y: rect.radius })
     }
+
+    /// Shows or hides the blur without tearing it down. A window can only be given its composition
+    /// target once, so the blur is made once and hidden when the look doesn't use it.
+    pub fn set_visible(&self, visible: bool) -> Result<()> {
+        self.sprite.SetIsVisible(visible)
+    }
 }
 
 #[cfg(test)]
