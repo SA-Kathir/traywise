@@ -201,6 +201,11 @@ fn paths(flags: QUERY_DISPLAY_CONFIG_FLAGS, topology: Option<*mut DISPLAYCONFIG_
     paths
 }
 
+/// Whether a screen that isn't the laptop's own is on.
+pub(crate) fn external_connected() -> bool {
+    active_targets().iter().any(|t| !t.internal)
+}
+
 fn active_targets() -> Vec<Target> {
     paths(QDC_ONLY_ACTIVE_PATHS, None)
         .iter()

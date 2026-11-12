@@ -8,6 +8,8 @@
 
 mod worker;
 
+pub(crate) use worker::external_connected;
+
 use std::sync::Mutex;
 use std::sync::mpsc::{Sender, channel};
 use std::thread::JoinHandle;

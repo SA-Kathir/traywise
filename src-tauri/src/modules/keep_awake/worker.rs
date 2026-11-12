@@ -7,7 +7,12 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
+use windows::Win32::Devices::DeviceAndDriverInstallation::{
+    CM_NOTIFY_ACTION, CM_NOTIFY_ACTION_DEVICEINTERFACEARRIVAL, CM_NOTIFY_ACTION_DEVICEINTERFACEREMOVAL, CM_NOTIFY_EVENT_DATA, CM_NOTIFY_FILTER,
+    CM_NOTIFY_FILTER_TYPE_DEVICEINTERFACE, CM_Register_Notification, CM_Unregister_Notification, CR_SUCCESS, HCMNOTIFICATION,
+};
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Devices::Display::GUID_DEVINTERFACE_MONITOR;
 use windows::Win32::Globalization::{GetTimeFormatEx, TIME_NOSECONDS};
 use windows::Win32::System::SystemInformation::GetLocalTime;
 use windows::Win32::System::Power::{
@@ -29,12 +34,13 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
         Ok(request) => request,
         Err(e) => return eprintln!("keep-awake: couldn't create a power request: {e}"),
     };
-    let _power_events = PowerEvents::register(tx);
+    let _power_events = PowerEvents::register(tx.clone());
+    let _display_events = DisplayEvents::register(tx);
     let mut wish = Wish { mode: Mode::Off, display: false, since: Instant::now() };
     let screen_off_sleeps = modern_standby();
 
     loop {
-        let (system, display) = wish.wanted(plugged_in());
+        let (system, display) = wish.wanted(plugged_in(), external_display());
         request.set(system, display);
         publish(&app, &wish, system, screen_off_sleeps);
 
@@ -102,6 +108,11 @@ fn plugged_in() -> bool {
     let mut status = SYSTEM_POWER_STATUS::default();
     // ACLineStatus: 0 battery, 1 mains, 255 unknown.
     unsafe { GetSystemPowerStatus(&mut status) }.is_err() || status.ACLineStatus != 0
+}
+
+/// Whether a screen that isn't the laptop's own is on (a docked laptop; on a desktop PC, any screen).
+fn external_display() -> bool {
+    crate::modules::displays::external_connected()
 }
 
 /// Traywise's power request. `powercfg /requests` lists it, with the reason below, while it's set.
@@ -187,5 +198,41 @@ unsafe extern "system" fn on_power_change(context: *const c_void, _: u32, _: *co
 impl Drop for PowerEvents {
     fn drop(&mut self) {
         let _ = unsafe { PowerSettingUnregisterNotification(self.handle) };
+    }
+}
+
+/// Tells the worker when a screen is plugged in or out: Windows' device notification for monitors,
+/// no window and no polling. `on_display_change` runs on one of Windows' threads and only posts a message.
+struct DisplayEvents {
+    handle: HCMNOTIFICATION,
+    _tx: Box<Sender<Msg>>,
+}
+
+impl DisplayEvents {
+    fn register(tx: Sender<Msg>) -> Option<Self> {
+        let tx = Box::new(tx);
+        let mut filter = CM_NOTIFY_FILTER { cbSize: size_of::<CM_NOTIFY_FILTER>() as u32, FilterType: CM_NOTIFY_FILTER_TYPE_DEVICEINTERFACE, ..Default::default() };
+        filter.u.DeviceInterface.ClassGuid = GUID_DEVINTERFACE_MONITOR;
+        let mut handle = HCMNOTIFICATION::default();
+        let status = unsafe { CM_Register_Notification(&filter, Some(&*tx as *const Sender<Msg> as *const c_void), Some(on_display_change), &mut handle) };
+        if status != CR_SUCCESS {
+            eprintln!("keep-awake: won't notice screens being plugged in or out (CONFIGRET {})", status.0);
+            return None;
+        }
+        Some(Self { handle, _tx: tx })
+    }
+}
+
+unsafe extern "system" fn on_display_change(_: HCMNOTIFICATION, context: *const c_void, action: CM_NOTIFY_ACTION, _: *const CM_NOTIFY_EVENT_DATA, _: u32) -> u32 {
+    if action == CM_NOTIFY_ACTION_DEVICEINTERFACEARRIVAL || action == CM_NOTIFY_ACTION_DEVICEINTERFACEREMOVAL {
+        let tx = unsafe { &*(context as *const Sender<Msg>) };
+        let _ = tx.send(Msg::PowerChanged);
+    }
+    0
+}
+
+impl Drop for DisplayEvents {
+    fn drop(&mut self) {
+        unsafe { CM_Unregister_Notification(self.handle) };
     }
 }

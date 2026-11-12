@@ -29,6 +29,8 @@ pub enum Mode {
     Minutes(u32),
     /// Only while the PC runs on mains power.
     WhilePluggedIn,
+    /// Only while an external screen is connected (a docked laptop).
+    WhileExternalDisplay,
 }
 
 /// Everything the panel shows.
@@ -38,7 +40,8 @@ pub struct KeepAwakeState {
     pub mode: Mode,
     /// Also keep the display on.
     pub display: bool,
-    /// Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery.
+    /// Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery, or
+    /// `whileExternalDisplay` mode with no external screen.
     pub active: bool,
     /// Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`).
     pub ends_at: Option<f64>,
@@ -54,7 +57,7 @@ pub struct KeepAwakeChanged(pub KeepAwakeState);
 enum Msg {
     SetMode(Mode),
     SetDisplay(bool),
-    /// Mains or battery changed: re-check.
+    /// Mains or battery changed, or a screen was plugged in or out: re-check.
     PowerChanged,
     Stop,
 }
@@ -77,11 +80,12 @@ impl Wish {
     }
 
     /// (keep the system awake, keep the display on)
-    fn wanted(&self, plugged_in: bool) -> (bool, bool) {
+    fn wanted(&self, plugged_in: bool, external_display: bool) -> (bool, bool) {
         let system = match self.mode {
             Mode::Off => false,
             Mode::On | Mode::Minutes(_) => true,
             Mode::WhilePluggedIn => plugged_in,
+            Mode::WhileExternalDisplay => external_display,
         };
         (system, system && self.display)
     }
@@ -173,12 +177,14 @@ mod tests {
 
     #[test]
     fn modes() {
-        assert_eq!(wish(Mode::Off, true).wanted(true), (false, false));
-        assert_eq!(wish(Mode::On, false).wanted(false), (true, false));
-        assert_eq!(wish(Mode::On, true).wanted(false), (true, true));
-        assert_eq!(wish(Mode::Minutes(30), true).wanted(false), (true, true));
-        assert_eq!(wish(Mode::WhilePluggedIn, true).wanted(true), (true, true));
-        assert_eq!(wish(Mode::WhilePluggedIn, true).wanted(false), (false, false), "on battery");
+        assert_eq!(wish(Mode::Off, true).wanted(true, false), (false, false));
+        assert_eq!(wish(Mode::On, false).wanted(false, false), (true, false));
+        assert_eq!(wish(Mode::On, true).wanted(false, false), (true, true));
+        assert_eq!(wish(Mode::Minutes(30), true).wanted(false, false), (true, true));
+        assert_eq!(wish(Mode::WhilePluggedIn, true).wanted(true, false), (true, true));
+        assert_eq!(wish(Mode::WhilePluggedIn, true).wanted(false, false), (false, false), "on battery");
+        assert_eq!(wish(Mode::WhileExternalDisplay, true).wanted(false, true), (true, true));
+        assert_eq!(wish(Mode::WhileExternalDisplay, true).wanted(true, false), (false, false), "no external screen");
     }
 
     #[test]
@@ -187,6 +193,7 @@ mod tests {
         assert_eq!(w.deadline(), Some(w.since + Duration::from_secs(90 * 60)));
         assert_eq!(wish(Mode::On, false).deadline(), None);
         assert_eq!(wish(Mode::WhilePluggedIn, false).deadline(), None);
+        assert_eq!(wish(Mode::WhileExternalDisplay, false).deadline(), None);
         assert_eq!(wish(Mode::Off, false).deadline(), None);
     }
 }

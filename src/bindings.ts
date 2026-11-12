@@ -300,7 +300,10 @@ export type KeepAwakeState = {
 	mode: Mode,
 	/**  Also keep the display on. */
 	display: boolean,
-	/**  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery. */
+	/**
+	 *  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery, or
+	 *  `whileExternalDisplay` mode with no external screen.
+	 */
 	active: boolean,
 	/**  Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`). */
 	endsAt: number | null,
@@ -381,7 +384,9 @@ export type Mode = "off" |
 /**  For this many minutes, then off. */
 { minutes: number } | 
 /**  Only while the PC runs on mains power. */
-"whilePluggedIn";
+"whilePluggedIn" | 
+/**  Only while an external screen is connected (a docked laptop). */
+"whileExternalDisplay";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
 export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
