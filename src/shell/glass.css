@@ -1,6 +1,6 @@
 /* The Glass look: frosted glass over a blurred desktop. Windows draws the blur behind the transparent
    panel (src-tauri/src/shell/glass.rs); this file paints only what sits on top of it: a thin tint,
-   lit rims, soft shadows. Tokens are the Figma file's "Glass" variables, dark and light, and
+   lit rims, soft shadows. Tokens are the Figma file's "Glass" variables (the dark set, in every Windows mode), and
    follow Windows' mode. Tiles can't blur the desktop themselves (the page has nothing behind it),
    so they are translucent sheets over the panel's blur. */
 
@@ -37,30 +37,6 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  .look-glass {
-    --tw-glass-frost: rgb(245 247 250 / 0.3);
-    --tw-glass-frost-solid: rgb(232 236 242 / 0.95);
-    --tw-glass-slab: rgb(255 255 255 / 0.45);
-    --tw-glass-slab-on: rgb(255 255 255 / 0.72);
-    --tw-glass-slab-fill: rgb(255 255 255 / 0.85);
-    --tw-glass-slab-track: rgb(11 16 32 / 0.1);
-    --tw-glass-well: rgb(11 16 32 / 0.08);
-    --tw-glass-accent: #2f6fd0;
-    --tw-glass-accent-wash: rgb(47 111 208 / 0.16);
-    --tw-glass-blue: #2f6fd0;
-    --tw-glass-rim-0: rgb(255 255 255 / 0.95);
-    --tw-glass-rim-1: rgb(255 255 255 / 0.45);
-    --tw-glass-rim-2: rgb(255 255 255 / 0.3);
-    --tw-glass-rim-3: rgb(255 255 255 / 0.7);
-    --tw-glass-shadow: rgb(30 40 70 / 0.18);
-    --tw-glass-text: #0e1116;
-    --tw-glass-text-2: rgb(14 17 22 / 0.7);
-    --tw-glass-text-3: rgb(14 17 22 / 0.55);
-    --ink: 0 0 0;
-    color-scheme: light;
-  }
-}
 
 /* ---- The panel ----------------------------------------------------------------------------- */
 
@@ -205,14 +181,6 @@ html.look-glass::after {
 :where(.look-glass) button:active {
   background: rgb(255 255 255 / 0.04);
 }
-@media (prefers-color-scheme: light) {
-  :where(.look-glass) button {
-    background: rgb(255 255 255 / 0.5);
-  }
-  :where(.look-glass) button:hover {
-    background: rgb(255 255 255 / 0.7);
-  }
-}
 /* The tab bar and segmented controls sit in a recessed well; their buttons are flat until picked. */
 .look-glass :is(.tabs, .segmented) {
   background: var(--tw-glass-well);
@@ -285,27 +253,16 @@ html.look-glass::after {
 .look-glass h1 {
   text-shadow: 0 1px 8px rgb(0 0 0 / 0.4);
 }
-@media (prefers-color-scheme: light) {
-  .look-glass h1 {
-    text-shadow: none;
-  }
-}
 
 /* ---- Accent colours ------------------------------------------------------------------------ */
 
 /* The accent is its own choice for this look (Settings › Appearance). --tw-glass-accent is the soft
    colour for text and rims, --tw-glass-blue the deeper one for lit glass (the names are from when blue
-   was the only one). Dark first; light mode takes the deeper colour for both. */
+   was the only one). */
 .look-glass.accent-green { --tw-glass-accent: #8fe3c0; --tw-glass-blue: #2fc58a; --tw-glass-accent-wash: rgb(143 227 192 / 0.2); }
 .look-glass.accent-amber { --tw-glass-accent: #f6cf8b; --tw-glass-blue: #f2a33a; --tw-glass-accent-wash: rgb(246 207 139 / 0.2); }
 .look-glass.accent-violet { --tw-glass-accent: #c3a7ff; --tw-glass-blue: #8a63ff; --tw-glass-accent-wash: rgb(195 167 255 / 0.2); }
 .look-glass.accent-red { --tw-glass-accent: #ff9a9a; --tw-glass-blue: #f0524f; --tw-glass-accent-wash: rgb(255 154 154 / 0.2); }
-@media (prefers-color-scheme: light) {
-  .look-glass.accent-green { --tw-glass-accent: #12875a; --tw-glass-blue: #12875a; --tw-glass-accent-wash: rgb(18 135 90 / 0.16); }
-  .look-glass.accent-amber { --tw-glass-accent: #b9720a; --tw-glass-blue: #b9720a; --tw-glass-accent-wash: rgb(185 114 10 / 0.16); }
-  .look-glass.accent-violet { --tw-glass-accent: #6a48db; --tw-glass-blue: #6a48db; --tw-glass-accent-wash: rgb(106 72 219 / 0.16); }
-  .look-glass.accent-red { --tw-glass-accent: #c93a3a; --tw-glass-blue: #c93a3a; --tw-glass-accent-wash: rgb(201 58 58 / 0.16); }
-}
 /* Settings' round swatches show the soft colour. */
 .glass-swatch.accent-blue { background: #8ec1ff; }
 .glass-swatch.accent-green { background: #8fe3c0; }
@@ -320,11 +277,6 @@ html.look-glass::after {
 .look-glass .tray {
   background: rgb(14 17 22 / 0.78);
   backdrop-filter: blur(22px) saturate(1.2);
-}
-@media (prefers-color-scheme: light) {
-  .look-glass .tray {
-    background: rgb(245 247 250 / 0.8);
-  }
 }
 /* The gallery: the live tile sits in a recessed well, "Current" is a lit chip, and the pick button is
    lit like a primary button. */

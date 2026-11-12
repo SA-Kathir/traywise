@@ -88,17 +88,6 @@
 .look-glass .lcap {
   fill: var(--tw-glass-accent);
 }
-@media (prefers-color-scheme: light) {
-  .look-glass .ltick {
-    stroke: rgb(14 17 22 / 0.3);
-  }
-  .look-glass .lmajor {
-    stroke: rgb(14 17 22 / 0.7);
-  }
-  .look-glass .lhand {
-    stroke: rgb(14 17 22 / 0.9);
-  }
-}
 
 /* Battery: a glass cell filled with the accent, glowing; amber when low, orange when critical. */
 .look-glass .gauge {
@@ -119,11 +108,6 @@
 .look-glass .battery .num {
   font-weight: 300;
 }
-@media (prefers-color-scheme: light) {
-  .look-glass .gauge {
-    color: rgb(14 17 22 / 0.5);
-  }
-}
 
 /* ---- Keep awake and Focus ------------------------------------------------------------------- */
 
@@ -137,16 +121,6 @@
 .look-glass.accent-green {
   --pomo-rest: #8ec1ff;
   --pomo-rest-deep: #3d8bff;
-}
-@media (prefers-color-scheme: light) {
-  .look-glass {
-    --pomo-rest: #12875a;
-    --pomo-rest-deep: #12875a;
-  }
-  .look-glass.accent-green {
-    --pomo-rest: #2f6fd0;
-    --pomo-rest-deep: #2f6fd0;
-  }
 }
 .look-glass .pomo {
   --glow: var(--tw-glass-blue);
@@ -176,11 +150,6 @@
 }
 .look-glass .pomo-arc .smooth-fill {
   stroke: color-mix(in srgb, var(--focus) 88%, transparent);
-}
-@media (prefers-color-scheme: light) {
-  .look-glass :is(.awake-ring, .pomo-arc) .smooth-track {
-    stroke: rgb(14 17 22 / 0.14);
-  }
 }
 /* Keep awake's quick buttons are glass chips already (plain buttons); the lit one is the accent. */
 .look-glass .awake-quick button {
@@ -228,14 +197,6 @@ html .panel.look-glass .pomo.on .pomo-rounds .cur {
 }
 html .panel.look-glass .pomo.on .pomo-rounds .done {
   background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
-}
-@media (prefers-color-scheme: light) {
-  html .panel.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
-    fill: rgb(14 17 22 / 0.22);
-  }
-  html .panel.look-glass .pomo.on .pomo-rounds i {
-    background: rgb(14 17 22 / 0.3);
-  }
 }
 .look-glass .awake.on {
   color: var(--tw-glass-accent);
