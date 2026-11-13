@@ -33,6 +33,14 @@ pub fn lookup(pid: u32) -> AppInfo {
     AppInfo { name, icon: icon_png(&shell_name) }
 }
 
+/// Just the name (no icon, which is the slow part): see `lookup`.
+pub fn name(pid: u32) -> String {
+    match process_ids(pid) {
+        Some((path, _)) => description(&path).unwrap_or_else(|| fallback_name(&path)),
+        None => format!("Process {pid}"),
+    }
+}
+
 /// "spotify.exe" → "Spotify", for apps without a description in their .exe.
 fn fallback_name(path: &str) -> String {
     let stem = Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();

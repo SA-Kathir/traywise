@@ -5,6 +5,8 @@
 //! reports a change or the UI asks for one, so it costs nothing while nothing happens.
 
 mod app_info;
+
+pub(crate) use app_info::name as app_name;
 mod app_output;
 mod worker;
 

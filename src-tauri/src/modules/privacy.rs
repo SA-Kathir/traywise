@@ -1,23 +1,22 @@
-//! Privacy: which apps are using the microphone or camera right now, from Windows' consent store
-//! (Settings › Privacy & security › Microphone / Camera, "Recent activity").
+//! Privacy: which apps are using the microphone or camera right now.
 //!
-//! Windows notes, for each app, when it last started and stopped using a device; an app whose
-//! start is later than its stop (or that has no stop yet) is using it now. The registry is read when
-//! the panel opens, and again whenever Windows changes anything in the consent store (an app starts
-//! or stops using a device): a thread sleeps on a registry change notification, so it costs nothing
-//! while nothing changes.
+//! The microphone comes from the audio engine (an app with an active capture session is recording),
+//! which is live. The camera comes from Windows' consent store (Settings › Privacy & security ›
+//! Camera, "Recent activity"): for each app it notes when it last started and stopped using the
+//! device, and an app that started after it last stopped is using it now (Windows writes these late
+//! on some PCs, so the camera can lag). The thread sleeps while the panel is closed and looks once a
+//! second while it is open, like the system monitor.
 
+use std::sync::Mutex;
+use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_specta::Event;
-use windows::Win32::Foundation::{CloseHandle, ERROR_SUCCESS, HANDLE};
-use windows::Win32::System::Registry::{
-    HKEY, HKEY_CURRENT_USER, KEY_NOTIFY, KEY_READ, REG_NOTIFY_CHANGE_LAST_SET, RRF_RT_REG_QWORD, RegCloseKey, RegEnumKeyExW,
-    RegGetValueW, RegNotifyChangeKeyValue, RegOpenKeyExW,
-};
-use windows::Win32::System::Threading::{CreateEventW, INFINITE, SetEvent, Sleep, WaitForMultipleObjects};
+use windows::Win32::Foundation::ERROR_SUCCESS;
+use windows::Win32::System::Registry::{HKEY, HKEY_CURRENT_USER, KEY_READ, RRF_RT_REG_QWORD, RegCloseKey, RegEnumKeyExW, RegGetValueW, RegOpenKeyExW};
 use windows::core::{HSTRING, PWSTR};
 
 use crate::module::{Module, ModuleId};
@@ -37,15 +36,19 @@ pub struct PrivacyState {
 #[derive(Clone, Serialize, specta::Type, tauri_specta::Event)]
 pub struct PrivacyChanged(pub PrivacyState);
 
+enum Msg {
+    PanelVisible(bool),
+    Stop,
+}
+
 pub struct Privacy {
     app: AppHandle,
-    /// The thread waiting for changes, and the event that ends it (a handle, as a number to cross threads).
-    watcher: Option<(JoinHandle<()>, isize)>,
+    worker: Option<(Sender<Msg>, JoinHandle<()>)>,
 }
 
 impl Privacy {
     pub fn new(app: AppHandle) -> Self {
-        Self { app, watcher: None }
+        Self { app, worker: None }
     }
 }
 
@@ -55,73 +58,95 @@ impl Module for Privacy {
     }
 
     fn start(&mut self) -> Result<(), String> {
-        let stop = unsafe { CreateEventW(None, true, false, None) }.map_err(|e| e.to_string())?;
+        let (tx, rx) = channel();
         let app = self.app.clone();
-        let stop_id = stop.0 as isize;
-        let thread = std::thread::Builder::new()
-            .name("privacy".into())
-            .spawn(move || watch(&app, stop_id))
-            .map_err(|e| e.to_string())?;
-        self.watcher = Some((thread, stop_id));
+        let thread = std::thread::Builder::new().name("privacy".into()).spawn(move || run(&app, rx)).map_err(|e| e.to_string())?;
+        self.worker = Some((tx, thread));
         Ok(())
     }
 
     fn stop(&mut self) {
-        if let Some((thread, stop)) = self.watcher.take() {
-            unsafe {
-                let _ = SetEvent(HANDLE(stop as _));
-            }
+        if let Some((tx, thread)) = self.worker.take() {
+            let _ = tx.send(Msg::Stop);
             let _ = thread.join();
-            unsafe {
-                let _ = CloseHandle(HANDLE(stop as _));
-            }
         }
     }
 
     fn panel_visible(&mut self, visible: bool) {
-        if visible {
-            let _ = PrivacyChanged(read()).emit(&self.app);
+        if let Some((tx, _)) = &self.worker {
+            let _ = tx.send(Msg::PanelVisible(visible));
         }
     }
 }
 
-/// Sleeps until Windows changes something under the consent store, then sends the state again.
-fn watch(app: &AppHandle, stop: isize) {
-    let mut key = HKEY::default();
-    if unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, &HSTRING::from(STORE), None, KEY_NOTIFY, &mut key) } != ERROR_SUCCESS {
-        return; // no live updates: the panel still reads it when it opens
-    }
-    let Ok(changed) = (unsafe { CreateEventW(None, false, false, None) }) else {
-        let _ = unsafe { RegCloseKey(key) };
-        return;
-    };
-    loop {
-        // (Asks again each time: a notification is used up once it has fired.)
-        if unsafe { RegNotifyChangeKeyValue(key, true, REG_NOTIFY_CHANGE_LAST_SET, Some(changed), true) } != ERROR_SUCCESS {
-            break;
+/// The last state sent: what `privacy_state` answers with.
+static LATEST: Mutex<PrivacyState> = Mutex::new(PrivacyState { microphone: Vec::new(), camera: Vec::new() });
+
+/// Sleeps while the panel is closed; while it is open, sends the state at once and then whenever it
+/// changes (checked every second).
+fn run(app: &AppHandle, rx: Receiver<Msg>) {
+    crate::audio::with_com("privacy", || {
+        let mut visible = false;
+        loop {
+            let msg = if visible { rx.recv_timeout(Duration::from_secs(1)) } else { rx.recv().map_err(|_| RecvTimeoutError::Disconnected) };
+            let opened = match msg {
+                Ok(Msg::PanelVisible(v)) => {
+                    visible = v;
+                    if !v {
+                        continue;
+                    }
+                    true
+                }
+                Ok(Msg::Stop) | Err(RecvTimeoutError::Disconnected) => break,
+                Err(RecvTimeoutError::Timeout) => false,
+            };
+            let state = read();
+            let changed = *LATEST.lock().unwrap() != state;
+            if changed || opened {
+                *LATEST.lock().unwrap() = state.clone();
+                let _ = PrivacyChanged(state).emit(app);
+            }
         }
-        // Index 0 is a change, 1 is the stop request.
-        if unsafe { WaitForMultipleObjects(&[changed, HANDLE(stop as _)], false, INFINITE) }.0 != 0 {
-            break;
-        }
-        // Windows writes the start and stop times a moment apart: read once they have settled.
-        unsafe { Sleep(150) };
-        let _ = PrivacyChanged(read()).emit(app);
-    }
-    unsafe {
-        let _ = CloseHandle(changed);
-        let _ = RegCloseKey(key);
-    }
+        Ok(())
+    });
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn privacy_state() -> PrivacyState {
-    read()
+    LATEST.lock().unwrap().clone()
 }
 
 fn read() -> PrivacyState {
-    PrivacyState { microphone: using("microphone"), camera: using("webcam") }
+    // A device the audio engine can't be asked about: fall back to the consent store.
+    let microphone = capture_apps().unwrap_or_else(|_| using("microphone"));
+    PrivacyState { microphone, camera: using("webcam") }
+}
+
+/// Apps with an active session on any microphone, straight from the audio engine (what the volume
+/// mixer reads for output): live, unlike the consent store, which Windows writes late.
+fn capture_apps() -> windows::core::Result<Vec<String>> {
+    use windows::Win32::Media::Audio::{AudioSessionStateActive, DEVICE_STATE_ACTIVE, IAudioSessionControl2, IAudioSessionManager2, eCapture};
+    use windows::Win32::System::Com::CLSCTX_ALL;
+    use windows::core::Interface;
+    let mut names = Vec::new();
+    let devices = unsafe { crate::audio::enumerator()?.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)? };
+    for i in 0..unsafe { devices.GetCount()? } {
+        let manager: IAudioSessionManager2 = unsafe { devices.Item(i)?.Activate(CLSCTX_ALL, None)? };
+        let sessions = unsafe { manager.GetSessionEnumerator()? };
+        for j in 0..unsafe { sessions.GetCount()? } {
+            let control = unsafe { sessions.GetSession(j)? };
+            let control2: IAudioSessionControl2 = control.cast()?;
+            let pid = unsafe { control2.GetProcessId()? };
+            if pid != 0 && unsafe { control.GetState()? } == AudioSessionStateActive {
+                let name = crate::modules::volume_mixer::app_name(pid);
+                if !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+        }
+    }
+    Ok(names)
 }
 
 /// The apps using one capability now. Windows keeps two lists under it: apps from the Store (by
@@ -218,20 +243,14 @@ mod tests {
         assert_eq!(app_name("Teams", false), "Teams");
     }
 
-    /// `cargo test privacy_notify -- --ignored --nocapture`, then change something under the consent
-    /// store within 10 s: the notification must fire.
+    /// `cargo test capture_live -- --ignored --nocapture`: who has an active capture session right now.
     #[test]
     #[ignore]
-    fn privacy_notify() {
-        use windows::Win32::System::Threading::WaitForSingleObject;
-        let mut key = HKEY::default();
-        assert_eq!(unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, &HSTRING::from(STORE), None, KEY_NOTIFY, &mut key) }, ERROR_SUCCESS);
-        let changed = unsafe { CreateEventW(None, false, false, None) }.unwrap();
-        assert_eq!(unsafe { RegNotifyChangeKeyValue(key, true, REG_NOTIFY_CHANGE_LAST_SET, Some(changed), true) }, ERROR_SUCCESS);
-        println!("WAITING");
-        let t = std::time::Instant::now();
-        let r = unsafe { WaitForSingleObject(changed, 10_000) };
-        println!("woke: {r:?} after {:?}", t.elapsed());
+    fn capture_live() {
+        crate::audio::with_com("privacy test", || {
+            println!("capture sessions: {:?}", capture_apps()?);
+            Ok(())
+        });
     }
 
     /// `cargo test privacy_live -- --ignored --nocapture`: reads this PC's consent store.
