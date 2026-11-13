@@ -434,14 +434,14 @@ button.tile-title:hover {
 .board .tile-badge {
   position: absolute;
   z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
   border-radius: 50%;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 9px;
-  line-height: 20px;
+  font-size: 10px;
+  line-height: 24px;
   text-align: center;
   background: var(--accent);
   color: var(--on-accent);
@@ -454,9 +454,10 @@ button.tile-title:hover {
   opacity: 1;
   pointer-events: auto;
 }
+/* The remove and resize badges sit centred 6 px in from the tile's corners, as in the Dot look. */
 .tile-remove {
-  top: 4px;
-  left: 4px;
+  top: -6px;
+  left: -6px;
 }
 /* The wide system monitor tile's pills: one under each half, showing what that side reads. */
 .board .tile-reading {
@@ -476,8 +477,8 @@ button.tile-title:hover {
   transform: translateX(-50%);
 }
 .tile-resize {
-  right: 4px;
-  bottom: 4px;
+  right: -6px;
+  bottom: -6px;
 }
 /* The tray of tiles to add: a card over the bottom of the board, above a dimmed board. */
 .scrim {
