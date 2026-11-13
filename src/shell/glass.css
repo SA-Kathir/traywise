@@ -132,8 +132,8 @@ html.look-glass::after {
   background:
     linear-gradient(
       160deg,
-      color-mix(in srgb, var(--tw-glass-blue) 9%, transparent),
-      color-mix(in srgb, var(--tw-glass-blue) 3%, transparent)
+      color-mix(in srgb, var(--tw-glass-blue) 34%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 20%, transparent)
     ),
     var(--tw-glass-slab);
   box-shadow:
@@ -149,14 +149,15 @@ html.look-glass::after {
   border-radius: inherit;
   pointer-events: none;
   opacity: 1;
-  padding: 1.5px;
-  /* The accent all the way round, brightest at the two corners where light catches the glass. */
+  padding: 1px;
+  /* A fine accent edge all the way round (the tint of the tile itself carries the colour), a little
+     brighter at the two corners. */
   background: linear-gradient(
     135deg,
-    var(--tw-glass-accent),
-    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
-    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
-    var(--tw-glass-accent)
+    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent),
+    color-mix(in srgb, var(--tw-glass-accent) 28%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 25%, transparent) 70%,
+    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent)
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
