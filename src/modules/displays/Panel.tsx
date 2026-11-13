@@ -251,6 +251,18 @@ export default function Panel() {
             {d.brightness === null ? <span className="tile-detail">Can't change</span> : <Num text={String(d.brightness)} />}
           </div>
           {d.brightness !== null && <Bar display={d} />}
+          {d.refresh && d.refresh.rates.length > 1 && (
+            <div className="row">
+              <span className="grow">Refresh rate</span>
+              <div className="segmented" role="group" aria-label={`${d.name} refresh rate`}>
+                {d.refresh.rates.map((hz) => (
+                  <button key={hz} className={hz === d.refresh!.now ? "on" : ""} onClick={() => commands.displaysSetRefresh(d.id, hz)}>
+                    <Num text={`${hz} Hz`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
       {state.displays.some((d) => !d.internal && d.brightness === null) && (
