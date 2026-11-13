@@ -311,7 +311,7 @@ html.look-glass::after {
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
     var(--tw-glass-drop);
 }
-.look-glass .tile:hover:not(.on)::after {
+.look-glass .tile:hover::after {
   opacity: 1;
   padding: 1.5px;
   background: linear-gradient(
@@ -518,7 +518,7 @@ html.look-glass body::after {
 
 /* Soft (the default) has no shadow under the tiles, no accent rim and a gentle tint on lit ones. Vivid is
    the look from before the design's thin edge: a deep drop shadow under every tile, and lit tiles with a
-   2 px accent rim, hottest at the two corners (the same on hover), a blue lip and a light tint. */
+   2 px accent rim, hottest at the two corners, a blue lip and a light tint. Hover is the same full accent ring as in Soft. */
 .look-glass.glass-vivid {
   --tw-glass-drop: 0 12px 24px -6px rgb(0 0 0 / 0.6), 0 2px 5px rgb(0 0 0 / 0.3);
 }
@@ -557,18 +557,6 @@ html.look-glass body::after {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-}
-.glass-vivid .tile:hover:not(.on)::after {
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
-    transparent 45%,
-    transparent 55%,
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
-  );
 }
 .glass-vivid .tile.pomo.rest.on {
   background:
