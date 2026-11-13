@@ -475,10 +475,10 @@ fn place(win: &WebviewWindow, edge: bool) {
     };
     let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
     set(width, height);
-    // Moved to a monitor with another scale: Windows resizes the window for it, so size it again.
-    if win.scale_factor().is_ok_and(|s| (s - scale).abs() > 0.01) {
-        set(width, height);
-    }
+    // Moving to a monitor with another scale makes Windows resize the window for it (from the old
+    // size, so it comes out wrong) as the move happens: size it once more, now that it is there.
+    // Always, since by now the window already reports the new scale and the move can't be told apart.
+    set(width, height);
     // A framed window's shadow takes a few pixels of it: add them back, so the page gets
     // WIDTH x HEIGHT either way. Unframed, there's nothing to add (and Windows briefly misreports
     // a frame right after resizing, so don't measure there).
