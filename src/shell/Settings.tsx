@@ -117,6 +117,19 @@ export function SettingsPage(props: Props) {
           </Row>
         )}
         {settings.look === "glass" && (
+          <Row label="Style" stacked>
+            <Pick
+              label="Style"
+              options={[
+                { id: "soft", label: "Soft" },
+                { id: "vivid", label: "Vivid" },
+              ]}
+              value={settings.glassVivid ? "vivid" : "soft"}
+              onChange={(v) => save({ ...settings, glassVivid: v === "vivid" })}
+            />
+          </Row>
+        )}
+        {settings.look === "glass" && (
           <Row label="Accent">
             <div className="colour-pick" role="radiogroup" aria-label="Accent">
               {ACCENTS.map((a) => (

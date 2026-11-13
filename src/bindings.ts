@@ -484,6 +484,8 @@ export type Settings = {
 	glassAccent?: Accent,
 	/**  Glass: no blur behind the panel; only the tiles, the header and the tab bar are glass, floating over the desktop. */
 	glassClear?: boolean,
+	/**  Glass: Vivid (accent rims, tinted lit tiles, shadows) instead of the default Soft. */
+	glassVivid?: boolean,
 	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */

@@ -513,3 +513,75 @@ html.look-glass body::after {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+
+/* ---- Vivid: the brighter style ------------------------------------------------------------------ */
+
+/* Soft (the default) has no shadow under the tiles, no accent rim and a gentle tint on lit ones. Vivid is
+   the look from before the design's thin edge: a deep drop shadow under every tile, and lit tiles with a
+   2 px accent rim, hottest at the two corners (the same on hover), a blue lip and a light tint. */
+.look-glass.glass-vivid {
+  --tw-glass-drop: 0 12px 24px -6px rgb(0 0 0 / 0.6), 0 2px 5px rgb(0 0 0 / 0.3);
+}
+.glass-vivid :is(.tile.on, .tabs button.on, .segmented button.on) {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tw-glass-blue) 9%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 3%, transparent)
+    ),
+    var(--tw-glass-slab);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+.glass-vivid :is(.tile.on, .tabs button.on, .segmented button.on)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 1;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 20%,
+    color-mix(in srgb, var(--tw-glass-blue) 22%, transparent) 50%,
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 80%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.glass-vivid .tile:hover:not(.on)::after {
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
+    transparent 45%,
+    transparent 55%,
+    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+  );
+}
+.glass-vivid .tile.pomo.rest.on {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
+    var(--tw-glass-slab);
+}
+.glass-vivid .tile.pomo.rest.on::after {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff),
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 20%,
+    color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent) 50%,
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 80%,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff)
+  );
+}
