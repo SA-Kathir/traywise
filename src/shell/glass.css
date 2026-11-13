@@ -5,6 +5,8 @@
    so they are translucent sheets over the panel's blur. */
 
 .look-glass {
+  /* The one drop shadow every tile, card, bar and pill has. */
+  --tw-glass-drop: 0 12px 24px -6px rgb(0 0 0 / 0.6), 0 2px 5px rgb(0 0 0 / 0.3);
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
   --tw-glass-frost: rgb(14 17 22 / 0.2);
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
@@ -99,7 +101,7 @@ html.look-glass::after {
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
     0 0 16px -6px rgb(255 255 255 / 0.2),
-    0 6px 18px rgb(0 0 0 / 0.16);
+    var(--tw-glass-drop);
 }
 .look-glass :is(section, .tile, .stats)::after {
   content: "";
@@ -137,7 +139,7 @@ html.look-glass::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 45%, #fff),
     inset -1.5px -1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
-    0 6px 18px rgb(0 0 0 / 0.16);
+    var(--tw-glass-drop);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
 .look-glass :is(.tile.on, .tabs button.on, .segmented button.on)::after {
@@ -147,13 +149,13 @@ html.look-glass::after {
   border-radius: inherit;
   pointer-events: none;
   opacity: 1;
-  padding: 1px;
-  /* As in the design: a 1 px edge, the accent at the two corners and nearly gone along the sides. */
+  padding: 1.5px;
+  /* The accent all the way round, brightest at the two corners where light catches the glass. */
   background: linear-gradient(
     135deg,
     var(--tw-glass-accent),
-    color-mix(in srgb, var(--tw-glass-accent) 12%, transparent) 35%,
-    color-mix(in srgb, var(--tw-glass-accent) 10%, transparent) 70%,
+    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
     var(--tw-glass-accent)
   );
   -webkit-mask:
@@ -324,22 +326,21 @@ html.look-glass::after {
   color: var(--tw-glass-accent);
 }
 /* Hovering any tile lights its rim in the accent with a soft glow, whatever state it is in. */
-.look-glass .tile:hover {
+.look-glass .tile:hover:not(.on) {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    0 6px 18px rgb(0 0 0 / 0.16);
+    var(--tw-glass-drop);
 }
-.look-glass .tile:hover::after {
+.look-glass .tile:hover:not(.on)::after {
   opacity: 1;
+  padding: 1.5px;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 25%,
-    transparent 45%,
-    transparent 55%,
-    color-mix(in srgb, var(--tw-glass-blue) 40%, transparent) 75%,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
+    var(--tw-glass-accent)
   );
 }
 
@@ -405,8 +406,6 @@ html.look-glass body {
    its own edge, so it stays defined against any desktop. */
 html.look-glass::before {
   box-shadow:
-    inset 0 0 0 1.5px rgb(0 0 0 / 0.55),
-    inset 0 0 26px rgb(0 0 0 / 0.38),
     0 8px 18px -6px rgb(0 0 0 / 0.6),
     0 2px 5px rgb(0 0 0 / 0.3);
 }
@@ -419,15 +418,13 @@ html.look-glass::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    0 12px 24px -6px rgb(0 0 0 / 0.6),
-    0 2px 5px rgb(0 0 0 / 0.3);
+    var(--tw-glass-drop);
 }
 .look-glass .tabs {
   position: relative;
   box-shadow:
     inset 0 0 0 1px var(--tw-glass-rim-2),
-    0 8px 18px -6px rgb(0 0 0 / 0.55),
-    0 1px 4px rgb(0 0 0 / 0.3);
+    var(--tw-glass-drop);
 }
 .look-glass .icon-button {
   box-shadow:
@@ -468,8 +465,7 @@ html.look-glass.glass-clear::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    0 12px 24px -6px rgb(0 0 0 / 0.6),
-    0 2px 5px rgb(0 0 0 / 0.3);
+    var(--tw-glass-drop);
 }
 .glass-clear.panel > header::after {
   content: "";
@@ -504,11 +500,6 @@ html.look-glass.glass-clear::after {
 .look-glass.glass-clear .scrim {
   background: transparent;
 }
-/* Without a blur, text behind a settings card would show through it: cards are mostly solid. Tiles keep
-   the lighter sheet. */
-.look-glass.glass-clear :is(section, .stats) {
-  background: rgb(14 17 22 / 0.86);
-}
 
 /* ---- The accent edge and the page dots -------------------------------------------------------- */
 
@@ -528,8 +519,7 @@ html.look-glass body::after {
   box-shadow:
     inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
     inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
-    0 8px 18px -6px rgb(0 0 0 / 0.55),
-    0 1px 4px rgb(0 0 0 / 0.3);
+    var(--tw-glass-drop);
 }
 .look-glass .page-dots::after {
   content: "";
