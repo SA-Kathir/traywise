@@ -135,9 +135,8 @@ html.look-glass::after {
     ),
     var(--tw-glass-slab);
   box-shadow:
-    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
-    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
-    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
+    inset 1.5px 1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 45%, #fff),
+    inset -1.5px -1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
     0 6px 18px rgb(0 0 0 / 0.16);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
@@ -148,15 +147,14 @@ html.look-glass::after {
   border-radius: inherit;
   pointer-events: none;
   opacity: 1;
-  padding: 2px;
-  /* Hot at the two corners, where light catches the glass, fading to a soft blue along the sides. */
+  padding: 1px;
+  /* As in the design: a 1 px edge, the accent at the two corners and nearly gone along the sides. */
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
-    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 20%,
-    color-mix(in srgb, var(--tw-glass-blue) 22%, transparent) 50%,
-    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 80%,
-    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 12%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 10%, transparent) 70%,
+    var(--tw-glass-accent)
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
