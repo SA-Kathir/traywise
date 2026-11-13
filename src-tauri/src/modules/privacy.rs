@@ -1,17 +1,23 @@
 //! Privacy: which apps are using the microphone or camera right now, from Windows' consent store
 //! (Settings › Privacy & security › Microphone / Camera, "Recent activity").
 //!
-//! Nothing runs in the background: the registry is read when the panel opens and when a tile asks.
 //! Windows notes, for each app, when it last started and stopped using a device; an app whose
-//! start is later than its stop (or that has no stop yet) is using it now.
+//! start is later than its stop (or that has no stop yet) is using it now. The registry is read when
+//! the panel opens, and again whenever Windows changes anything in the consent store (an app starts
+//! or stops using a device): a thread sleeps on a registry change notification, so it costs nothing
+//! while nothing changes.
+
+use std::thread::JoinHandle;
 
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_specta::Event;
-use windows::Win32::Foundation::ERROR_SUCCESS;
+use windows::Win32::Foundation::{CloseHandle, ERROR_SUCCESS, HANDLE};
 use windows::Win32::System::Registry::{
-    HKEY, HKEY_CURRENT_USER, KEY_READ, RRF_RT_REG_QWORD, RegCloseKey, RegEnumKeyExW, RegGetValueW, RegOpenKeyExW,
+    HKEY, HKEY_CURRENT_USER, KEY_NOTIFY, KEY_READ, REG_NOTIFY_CHANGE_LAST_SET, RRF_RT_REG_QWORD, RegCloseKey, RegEnumKeyExW,
+    RegGetValueW, RegNotifyChangeKeyValue, RegOpenKeyExW,
 };
+use windows::Win32::System::Threading::{CreateEventW, INFINITE, SetEvent, Sleep, WaitForMultipleObjects};
 use windows::core::{HSTRING, PWSTR};
 
 use crate::module::{Module, ModuleId};
@@ -33,11 +39,13 @@ pub struct PrivacyChanged(pub PrivacyState);
 
 pub struct Privacy {
     app: AppHandle,
+    /// The thread waiting for changes, and the event that ends it (a handle, as a number to cross threads).
+    watcher: Option<(JoinHandle<()>, isize)>,
 }
 
 impl Privacy {
     pub fn new(app: AppHandle) -> Self {
-        Self { app }
+        Self { app, watcher: None }
     }
 }
 
@@ -47,15 +55,62 @@ impl Module for Privacy {
     }
 
     fn start(&mut self) -> Result<(), String> {
-        Ok(()) // nothing to start: no thread, no subscriptions
+        let stop = unsafe { CreateEventW(None, true, false, None) }.map_err(|e| e.to_string())?;
+        let app = self.app.clone();
+        let stop_id = stop.0 as isize;
+        let thread = std::thread::Builder::new()
+            .name("privacy".into())
+            .spawn(move || watch(&app, stop_id))
+            .map_err(|e| e.to_string())?;
+        self.watcher = Some((thread, stop_id));
+        Ok(())
     }
 
-    fn stop(&mut self) {}
+    fn stop(&mut self) {
+        if let Some((thread, stop)) = self.watcher.take() {
+            unsafe {
+                let _ = SetEvent(HANDLE(stop as _));
+            }
+            let _ = thread.join();
+            unsafe {
+                let _ = CloseHandle(HANDLE(stop as _));
+            }
+        }
+    }
 
     fn panel_visible(&mut self, visible: bool) {
         if visible {
             let _ = PrivacyChanged(read()).emit(&self.app);
         }
+    }
+}
+
+/// Sleeps until Windows changes something under the consent store, then sends the state again.
+fn watch(app: &AppHandle, stop: isize) {
+    let mut key = HKEY::default();
+    if unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, &HSTRING::from(STORE), None, KEY_NOTIFY, &mut key) } != ERROR_SUCCESS {
+        return; // no live updates: the panel still reads it when it opens
+    }
+    let Ok(changed) = (unsafe { CreateEventW(None, false, false, None) }) else {
+        let _ = unsafe { RegCloseKey(key) };
+        return;
+    };
+    loop {
+        // (Asks again each time: a notification is used up once it has fired.)
+        if unsafe { RegNotifyChangeKeyValue(key, true, REG_NOTIFY_CHANGE_LAST_SET, Some(changed), true) } != ERROR_SUCCESS {
+            break;
+        }
+        // Index 0 is a change, 1 is the stop request.
+        if unsafe { WaitForMultipleObjects(&[changed, HANDLE(stop as _)], false, INFINITE) }.0 != 0 {
+            break;
+        }
+        // Windows writes the start and stop times a moment apart: read once they have settled.
+        unsafe { Sleep(150) };
+        let _ = PrivacyChanged(read()).emit(app);
+    }
+    unsafe {
+        let _ = CloseHandle(changed);
+        let _ = RegCloseKey(key);
     }
 }
 
@@ -161,6 +216,22 @@ mod tests {
         assert_eq!(app_name("C:#Program Files#Zoom#bin#Zoom.exe", false), "Zoom");
         assert_eq!(app_name("Microsoft.WindowsCamera_8wekyb3d8bbwe", true), "Microsoft.WindowsCamera");
         assert_eq!(app_name("Teams", false), "Teams");
+    }
+
+    /// `cargo test privacy_notify -- --ignored --nocapture`, then change something under the consent
+    /// store within 10 s: the notification must fire.
+    #[test]
+    #[ignore]
+    fn privacy_notify() {
+        use windows::Win32::System::Threading::WaitForSingleObject;
+        let mut key = HKEY::default();
+        assert_eq!(unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, &HSTRING::from(STORE), None, KEY_NOTIFY, &mut key) }, ERROR_SUCCESS);
+        let changed = unsafe { CreateEventW(None, false, false, None) }.unwrap();
+        assert_eq!(unsafe { RegNotifyChangeKeyValue(key, true, REG_NOTIFY_CHANGE_LAST_SET, Some(changed), true) }, ERROR_SUCCESS);
+        println!("WAITING");
+        let t = std::time::Instant::now();
+        let r = unsafe { WaitForSingleObject(changed, 10_000) };
+        println!("woke: {r:?} after {:?}", t.elapsed());
     }
 
     /// `cargo test privacy_live -- --ignored --nocapture`: reads this PC's consent store.

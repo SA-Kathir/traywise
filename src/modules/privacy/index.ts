@@ -6,7 +6,7 @@ const privacy: ModuleUi = {
   icon: String.fromCodePoint(0xe72e), // Segoe Fluent "Lock"
   category: "system",
   description: "Mic and camera in use",
-  idle: "off till opened",
+  idle: "waits for changes",
   tiles: {
     indicator: { name: "Mic and camera", sizes: ["1x1", "2x1"] },
   },
