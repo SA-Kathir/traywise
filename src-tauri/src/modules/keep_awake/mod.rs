@@ -48,6 +48,8 @@ pub struct KeepAwakeState {
     /// A Modern Standby PC: Windows goes to standby when the screen turns off, whatever apps ask,
     /// so only keeping the display on keeps it awake.
     pub screen_off_sleeps: bool,
+    /// The external screens found, by name: what Docked mode goes by.
+    pub external: Vec<String>,
 }
 
 /// Sent to the UI whenever the state changes.

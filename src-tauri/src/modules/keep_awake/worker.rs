@@ -40,9 +40,10 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     let screen_off_sleeps = modern_standby();
 
     loop {
-        let (system, display) = wish.wanted(plugged_in(), external_display());
+        let external = external_screens();
+        let (system, display) = wish.wanted(plugged_in(), !external.is_empty());
         request.set(system, display);
-        publish(&app, &wish, system, screen_off_sleeps);
+        publish(&app, &wish, system, screen_off_sleeps, external);
 
         // Sleeps until a message arrives or the timer runs out.
         // shortcut: the timer counts awake time only, so a PC put to sleep by hand runs late
@@ -65,12 +66,12 @@ pub fn run(app: AppHandle, tx: Sender<Msg>, rx: Receiver<Msg>) {
     tray::set_keep_awake(&app, None);
 }
 
-fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool) {
+fn publish(app: &AppHandle, wish: &Wish, active: bool, screen_off_sleeps: bool, external: Vec<String>) {
     let ends_at = wish.deadline().map(|end| {
         let end = SystemTime::now() + end.saturating_duration_since(Instant::now());
         end.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs_f64() * 1000.0
     });
-    let state = KeepAwakeState { mode: wish.mode, display: wish.display, active, ends_at, screen_off_sleeps };
+    let state = KeepAwakeState { mode: wish.mode, display: wish.display, active, ends_at, screen_off_sleeps, external };
     let shared = app.state::<Shared>();
     let mut current = shared.state.lock().unwrap();
     if *current != state {
@@ -110,9 +111,9 @@ fn plugged_in() -> bool {
     unsafe { GetSystemPowerStatus(&mut status) }.is_err() || status.ACLineStatus != 0
 }
 
-/// Whether a screen that isn't the laptop's own is on (a docked laptop; on a desktop PC, any screen).
-fn external_display() -> bool {
-    crate::modules::displays::external_connected()
+/// The screens that aren't the laptop's own (a docked laptop; on a desktop PC, any screen).
+fn external_screens() -> Vec<String> {
+    crate::modules::displays::external_names()
 }
 
 /// Traywise's power request. `powercfg /requests` lists it, with the reason below, while it's set.

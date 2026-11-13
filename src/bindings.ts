@@ -312,6 +312,8 @@ export type KeepAwakeState = {
 	 *  so only keeping the display on keeps it awake.
 	 */
 	screenOffSleeps: boolean,
+	/**  The external screens found, by name: what Docked mode goes by. */
+	external: string[],
 };
 
 export type Level = {

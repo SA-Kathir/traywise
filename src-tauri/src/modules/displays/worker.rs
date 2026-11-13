@@ -10,7 +10,7 @@ use tauri_specta::Event;
 use windows::Win32::Devices::Display::{
     DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME, DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME, DISPLAYCONFIG_DEVICE_INFO_HEADER,
     DISPLAYCONFIG_MODE_INFO, DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED, DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL,
-    DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS, DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED, DISPLAYCONFIG_PATH_INFO,
+    DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL, DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS, DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED, DISPLAYCONFIG_PATH_INFO,
     DISPLAYCONFIG_SOURCE_DEVICE_NAME, DISPLAYCONFIG_TARGET_DEVICE_NAME, DISPLAYCONFIG_TOPOLOGY_CLONE, DISPLAYCONFIG_TOPOLOGY_EXTEND,
     DISPLAYCONFIG_TOPOLOGY_EXTERNAL, DISPLAYCONFIG_TOPOLOGY_ID, DISPLAYCONFIG_TOPOLOGY_INTERNAL, DestroyPhysicalMonitors,
     DisplayConfigGetDeviceInfo, GetDisplayConfigBufferSizes, GetNumberOfPhysicalMonitorsFromHMONITOR, GetPhysicalMonitorsFromHMONITOR,
@@ -183,6 +183,8 @@ struct Target {
     /// The GDI name of what's drawn on it, like `\\.\DISPLAY1`.
     source: String,
     name: String,
+    /// A virtual display (an indirect display driver, as remote desktop tools use).
+    virtual_: bool,
     internal: bool,
 }
 
@@ -201,9 +203,15 @@ fn paths(flags: QUERY_DISPLAY_CONFIG_FLAGS, topology: Option<*mut DISPLAYCONFIG_
     paths
 }
 
-/// Whether a screen that isn't the laptop's own is on.
-pub(crate) fn external_connected() -> bool {
-    active_targets().iter().any(|t| !t.internal)
+/// The names of the screens that aren't the laptop's own and are physically plugged in: virtual
+/// displays (remote desktop and screen-sharing tools add these) don't count.
+pub(crate) fn external_names() -> Vec<String> {
+    active_targets()
+        .into_iter()
+        .filter(|t| !t.internal && !t.virtual_)
+        .enumerate()
+        .map(|(i, t)| if t.name.is_empty() { format!("Display {}", i + 1) } else { t.name })
+        .collect()
 }
 
 fn active_targets() -> Vec<Target> {
@@ -238,6 +246,7 @@ fn active_targets() -> Vec<Target> {
                     DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED,
                 ]
                 .contains(&tech),
+                virtual_: tech == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL,
             }
         })
         .collect()

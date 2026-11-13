@@ -182,7 +182,8 @@ function Controls({ state }: { state: KeepAwakeState }) {
 
 function status(state: KeepAwakeState) {
   if (state.mode === "whilePluggedIn" && !state.active) return "On battery: your PC can sleep until it's plugged in.";
-  if (state.mode === "whileExternalDisplay" && !state.active) return "No external screen: your PC can sleep until one is connected.";
+  if (state.mode === "whileExternalDisplay")
+    return state.active ? `Docked to ${state.external.join(", ")}: your PC won't go to sleep.` : "No external screen: your PC can sleep until one is connected.";
   return state.active ? "Your PC won't go to sleep." : "Your PC sleeps as usual.";
 }
 

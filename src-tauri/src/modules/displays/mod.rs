@@ -8,7 +8,7 @@
 
 mod worker;
 
-pub(crate) use worker::external_connected;
+pub(crate) use worker::external_names;
 
 use std::sync::Mutex;
 use std::sync::mpsc::{Sender, channel};
