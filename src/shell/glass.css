@@ -511,3 +511,38 @@ html.look-glass.glass-clear::after {
 .look-glass.glass-clear :is(section, .stats) {
   background: rgb(14 17 22 / 0.86);
 }
+
+/* ---- The accent edge and the page dots -------------------------------------------------------- */
+
+/* liquid.css draws an accent glow along the top and bottom of the window for the other looks. Here the
+   window has a clear margin round the panel, so it floated in the margin: Glass has its own rim. */
+html.look-glass body::after {
+  display: none;
+}
+/* The page dots sit in a small glass pill, so they don't float over nothing. */
+.look-glass .page-dots {
+  position: relative;
+  align-self: center;
+  width: fit-content;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    0 8px 18px -6px rgb(0 0 0 / 0.55),
+    0 1px 4px rgb(0 0 0 / 0.3);
+}
+.look-glass .page-dots::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(135deg, var(--tw-glass-rim-0), var(--tw-glass-rim-1) 30%, var(--tw-glass-rim-2) 70%, var(--tw-glass-rim-3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

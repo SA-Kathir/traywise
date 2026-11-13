@@ -4,7 +4,7 @@ import { commands } from "../bindings";
  *  the tab bar. This tells Rust where those are, and again whenever they move, fade or scroll. Nothing
  *  runs while nothing moves; during the open animation it follows every frame, then stops. */
 
-const PIECES = ".tile, section, .stats, .tabs, .panel > header";
+const PIECES = ".tile, section, .stats, .tabs, .page-dots, .panel > header";
 
 /** How visible an element is: its own opacity times its parents'. */
 function visibility(el: Element | null): number {
