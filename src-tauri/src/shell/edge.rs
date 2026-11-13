@@ -132,7 +132,7 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<u32>) {
         ..Default::default()
     };
     unsafe { RegisterClassW(&wc) }; // (the class is removed when the thread ends, so a new start gets its own colour)
-    let _ = tx.send(unsafe { GetCurrentThreadId() });
+    let mut tx = Some(tx);
     let mut msg = MSG::default();
     'strips: loop {
         REBUILD.set(false);
@@ -142,6 +142,10 @@ fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<u32>) {
             .filter_map(|i| make_strip(instance, class, monitors[i], handle, side))
             .collect();
         STRIPS.with_borrow_mut(|s| *s = strips.clone());
+        // Only now is it up: `apply` waits for this, as it always waited for the window.
+        if let Some(tx) = tx.take() {
+            let _ = tx.send(unsafe { GetCurrentThreadId() });
+        }
         // Sleeps in Windows' message loop; a display change posts WM_REBUILD, and WM_QUIT ends it.
         loop {
             if !unsafe { GetMessageW(&mut msg, None, 0, 0) }.as_bool() {
