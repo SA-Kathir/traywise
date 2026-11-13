@@ -37,6 +37,18 @@ pub struct Display {
     pub internal: bool,
     /// Percent. None when it can't be changed from here (a monitor without DDC/CI, or with it off).
     pub brightness: Option<u8>,
+    /// The screen's refresh rate and the ones it offers at its current resolution. None if Windows
+    /// won't say.
+    pub refresh: Option<Refresh>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct Refresh {
+    /// Hz.
+    pub now: u32,
+    /// Hz, lowest first. Always includes `now`.
+    pub rates: Vec<u32>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, specta::Type)]
@@ -57,6 +69,8 @@ pub struct DisplaysChanged(pub DisplaysState);
 enum Msg {
     PanelVisible(bool),
     Brightness(String, u8),
+    /// Screen id, Hz.
+    Refresh(String, u32),
     Project(Project),
     Stop,
 }
@@ -160,6 +174,23 @@ pub fn displays_set_brightness(shared: State<Shared>, id: String, percent: u8) -
     send(&shared, Msg::Brightness(id, percent))
 }
 
+/// Switches a screen to another refresh rate it offers, at the same resolution.
+#[tauri::command]
+#[specta::specta]
+pub fn displays_set_refresh(shared: State<Shared>, id: String, hz: u32) -> Result<(), String> {
+    send(&shared, Msg::Refresh(id, hz))
+}
+
+/// The rates a screen offers at its current mode: from every mode Windows lists
+/// `(width, height, bits, hz)`, those that match `current`. Lowest first, no duplicates, and
+/// "1 Hz" and "0 Hz" (Windows' "default") left out.
+fn rates_at(current: (u32, u32, u32), modes: impl Iterator<Item = (u32, u32, u32, u32)>) -> Vec<u32> {
+    let mut rates: Vec<u32> = modes.filter(|&(w, h, b, hz)| (w, h, b) == current && hz > 1).map(|m| m.3).collect();
+    rates.sort_unstable();
+    rates.dedup();
+    rates
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn displays_set_project(shared: State<Shared>, project: Project) -> Result<(), String> {
@@ -176,6 +207,13 @@ mod tests {
         let msgs = vec![b("a", 10), b("b", 50), b("a", 20), Msg::Project(Project::Extend), b("a", 30), b("b", 60)];
         assert_eq!(coalesce(msgs), vec![b("a", 30), b("b", 60), Msg::Project(Project::Extend)]);
         assert_eq!(coalesce(vec![Msg::Stop]), vec![Msg::Stop]);
+    }
+
+    #[test]
+    fn rates_at_the_current_mode() {
+        let modes = [(1920, 1080, 32, 60), (1920, 1080, 32, 144), (1920, 1080, 32, 60), (2560, 1440, 32, 240), (1920, 1080, 16, 75), (1920, 1080, 32, 1)];
+        assert_eq!(rates_at((1920, 1080, 32), modes.into_iter()), vec![60, 144]);
+        assert!(rates_at((800, 600, 32), modes.into_iter()).is_empty());
     }
 
     #[test]
