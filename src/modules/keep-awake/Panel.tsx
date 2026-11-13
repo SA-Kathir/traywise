@@ -166,7 +166,7 @@ function Controls({ state }: { state: KeepAwakeState }) {
           −
         </button>
         <button
-          className={left !== null ? "on" : ""}
+          className={left !== null ? "on" : "start"}
           onClick={() => commands.keepAwakeSetMode(left === null ? { minutes } : "off")}
           title={left === null ? "Start the timer" : "Stop the timer"}
         >

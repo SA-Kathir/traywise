@@ -774,6 +774,11 @@ button.on {
   flex: none;
   width: 40px;
 }
+/* Not started yet: the middle button is what starts the timer, so it carries the accent. */
+.segmented.timer button.start {
+  color: var(--tw-accent-text, var(--accent));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
 }
