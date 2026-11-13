@@ -94,12 +94,14 @@ fn publish_connectivity(app: &AppHandle) {
 }
 
 fn read() -> QuickTogglesState {
+    // One lock: taking it twice in the same expression would wait for itself forever.
+    let (airplane, hotspot) = *CONNECTIVITY.lock().unwrap();
     QuickTogglesState {
         dark: dword(PERSONALIZE, w!("AppsUseLightTheme")) == Some(0),
         // If the desktop can't be found, say shown: that's Windows' default.
         desktop_icons: desktop_icons().is_none_or(|list| unsafe { IsWindowVisible(list) }.as_bool()),
-        airplane: CONNECTIVITY.lock().unwrap().0,
-        hotspot: CONNECTIVITY.lock().unwrap().1,
+        airplane,
+        hotspot,
     }
 }
 
