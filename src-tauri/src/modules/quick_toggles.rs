@@ -3,6 +3,8 @@
 //! Nothing runs in the background. Each tile reads or changes a Windows setting when it's used,
 //! and the state is re-read each time the panel opens, in case it was changed elsewhere.
 
+use std::sync::Mutex;
+
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -33,8 +35,8 @@ pub struct QuickTogglesState {
     /// Apps and Windows itself (taskbar, Start) in dark mode.
     pub dark: bool,
     pub desktop_icons: bool,
-    /// Every radio off. None until read (it waits on Windows, so it comes a moment after the rest),
-    /// or if this PC has no radios.
+    /// Every radio off. None until first read (it waits on Windows, so it comes a moment after the
+    /// rest), or if this PC has no radios.
     pub airplane: Option<bool>,
     /// Windows' Mobile hotspot, shared from the internet connection. None until read, or if this PC
     /// can't share one.
@@ -76,13 +78,19 @@ impl Module for QuickToggles {
     }
 }
 
+/// The last airplane and hotspot readings, so every later read of the state carries them: the
+/// panel asks for the state while the radios are still being read, and that answer must not wipe
+/// out what the readings publish.
+static CONNECTIVITY: Mutex<(Option<bool>, Option<bool>)> = Mutex::new((None, None));
+
 fn publish(app: &AppHandle) {
     let _ = QuickTogglesChanged(read()).emit(app);
 }
 
 /// Like `publish`, with the airplane and hotspot readings too. Waits on Windows: not on the UI's thread.
 fn publish_connectivity(app: &AppHandle) {
-    let _ = QuickTogglesChanged(QuickTogglesState { airplane: airplane_mode(), hotspot: hotspot_on(), ..read() }).emit(app);
+    *CONNECTIVITY.lock().unwrap() = (airplane_mode(), hotspot_on());
+    publish(app);
 }
 
 fn read() -> QuickTogglesState {
@@ -90,8 +98,8 @@ fn read() -> QuickTogglesState {
         dark: dword(PERSONALIZE, w!("AppsUseLightTheme")) == Some(0),
         // If the desktop can't be found, say shown: that's Windows' default.
         desktop_icons: desktop_icons().is_none_or(|list| unsafe { IsWindowVisible(list) }.as_bool()),
-        airplane: None,
-        hotspot: None,
+        airplane: CONNECTIVITY.lock().unwrap().0,
+        hotspot: CONNECTIVITY.lock().unwrap().1,
     }
 }
 
