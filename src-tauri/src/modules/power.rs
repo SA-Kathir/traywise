@@ -124,7 +124,10 @@ pub fn watch_energy_saver() {
 /// look decides by this alone: a guess (battery level) could be wrong and restart the app for nothing.
 pub fn energy_saver_state() -> Option<bool> {
     match SAVER.load(Ordering::Relaxed) {
-        1 => Some(false),
+        // Not Battery saver mode, but Energy saver can still be on: switching it by hand doesn't
+        // change the effective mode on every PC (it stays "Best power efficiency", say), so Windows
+        // sends no notice either way. The switch itself is the answer then.
+        1 => Some(switched_on()),
         2 => Some(true),
         _ => None,
     }
