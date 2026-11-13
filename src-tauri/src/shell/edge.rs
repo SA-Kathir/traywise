@@ -1,11 +1,11 @@
 //! Opening the panel from the screen's left or right edge (Settings › Open from the screen edge).
 //!
-//! A tiny native window covers the middle third of the chosen edge of the primary monitor: an invisible
-//! 1 px strip, or a small pill when the handle is on. Windows tells it when the mouse rests on it,
+//! A tiny native window covers the middle third of the chosen edge of each monitor that has nothing
+//! beside it on that side: an invisible 1 px strip, or a small pill when the handle is on. Windows tells it when the mouse rests on it,
 //! so nothing watches the mouse anywhere else and it costs nothing while idle. It runs on its own
 //! thread, which sleeps in Windows' message loop between those messages.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::sync::mpsc::{Sender, channel};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -13,21 +13,22 @@ use std::thread::JoinHandle;
 use std::time::Instant;
 
 use tauri::{AppHandle, Manager};
-use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, RECT, WPARAM};
 use windows::Win32::Graphics::Gdi::{
-    CreateRoundRectRgn, CreateSolidBrush, GetMonitorInfoW, MONITOR_DEFAULTTOPRIMARY, MONITORINFO, MonitorFromPoint,
-    SetWindowRgn,
+    CreateRoundRectRgn, CreateSolidBrush, EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR, MONITOR_DEFAULTTONEAREST, MONITORINFO,
+    MonitorFromWindow, SetWindowRgn,
 };
+use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, TME_HOVER, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent, VK_LBUTTON, VK_RBUTTON};
 use windows::Win32::UI::Shell::{QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN, SHQueryUserNotificationState};
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, IDC_ARROW, KillTimer, SetTimer, WM_TIMER, LWA_ALPHA, LoadCursorW, MSG,
-    PostMessageW, PostQuitMessage, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
-    SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE, WM_MOUSEMOVE, WNDCLASSW,
+    PostThreadMessageW, RegisterClassW, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER, SetLayeredWindowAttributes,
+    SetWindowPos, ShowWindow, TranslateMessage, UnregisterClassW, WM_APP, WM_DISPLAYCHANGE, WM_QUIT, WM_MOUSEMOVE, WNDCLASSW,
     WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TRANSPARENT, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
-use windows::core::w;
+use windows::core::{BOOL, w};
 
 use crate::settings::{Accent, EdgeSide, Look, Preset, Settings};
 
@@ -54,6 +55,9 @@ const WARM_MS: u32 = 120;
 const WARM_TIMER: usize = 2;
 const FRAME_MS: u32 = 16;
 
+/// Posted to the edge thread when the monitors changed: the strips are made again.
+const WM_REBUILD: u32 = WM_APP;
+
 thread_local! {
     /// When the mouse arrived on the handle, while it swells.
     static ARRIVED: Cell<Option<Instant>> = const { Cell::new(None) };
@@ -61,7 +65,10 @@ thread_local! {
     /// holds still while the handle swells (resizing the target under the pointer made the handle flicker).
     /// The panel has been warmed up for this visit (and must be put back if the mouse leaves).
     static WARMED: Cell<bool> = const { Cell::new(false) };
-    static VISIBLE: Cell<isize> = const { Cell::new(0) };
+    /// Each strip's window and, when the handle is on, the handle window drawn over it.
+    static STRIPS: RefCell<Vec<(isize, isize)>> = const { RefCell::new(Vec::new()) };
+    /// A rebuild has been asked for and not yet done (every strip hears of a display change).
+    static REBUILD: Cell<bool> = const { Cell::new(false) };
 }
 
 /// The running edge window, and which settings it was made for.
@@ -71,7 +78,8 @@ pub struct EdgeState {
 }
 
 struct Running {
-    hwnd: isize,
+    /// The edge thread's id, to tell it to stop.
+    thread_id: u32,
     thread: JoinHandle<()>,
     /// What the window was made for: with a handle, which side, and the handle's colour (Windows' BGR).
     key: Key,
@@ -96,7 +104,7 @@ pub fn apply(app: &AppHandle, settings: &Settings) {
         return; // unchanged, like most saves (a tile moved on the board)
     }
     if let Some(r) = running.take() {
-        unsafe { PostMessageW(Some(HWND(r.hwnd as _)), WM_CLOSE, WPARAM(0), LPARAM(0)).ok() };
+        unsafe { PostThreadMessageW(r.thread_id, WM_QUIT, WPARAM(0), LPARAM(0)).ok() };
         let _ = r.thread.join();
     }
     if let Some(key @ (handle, side, colour)) = wanted {
@@ -104,66 +112,110 @@ pub fn apply(app: &AppHandle, settings: &Settings) {
         LEFT.store(side == EdgeSide::Left, Ordering::Relaxed);
         let (tx, rx) = channel();
         if let Ok(thread) = std::thread::Builder::new().name("edge".into()).spawn(move || run(handle, side, colour, tx))
-            && let Ok(hwnd) = rx.recv()
+            && let Ok(thread_id) = rx.recv()
         {
-            *running = Some(Running { hwnd, thread, key });
+            *running = Some(Running { thread_id, thread, key });
         }
     }
 }
 
-fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<isize>) {
-    let made = unsafe {
-        let instance = GetModuleHandleW(None).ok();
-        let class = w!("TraywiseEdge");
-        let wc = WNDCLASSW {
-            lpfnWndProc: Some(window_proc),
-            hInstance: instance.map(Into::into).unwrap_or_default(),
-            lpszClassName: class,
-            hCursor: LoadCursorW(None, IDC_ARROW).unwrap_or_default(),
-            // The handle's colour (grey, or the accent); the strip is invisible anyway.
-            hbrBackground: CreateSolidBrush(COLORREF(colour)),
-            ..Default::default()
-        };
-        RegisterClassW(&wc); // (the class is removed when the window ends, so a new start gets its own colour)
-        let create = |extra, r: RECT| {
-            CreateWindowExW(
-                WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED | extra,
-                class,
-                w!(""),
-                WS_POPUP,
-                r.left,
-                r.top,
-                r.right - r.left,
-                r.bottom - r.top,
-                None,
-                None,
-                instance.map(Into::into),
-                None,
-            )
-        };
-        let hit = create(Default::default(), rect(monitor(), handle, side));
-        if handle && let Ok(visible) = create(WS_EX_TRANSPARENT, rect(monitor(), handle, side)) {
-            VISIBLE.set(visible.0 as isize); // click-through: the mouse messages go to the window under it
-            pose(0.0);
-            let _ = ShowWindow(visible, SW_SHOWNOACTIVATE);
-        }
-        hit
+fn run(handle: bool, side: EdgeSide, colour: u32, tx: Sender<u32>) {
+    let instance = unsafe { GetModuleHandleW(None).ok() };
+    let class = w!("TraywiseEdge");
+    let wc = WNDCLASSW {
+        lpfnWndProc: Some(window_proc),
+        hInstance: instance.map(Into::into).unwrap_or_default(),
+        lpszClassName: class,
+        hCursor: unsafe { LoadCursorW(None, IDC_ARROW) }.unwrap_or_default(),
+        // The handle's colour (grey, or the accent); the strip is invisible anyway.
+        hbrBackground: unsafe { CreateSolidBrush(COLORREF(colour)) },
+        ..Default::default()
     };
-    let Ok(hwnd) = made else {
-        eprintln!("edge: couldn't create the edge window");
-        return;
-    };
-    style(hwnd);
-    let _ = tx.send(hwnd.0 as isize);
+    unsafe { RegisterClassW(&wc) }; // (the class is removed when the thread ends, so a new start gets its own colour)
+    let _ = tx.send(unsafe { GetCurrentThreadId() });
     let mut msg = MSG::default();
-    while unsafe { GetMessageW(&mut msg, None, 0, 0) }.as_bool() {
-        unsafe {
-            let _ = TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+    'strips: loop {
+        REBUILD.set(false);
+        let monitors = monitors();
+        let strips: Vec<(isize, isize)> = (0..monitors.len())
+            .filter(|&i| outer_edge(&monitors, i, side))
+            .filter_map(|i| make_strip(instance, class, monitors[i], handle, side))
+            .collect();
+        STRIPS.with_borrow_mut(|s| *s = strips.clone());
+        // Sleeps in Windows' message loop; a display change posts WM_REBUILD, and WM_QUIT ends it.
+        loop {
+            if !unsafe { GetMessageW(&mut msg, None, 0, 0) }.as_bool() {
+                break;
+            }
+            if msg.hwnd.0.is_null() && msg.message == WM_REBUILD {
+                for (hit, visible) in strips {
+                    unsafe {
+                        let _ = DestroyWindow(HWND(hit as _));
+                        if visible != 0 {
+                            let _ = DestroyWindow(HWND(visible as _));
+                        }
+                    }
+                }
+                continue 'strips;
+            }
+            unsafe {
+                let _ = TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
         }
+        for (hit, visible) in strips {
+            unsafe {
+                let _ = DestroyWindow(HWND(hit as _));
+                if visible != 0 {
+                    let _ = DestroyWindow(HWND(visible as _));
+                }
+            }
+        }
+        break;
     }
-    // The class holds the handle's colour, so it goes with the window: the next start registers its own.
-    let _ = unsafe { UnregisterClassW(w!("TraywiseEdge"), GetModuleHandleW(None).ok().map(Into::into)) };
+    STRIPS.with_borrow_mut(Vec::clear);
+    // The class holds the handle's colour, so it goes with the strips: the next start registers its own.
+    let _ = unsafe { UnregisterClassW(w!("TraywiseEdge"), instance.map(Into::into)) };
+}
+
+/// One edge strip on `monitor` (and its handle), as (strip window, handle window or 0).
+fn make_strip(instance: Option<windows::Win32::Foundation::HMODULE>, class: windows::core::PCWSTR, monitor: RECT, handle: bool, side: EdgeSide) -> Option<(isize, isize)> {
+    let create = |extra, r: RECT| unsafe {
+        CreateWindowExW(
+            WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_LAYERED | extra,
+            class,
+            w!(""),
+            WS_POPUP,
+            r.left,
+            r.top,
+            r.right - r.left,
+            r.bottom - r.top,
+            None,
+            None,
+            instance.map(Into::into),
+            None,
+        )
+    };
+    let hit = match create(Default::default(), rect(monitor, handle, side)) {
+        Ok(hit) => hit,
+        Err(e) => {
+            eprintln!("edge: couldn't create an edge window: {e}");
+            return None;
+        }
+    };
+    style(hit);
+    let visible = if handle
+        && let Ok(visible) = create(WS_EX_TRANSPARENT, rect(monitor, handle, side))
+    {
+        // Click-through: the mouse messages go to the window under it.
+        let strip = (hit.0 as isize, visible.0 as isize);
+        pose(strip.0, 0.0);
+        let _ = unsafe { ShowWindow(visible, SW_SHOWNOACTIVATE) };
+        strip.1
+    } else {
+        0
+    };
+    Some((hit.0 as isize, visible))
 }
 
 /// Nearly invisible (fully invisible windows get no mouse messages). With a handle, it's the handle's
@@ -219,7 +271,7 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
             }
             WM_TIMER => {
                 let t = ARRIVED.get().map_or(0.0, |at| (at.elapsed().as_millis() as f32 / SWELL_MS as f32).min(1.0));
-                pose(t);
+                pose(hwnd.0 as isize, t);
                 if t >= 1.0 {
                     let _ = KillTimer(Some(hwnd), ANIMATION_TIMER); // it stays swollen until the mouse leaves
                 }
@@ -234,28 +286,15 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
                 if WARMED.replace(false) && let Some(app) = APP.get() {
                     super::panel::warm_up(app, false);
                 }
-                pose(0.0);
+                pose(hwnd.0 as isize, 0.0);
                 LRESULT(0)
             }
-            // A monitor added, removed or rescaled: move to the new edge.
+            // A monitor added, removed or rescaled: the strips are made again for the new layout (once,
+            // though every strip hears of it).
             WM_DISPLAYCHANGE => {
-                let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
-                let r = rect(monitor(), SHOW_HANDLE.load(Ordering::Relaxed), side);
-                let _ = SetWindowPos(hwnd, None, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
-                if SHOW_HANDLE.load(Ordering::Relaxed) {
-                    pose(0.0);
+                if !REBUILD.replace(true) {
+                    let _ = PostThreadMessageW(GetCurrentThreadId(), WM_REBUILD, WPARAM(0), LPARAM(0));
                 }
-                LRESULT(0)
-            }
-            WM_CLOSE => {
-                let _ = DestroyWindow(hwnd);
-                LRESULT(0)
-            }
-            WM_DESTROY => {
-                if VISIBLE.get() != 0 {
-                    let _ = DestroyWindow(HWND(VISIBLE.replace(0) as _));
-                }
-                PostQuitMessage(0);
                 LRESULT(0)
             }
             _ => DefWindowProcW(hwnd, msg, wparam, lparam),
@@ -263,11 +302,12 @@ extern "system" fn window_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPA
     }
 }
 
-/// The handle `t` of the way (0 to 1) from resting to swollen: its size, shape and brightness.
-fn pose(t: f32) {
-    let hwnd = HWND(VISIBLE.get() as _);
+/// The handle of the strip `hit` `t` of the way (0 to 1) from resting to swollen: its size, shape and brightness.
+fn pose(hit: isize, t: f32) {
+    let Some(visible) = STRIPS.with_borrow(|s| s.iter().find(|(h, _)| *h == hit).map(|&(_, v)| v)).filter(|&v| v != 0) else { return };
+    let hwnd = HWND(visible as _);
     let side = if LEFT.load(Ordering::Relaxed) { EdgeSide::Left } else { EdgeSide::Right };
-    let (r, alpha) = swell(monitor(), side, t);
+    let (r, alpha) = swell(monitor_of(HWND(hit as _)), side, t);
     let (w, h) = (r.right - r.left, r.bottom - r.top);
     unsafe {
         let _ = SetWindowPos(hwnd, None, r.left, r.top, w, h, SWP_NOZORDER | SWP_NOACTIVATE);
@@ -307,14 +347,37 @@ fn desktop_in_front() -> bool {
     matches!(String::from_utf16_lossy(&class[..len]).as_str(), "Progman" | "WorkerW")
 }
 
-/// The primary monitor's whole area (the edge, not the work area: the taskbar may be on the right).
-fn monitor() -> RECT {
+/// The whole area of every monitor (the edge, not the work area: the taskbar may be on that side).
+fn monitors() -> Vec<RECT> {
+    unsafe extern "system" fn add(_: HMONITOR, _: HDC, area: *mut RECT, list: LPARAM) -> BOOL {
+        unsafe { (*(list.0 as *mut Vec<RECT>)).push(*area) };
+        true.into()
+    }
+    let mut list: Vec<RECT> = Vec::new();
+    let _ = unsafe { EnumDisplayMonitors(None, None, Some(add), LPARAM(&mut list as *mut Vec<RECT> as isize)) };
+    list
+}
+
+/// The whole area of the monitor a strip is on.
+fn monitor_of(strip: HWND) -> RECT {
     let mut info = MONITORINFO { cbSize: size_of::<MONITORINFO>() as u32, ..Default::default() };
     unsafe {
-        let m = MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY);
-        let _ = GetMonitorInfoW(m, &mut info);
+        let _ = GetMonitorInfoW(MonitorFromWindow(strip, MONITOR_DEFAULTTONEAREST), &mut info);
     }
     info.rcMonitor
+}
+
+/// Whether monitor `i` has no other monitor beside it on `side`, level with its middle third: only
+/// those edges get a strip, so the mouse crossing from one monitor to the next doesn't open the panel.
+fn outer_edge(monitors: &[RECT], i: usize, side: EdgeSide) -> bool {
+    let m = monitors[i];
+    let third = (m.bottom - m.top) / 3;
+    let (top, bottom) = (m.top + third, m.bottom - third);
+    let edge = if side == EdgeSide::Left { m.left } else { m.right };
+    !monitors.iter().enumerate().any(|(j, o)| {
+        let beside = if side == EdgeSide::Left { o.right >= edge && o.left < edge } else { o.left <= edge && o.right > edge };
+        j != i && beside && o.top < bottom && o.bottom > top
+    })
 }
 
 /// The edge window: the middle third of the chosen edge, 1 px wide; or the handle, centred on it.
@@ -359,6 +422,25 @@ fn handle_colour(settings: &Settings) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn strips_only_on_outer_edges() {
+        let r = |l, t, rt, b| RECT { left: l, top: t, right: rt, bottom: b };
+        // A laptop screen with a monitor to its right.
+        let two = [r(0, 0, 1920, 1080), r(1920, 0, 4480, 1440)];
+        assert!(outer_edge(&two, 0, EdgeSide::Left), "the laptop's left edge");
+        assert!(!outer_edge(&two, 0, EdgeSide::Right), "the laptop's right edge touches the monitor");
+        assert!(!outer_edge(&two, 1, EdgeSide::Left));
+        assert!(outer_edge(&two, 1, EdgeSide::Right));
+        // One screen: both edges are outer.
+        assert!(outer_edge(&two[..1], 0, EdgeSide::Right));
+        // A monitor that only reaches the top corner doesn't cover the middle third of the other.
+        let corner = [r(0, 0, 1920, 1080), r(1920, -900, 3840, 100)];
+        assert!(outer_edge(&corner, 0, EdgeSide::Right));
+        // A monitor above, not beside: still outer.
+        let above = [r(0, 0, 1920, 1080), r(0, -1080, 1920, 0)];
+        assert!(outer_edge(&above, 0, EdgeSide::Right) && outer_edge(&above, 0, EdgeSide::Left));
+    }
 
     #[test]
     fn edge_rect() {

@@ -440,10 +440,20 @@ pub fn autotest(app: AppHandle) {
     });
 }
 
-/// Sizes the panel (shorter if the screen is) and puts it in the bottom-right corner of the primary
-/// monitor's work area (above the taskbar), 12 px margin; opened from the edge, at the right, centred.
+/// Which monitor holds the point (x, y), from each monitor's (left, top, width, height) in physical pixels.
+fn monitor_at(monitors: &[(i32, i32, u32, u32)], x: i32, y: i32) -> Option<usize> {
+    monitors.iter().position(|&(l, t, w, h)| x >= l && x < l + w as i32 && y >= t && y < t + h as i32)
+}
+
+/// Sizes the panel (shorter if the screen is) and puts it in the bottom-right corner of the work area
+/// (above the taskbar) of the monitor the mouse is on, 12 px margin; opened from the edge, at the
+/// edge it was opened from, centred. (The tray icon, the shortcut and the edge are all used with
+/// the mouse or just after it, so "the monitor under the mouse" is the one you are looking at.)
 fn place(win: &WebviewWindow, edge: bool) {
-    let (Ok(Some(monitor)), Ok(hwnd)) = (win.primary_monitor(), win.hwnd()) else { return };
+    let monitors = win.available_monitors().unwrap_or_default();
+    let rects: Vec<_> = monitors.iter().map(|m| (m.position().x, m.position().y, m.size().width, m.size().height)).collect();
+    let under = win.cursor_position().ok().and_then(|p| monitor_at(&rects, p.x as i32, p.y as i32)).map(|i| monitors[i].clone());
+    let (Some(monitor), Ok(hwnd)) = (under.or(win.primary_monitor().ok().flatten()), win.hwnd()) else { return };
     let scale = monitor.scale_factor();
     let area = monitor.work_area();
     let margin = (12.0 * scale) as i32;
@@ -465,6 +475,10 @@ fn place(win: &WebviewWindow, edge: bool) {
     };
     let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
     set(width, height);
+    // Moved to a monitor with another scale: Windows resizes the window for it, so size it again.
+    if win.scale_factor().is_ok_and(|s| (s - scale).abs() > 0.01) {
+        set(width, height);
+    }
     // A framed window's shadow takes a few pixels of it: add them back, so the page gets
     // WIDTH x HEIGHT either way. Unframed, there's nothing to add (and Windows briefly misreports
     // a frame right after resizing, so don't measure there).
@@ -550,6 +564,19 @@ mod tests {
         assert!(at_left(0, 600), "on the left edge, level with it");
         assert!(at_left(1600, 600), "over it");
         assert!(!at_left(1919, 600), "to its right"); 
+    }
+
+    #[test]
+    fn the_monitor_under_a_point() {
+        // A laptop screen at the origin, a monitor to its right, and one above the first.
+        let monitors = [(0, 0, 1920, 1080), (1920, 0, 2560, 1440), (0, -1080, 1920, 1080)];
+        assert_eq!(super::monitor_at(&monitors, 100, 100), Some(0));
+        assert_eq!(super::monitor_at(&monitors, 1919, 1079), Some(0), "the last pixel of the first");
+        assert_eq!(super::monitor_at(&monitors, 1920, 0), Some(1), "the first pixel of the second");
+        assert_eq!(super::monitor_at(&monitors, 3000, 1439), Some(1));
+        assert_eq!(super::monitor_at(&monitors, 10, -1), Some(2), "above the origin");
+        assert_eq!(super::monitor_at(&monitors, 1920, 1440), None, "outside them all");
+        assert_eq!(super::monitor_at(&[], 0, 0), None);
     }
 
     #[test]
