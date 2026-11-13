@@ -5,8 +5,8 @@
    so they are translucent sheets over the panel's blur. */
 
 .look-glass {
-  /* The one drop shadow every tile, card, bar and pill has. */
-  --tw-glass-drop: 0 12px 24px -6px rgb(0 0 0 / 0.6), 0 2px 5px rgb(0 0 0 / 0.3);
+  /* The drop shadow every tile, card, bar and pill has: none for now (a transparent one keeps the lists valid). */
+  --tw-glass-drop: 0 0 0 0 transparent;
   /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
   --tw-glass-frost: rgb(14 17 22 / 0.2);
   /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
@@ -132,39 +132,17 @@ html.look-glass::after {
   background:
     linear-gradient(
       160deg,
-      color-mix(in srgb, var(--tw-glass-blue) 34%, transparent),
-      color-mix(in srgb, var(--tw-glass-blue) 20%, transparent)
+      color-mix(in srgb, var(--tw-glass-blue) 15%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 8%, transparent)
     ),
     var(--tw-glass-slab);
   box-shadow:
-    inset 1.5px 1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 45%, #fff),
-    inset -1.5px -1.5px 3px -1.5px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent),
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
     var(--tw-glass-drop);
   color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
 }
-.look-glass :is(.tile.on, .tabs button.on, .segmented button.on)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 1;
-  padding: 1px;
-  /* A fine accent edge all the way round (the tint of the tile itself carries the colour), a little
-     brighter at the two corners. */
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent),
-    color-mix(in srgb, var(--tw-glass-accent) 28%, transparent) 35%,
-    color-mix(in srgb, var(--tw-glass-accent) 25%, transparent) 70%,
-    color-mix(in srgb, var(--tw-glass-accent) 75%, transparent)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
+/* No accent rim: a lit tile keeps the neutral rim every tile has; the tint carries the colour. */
 .look-glass .tile.on .tile-detail {
   color: color-mix(in srgb, var(--tw-glass-accent) 80%, transparent);
 }

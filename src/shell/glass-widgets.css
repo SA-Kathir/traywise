@@ -204,22 +204,12 @@ html .panel.look-glass .pomo.on .pomo-rounds .done {
 /* A break lights the whole tile in the break colour too: rim, glow and body. */
 .look-glass .tile.pomo.rest.on {
   background:
-    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
+    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 15%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
     var(--tw-glass-slab);
   box-shadow:
-    inset 2px 2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 55%, #fff),
-    inset -2px -2px 4px -2px color-mix(in srgb, var(--pomo-rest-deep) 85%, #fff 15%),
-    inset 0 0 22px -6px color-mix(in srgb, var(--pomo-rest-deep) 18%, transparent),
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
     var(--tw-glass-drop);
-}
-.look-glass .tile.pomo.rest.on::after {
-  background: linear-gradient(
-    135deg,
-    var(--pomo-rest),
-    color-mix(in srgb, var(--pomo-rest) 55%, transparent) 35%,
-    color-mix(in srgb, var(--pomo-rest) 50%, transparent) 70%,
-    var(--pomo-rest)
-  );
 }
 
 /* 1×1 stepper: − and + clear of the round corners, centred in their pills, with room before a two or
