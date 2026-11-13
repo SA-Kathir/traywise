@@ -457,8 +457,8 @@ export type QuickTogglesState = {
 	dark: boolean,
 	desktopIcons: boolean,
 	/**
-	 *  Every radio off. None until read (it waits on Windows, so it comes a moment after the rest),
-	 *  or if this PC has no radios.
+	 *  Every radio off. None until first read (it waits on Windows, so it comes a moment after the
+	 *  rest), or if this PC has no radios.
 	 */
 	airplane: boolean | null,
 	/**
