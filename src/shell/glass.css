@@ -177,7 +177,7 @@ html.look-glass::after {
   box-shadow: none;
 }
 .look-glass :is(.tabs, .segmented) button:not(.on):hover {
-  background: var(--tw-glass-slab);
+  background: transparent;
 }
 .look-glass .icon-button {
   border-radius: 50%;
@@ -572,4 +572,32 @@ html.look-glass body::after {
     color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 80%,
     color-mix(in srgb, var(--pomo-rest) 70%, #fff)
   );
+}
+
+/* ---- Hover on the tab bar --------------------------------------------------------------------- */
+
+/* A tab lights with the accent ring when hovered, like a tile, instead of a dimming fill that is hard to
+   see over a dark desktop. */
+.look-glass .tabs button {
+  position: relative;
+}
+.look-glass .tabs button:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
+    var(--tw-glass-accent)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
