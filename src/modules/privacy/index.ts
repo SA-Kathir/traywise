@@ -8,11 +8,7 @@ const privacy: ModuleUi = {
   description: "Mic and camera in use",
   idle: "off till opened",
   tiles: {
-    indicator: {
-      name: "Mic and camera",
-      sizes: ["1x1", "2x1"],
-      notes: { "1x1": "lit while an app uses the mic or camera", "2x1": "and which apps" },
-    },
+    indicator: { name: "Mic and camera", sizes: ["1x1", "2x1"] },
   },
   Tiles: lazy(() => import("./Tiles")),
 };
