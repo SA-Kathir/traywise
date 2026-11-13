@@ -1,13 +1,14 @@
 //! Privacy: which apps are using the microphone or camera right now.
 //!
 //! The microphone comes from the audio engine (an app with an active capture session is recording),
-//! which is live. The camera comes from Windows' consent store (Settings › Privacy & security ›
-//! Camera, "Recent activity"): for each app it notes when it last started and stopped using the
-//! device, and an app that started after it last stopped is using it now (Windows writes these late
-//! on some PCs, so the camera can lag). The thread sleeps while the panel is closed and looks once a
-//! second while it is open, like the system monitor.
+//! looked at once a second while the panel is open. The camera comes from Windows' own camera
+//! activity monitor (the one behind the camera indicator in the taskbar): Windows calls back when an
+//! app starts or stops streaming from a camera, so it costs nothing while nothing happens. If that
+//! isn't available, both fall back to the consent store (Settings › Privacy & security, "Recent
+//! activity"), which Windows writes late on some PCs. The thread sleeps while the panel is closed.
 
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -16,8 +17,12 @@ use serde::Serialize;
 use tauri::AppHandle;
 use tauri_specta::Event;
 use windows::Win32::Foundation::ERROR_SUCCESS;
+use windows::Win32::Media::MediaFoundation::{
+    IMFSensorActivitiesReport, IMFSensorActivitiesReportCallback, IMFSensorActivitiesReportCallback_Impl, MF_VERSION, MFCreateSensorActivityMonitor,
+    MFSTARTUP_LITE, MFShutdown, MFStartup,
+};
 use windows::Win32::System::Registry::{HKEY, HKEY_CURRENT_USER, KEY_READ, RRF_RT_REG_QWORD, RegCloseKey, RegEnumKeyExW, RegGetValueW, RegOpenKeyExW};
-use windows::core::{HSTRING, PWSTR};
+use windows::core::{HSTRING, PWSTR, Ref, implement};
 
 use crate::module::{Module, ModuleId};
 
@@ -38,7 +43,46 @@ pub struct PrivacyChanged(pub PrivacyState);
 
 enum Msg {
     PanelVisible(bool),
+    /// The camera activity monitor reported a change.
+    Camera,
     Stop,
+}
+
+/// Apps streaming from a camera now, as the activity monitor last said; and whether it is running at all.
+static CAMERA: Mutex<Vec<String>> = Mutex::new(Vec::new());
+static CAMERA_MONITOR: AtomicBool = AtomicBool::new(false);
+
+/// Windows' camera activity callback: it runs on one of Windows' threads, notes who is streaming and
+/// tells the worker.
+#[implement(IMFSensorActivitiesReportCallback)]
+struct CameraWatch(Sender<Msg>);
+
+impl IMFSensorActivitiesReportCallback_Impl for CameraWatch_Impl {
+    fn OnActivitiesReport(&self, report: Ref<IMFSensorActivitiesReport>) -> windows::core::Result<()> {
+        if let Some(report) = report.as_ref() {
+            *CAMERA.lock().unwrap() = camera_apps(report).unwrap_or_default();
+        }
+        let _ = self.0.send(Msg::Camera);
+        Ok(())
+    }
+}
+
+/// The apps that are streaming from any camera in the report.
+fn camera_apps(report: &IMFSensorActivitiesReport) -> windows::core::Result<Vec<String>> {
+    let mut names = Vec::new();
+    for i in 0..unsafe { report.GetCount()? } {
+        let camera = unsafe { report.GetActivityReport(i)? };
+        for j in 0..unsafe { camera.GetProcessCount()? } {
+            let process = unsafe { camera.GetProcessActivity(j)? };
+            if unsafe { process.GetStreamingState()? }.as_bool() {
+                let name = crate::modules::volume_mixer::app_name(unsafe { process.GetProcessId()? });
+                if !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+        }
+    }
+    Ok(names)
 }
 
 pub struct Privacy {
@@ -60,7 +104,8 @@ impl Module for Privacy {
     fn start(&mut self) -> Result<(), String> {
         let (tx, rx) = channel();
         let app = self.app.clone();
-        let thread = std::thread::Builder::new().name("privacy".into()).spawn(move || run(&app, rx)).map_err(|e| e.to_string())?;
+        let to_worker = tx.clone();
+        let thread = std::thread::Builder::new().name("privacy".into()).spawn(move || run(&app, rx, to_worker)).map_err(|e| e.to_string())?;
         self.worker = Some((tx, thread));
         Ok(())
     }
@@ -84,8 +129,16 @@ static LATEST: Mutex<PrivacyState> = Mutex::new(PrivacyState { microphone: Vec::
 
 /// Sleeps while the panel is closed; while it is open, sends the state at once and then whenever it
 /// changes (checked every second).
-fn run(app: &AppHandle, rx: Receiver<Msg>) {
+fn run(app: &AppHandle, rx: Receiver<Msg>, tx: Sender<Msg>) {
     crate::audio::with_com("privacy", || {
+        // Windows' camera indicator: told when a camera starts or stops streaming. It reports the
+        // current state right after it starts.
+        let started = unsafe { MFStartup(MF_VERSION, MFSTARTUP_LITE) }.is_ok();
+        let monitor = started
+            .then(|| unsafe { MFCreateSensorActivityMonitor(&IMFSensorActivitiesReportCallback::from(CameraWatch(tx))) })
+            .and_then(|m| m.ok())
+            .filter(|m| unsafe { m.Start() }.is_ok());
+        CAMERA_MONITOR.store(monitor.is_some(), Ordering::Relaxed);
         let mut visible = false;
         loop {
             let msg = if visible { rx.recv_timeout(Duration::from_secs(1)) } else { rx.recv().map_err(|_| RecvTimeoutError::Disconnected) };
@@ -98,7 +151,8 @@ fn run(app: &AppHandle, rx: Receiver<Msg>) {
                     true
                 }
                 Ok(Msg::Stop) | Err(RecvTimeoutError::Disconnected) => break,
-                Err(RecvTimeoutError::Timeout) => false,
+                Ok(Msg::Camera) if !visible => continue,
+                Ok(Msg::Camera) | Err(RecvTimeoutError::Timeout) => false,
             };
             let state = read();
             let changed = *LATEST.lock().unwrap() != state;
@@ -106,6 +160,12 @@ fn run(app: &AppHandle, rx: Receiver<Msg>) {
                 *LATEST.lock().unwrap() = state.clone();
                 let _ = PrivacyChanged(state).emit(app);
             }
+        }
+        if let Some(monitor) = monitor {
+            let _ = unsafe { monitor.Stop() };
+        }
+        if started {
+            let _ = unsafe { MFShutdown() };
         }
         Ok(())
     });
@@ -120,7 +180,8 @@ pub fn privacy_state() -> PrivacyState {
 fn read() -> PrivacyState {
     // A device the audio engine can't be asked about: fall back to the consent store.
     let microphone = capture_apps().unwrap_or_else(|_| using("microphone"));
-    PrivacyState { microphone, camera: using("webcam") }
+    let camera = if CAMERA_MONITOR.load(Ordering::Relaxed) { CAMERA.lock().unwrap().clone() } else { using("webcam") };
+    PrivacyState { microphone, camera }
 }
 
 /// Apps with an active session on any microphone, straight from the audio engine (what the volume
@@ -241,6 +302,26 @@ mod tests {
         assert_eq!(app_name("C:#Program Files#Zoom#bin#Zoom.exe", false), "Zoom");
         assert_eq!(app_name("Microsoft.WindowsCamera_8wekyb3d8bbwe", true), "Microsoft.WindowsCamera");
         assert_eq!(app_name("Teams", false), "Teams");
+    }
+
+    /// `cargo test camera_live -- --ignored --nocapture`: who is streaming from a camera now, as Windows' monitor says.
+    #[test]
+    #[ignore]
+    fn camera_live() {
+        crate::audio::with_com("privacy test", || {
+            let (tx, rx) = channel();
+            unsafe { MFStartup(MF_VERSION, MFSTARTUP_LITE)? };
+            let monitor = unsafe { MFCreateSensorActivityMonitor(&IMFSensorActivitiesReportCallback::from(CameraWatch(tx)))? };
+            unsafe { monitor.Start()? };
+            let mut n = 0;
+            while rx.recv_timeout(Duration::from_secs(3)).is_ok() {
+                n += 1;
+                println!("callback #{n}; camera apps: {:?}", CAMERA.lock().unwrap());
+            }
+            println!("callbacks: {n}");
+            unsafe { monitor.Stop()? };
+            Ok(())
+        });
     }
 
     /// `cargo test capture_live -- --ignored --nocapture`: who has an active capture session right now.
