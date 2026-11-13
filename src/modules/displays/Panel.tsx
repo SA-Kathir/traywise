@@ -252,8 +252,8 @@ export default function Panel() {
           </div>
           {d.brightness !== null && <Bar display={d} />}
           {d.refresh && d.refresh.rates.length > 1 && (
-            <div className="row">
-              <span className="grow">Refresh rate</span>
+            <div className="refresh-row">
+              <span>Refresh rate</span>
               <div className="segmented" role="group" aria-label={`${d.name} refresh rate`}>
                 {d.refresh.rates.map((hz) => (
                   <button key={hz} className={hz === d.refresh!.now ? "on" : ""} onClick={() => commands.displaysSetRefresh(d.id, hz)}>
