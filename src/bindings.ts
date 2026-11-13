@@ -73,6 +73,7 @@ export const commands = {
 	/**  The latest sample. Empty while the module is off or the panel is closed. */
 	systemMonitorState: () => __TAURI_INVOKE<SystemSample>("system_monitor_state"),
 	powerState: () => __TAURI_INVOKE<PowerState>("power_state"),
+	privacyState: () => __TAURI_INVOKE<PrivacyState>("privacy_state"),
 	powerSetMode: (mode: PowerMode) => typedError<null, string>(__TAURI_INVOKE("power_set_mode", { mode })),
 	/**  The screens as last read. Empty while the module is off. */
 	displaysState: () => __TAURI_INVOKE<DisplaysState>("displays_state"),
@@ -117,6 +118,7 @@ export const events = {
 	nowPlayingChanged: makeEvent<NowPlayingChanged>("now-playing-changed"),
 	panelShown: makeEvent<PanelShown>("panel-shown"),
 	powerChanged: makeEvent<PowerChanged>("power-changed"),
+	privacyChanged: makeEvent<PrivacyChanged>("privacy-changed"),
 	quickTogglesChanged: makeEvent<QuickTogglesChanged>("quick-toggles-changed"),
 	showSettings: makeEvent<ShowSettings>("show-settings"),
 	systemSampled: makeEvent<SystemSampled>("system-sampled"),
@@ -384,7 +386,7 @@ export type Mode = "off" |
 "whilePluggedIn";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
-export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
+export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus" | "privacy";
 
 /**  Sent to the UI whenever the state changes while the panel is open, and when it opens. */
 export type NowPlayingChanged = NowPlayingState;
@@ -443,6 +445,16 @@ export type PowerState = {
  *  (An old file's `motion` field, from when the background moved, is ignored.)
  */
 export type Preset = "ocean" | "graphite" | "forest" | "plum" | "ember" | "rose";
+
+/**  Sent when the panel opens, and after a read the UI asked for. */
+export type PrivacyChanged = PrivacyState;
+
+export type PrivacyState = {
+	/**  Apps using the microphone now, by name. */
+	microphone: string[],
+	/**  Apps using the camera now. */
+	camera: string[],
+};
 
 /**  The four choices of Win+P. */
 export type Project = "pcOnly" | "duplicate" | "extend" | "secondOnly";

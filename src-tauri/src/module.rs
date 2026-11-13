@@ -15,6 +15,7 @@ use crate::modules::focus::Focus;
 use crate::modules::keep_awake::KeepAwake;
 use crate::modules::now_playing::NowPlaying;
 use crate::modules::power::Power;
+use crate::modules::privacy::Privacy;
 use crate::modules::quick_toggles::QuickToggles;
 use crate::modules::system_monitor::SystemMonitor;
 use crate::modules::volume_mixer::VolumeMixer;
@@ -37,6 +38,7 @@ pub enum ModuleId {
     Displays,
     Clock,
     Focus,
+    Privacy,
 }
 
 pub trait Module: Send {
@@ -66,6 +68,7 @@ fn registry(app: &AppHandle) -> Vec<Box<dyn Module>> {
         Box::new(Displays::new(app.clone())),
         Box::new(Clock::new(app.clone())),
         Box::new(Focus::new(app.clone())),
+        Box::new(Privacy::new(app.clone())),
     ]
 }
 

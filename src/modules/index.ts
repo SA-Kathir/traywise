@@ -8,6 +8,7 @@ import focus from "./focus";
 import keepAwake from "./keep-awake";
 import nowPlaying from "./now-playing";
 import power from "./power";
+import privacy from "./privacy";
 import quickToggles from "./quick-toggles";
 import systemMonitor from "./system-monitor";
 import volumeMixer from "./volume-mixer";
@@ -68,6 +69,7 @@ export const modules: Record<ModuleId, ModuleUi> = {
   "system-monitor": systemMonitor,
   displays,
   power,
+  privacy,
 };
 
 /** A tile on the board is "<module id>/<kind>", like "quick-toggles/dark": this is its module. */
