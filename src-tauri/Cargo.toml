@@ -35,6 +35,7 @@ windows = { version = "0.62", features = [
     "Devices_Radios",
     "Devices_WiFi",
     "Networking_Connectivity",
+    "Networking_NetworkOperators",
     "Security_Credentials",
     "Win32_Media_KernelStreaming",
     "Foundation",

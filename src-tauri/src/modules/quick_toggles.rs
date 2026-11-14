@@ -3,6 +3,8 @@
 //! Nothing runs in the background. Each tile reads or changes a Windows setting when it's used,
 //! and the state is re-read each time the panel opens, in case it was changed elsewhere.
 
+use std::sync::Mutex;
+
 use serde::Serialize;
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -15,7 +17,13 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{PCWSTR, w};
 
+use windows::Networking::Connectivity::NetworkInformation;
+use windows::Networking::NetworkOperators::{
+    NetworkOperatorTetheringManager, TetheringCapability, TetheringOperationStatus, TetheringOperationalState,
+};
+
 use crate::module::{Module, ModuleId};
+use crate::radios::{airplane_mode, blocking, mta, set_airplane_mode};
 
 const PERSONALIZE: PCWSTR = w!(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
 /// The desktop's own "Show desktop icons" menu command.
@@ -27,6 +35,12 @@ pub struct QuickTogglesState {
     /// Apps and Windows itself (taskbar, Start) in dark mode.
     pub dark: bool,
     pub desktop_icons: bool,
+    /// Every radio off. None until first read (it waits on Windows, so it comes a moment after the
+    /// rest), or if this PC has no radios.
+    pub airplane: Option<bool>,
+    /// Windows' Mobile hotspot, shared from the internet connection. None until read, or if this PC
+    /// can't share one.
+    pub hotspot: Option<bool>,
 }
 
 /// Sent after a toggle, and each time the panel opens.
@@ -57,19 +71,37 @@ impl Module for QuickToggles {
     fn panel_visible(&mut self, visible: bool) {
         if visible {
             publish(&self.app);
+            // The radios and the hotspot make Windows wait: their part comes in a moment later.
+            let app = self.app.clone();
+            std::thread::spawn(move || publish_connectivity(&app));
         }
     }
 }
+
+/// The last airplane and hotspot readings, so every later read of the state carries them: the
+/// panel asks for the state while the radios are still being read, and that answer must not wipe
+/// out what the readings publish.
+static CONNECTIVITY: Mutex<(Option<bool>, Option<bool>)> = Mutex::new((None, None));
 
 fn publish(app: &AppHandle) {
     let _ = QuickTogglesChanged(read()).emit(app);
 }
 
+/// Like `publish`, with the airplane and hotspot readings too. Waits on Windows: not on the UI's thread.
+fn publish_connectivity(app: &AppHandle) {
+    *CONNECTIVITY.lock().unwrap() = (airplane_mode(), hotspot_on());
+    publish(app);
+}
+
 fn read() -> QuickTogglesState {
+    // One lock: taking it twice in the same expression would wait for itself forever.
+    let (airplane, hotspot) = *CONNECTIVITY.lock().unwrap();
     QuickTogglesState {
         dark: dword(PERSONALIZE, w!("AppsUseLightTheme")) == Some(0),
         // If the desktop can't be found, say shown: that's Windows' default.
         desktop_icons: desktop_icons().is_none_or(|list| unsafe { IsWindowVisible(list) }.as_bool()),
+        airplane,
+        hotspot,
     }
 }
 
@@ -116,6 +148,54 @@ pub fn quick_toggles_set_desktop_icons(app: AppHandle, show: bool) -> Result<(),
     }
     publish(&app);
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn quick_toggles_set_airplane(app: AppHandle, on: bool) -> Result<(), String> {
+    blocking(move || {
+        let done = set_airplane_mode(on);
+        publish_connectivity(&app);
+        done
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn quick_toggles_set_hotspot(app: AppHandle, on: bool) -> Result<(), String> {
+    blocking(move || {
+        let done = set_hotspot(on);
+        publish_connectivity(&app);
+        done
+    })
+    .await
+}
+
+/// The tethering manager for the connection the PC reaches the internet through, if it can share it.
+fn tethering() -> windows::core::Result<Option<NetworkOperatorTetheringManager>> {
+    mta();
+    let profile = NetworkInformation::GetInternetConnectionProfile()?;
+    if NetworkOperatorTetheringManager::GetTetheringCapabilityFromConnectionProfile(&profile)? != TetheringCapability::Enabled {
+        return Ok(None);
+    }
+    NetworkOperatorTetheringManager::CreateFromConnectionProfile(&profile).map(Some)
+}
+
+fn hotspot_on() -> Option<bool> {
+    let manager = tethering().ok()??;
+    Some(manager.TetheringOperationalState() == Ok(TetheringOperationalState::On))
+}
+
+fn set_hotspot(on: bool) -> Result<(), String> {
+    let manager = tethering().ok().flatten().ok_or("this PC has no internet connection it can share")?;
+    let result = if on { manager.StartTetheringAsync() } else { manager.StopTetheringAsync() }
+        .and_then(|op| op.join())
+        .map_err(|e| e.to_string())?;
+    match result.Status().map_err(|e| e.to_string())? {
+        TetheringOperationStatus::Success => Ok(()),
+        status => Err(format!("Windows couldn't {} the hotspot ({status:?})", if on { "start" } else { "stop" })),
+    }
 }
 
 #[tauri::command]
