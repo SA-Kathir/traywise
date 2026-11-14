@@ -78,6 +78,8 @@ export const commands = {
 	displaysState: () => __TAURI_INVOKE<DisplaysState>("displays_state"),
 	/**  Percent. Sent as the slider moves; the worker keeps up by skipping to the latest value. */
 	displaysSetBrightness: (id: string, percent: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_brightness", { id, percent })),
+	/**  Switches a screen to another refresh rate it offers, at the same resolution. */
+	displaysSetRefresh: (id: string, hz: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_refresh", { id, hz })),
 	displaysSetProject: (project: Project) => typedError<null, string>(__TAURI_INVOKE("displays_set_project", { project })),
 	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
 	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
@@ -232,6 +234,11 @@ export type Display = {
 	internal: boolean,
 	/**  Percent. None when it can't be changed from here (a monitor without DDC/CI, or with it off). */
 	brightness: number | null,
+	/**
+	 *  The screen's refresh rate and the ones it offers at its current resolution. None if Windows
+	 *  won't say.
+	 */
+	refresh: Refresh | null,
 };
 
 /**  Sent when the panel opens (once the screens have been read) and after the Project choice changes. */
@@ -479,6 +486,13 @@ export type QuickTogglesState = {
 
 /**  A reading the system monitor graphs. */
 export type Reading = "cpu" | "memory" | "download" | "upload" | "gpu";
+
+export type Refresh = {
+	/**  Hz. */
+	now: number,
+	/**  Hz, lowest first. Always includes `now`. */
+	rates: number[],
+};
 
 export type Repeat = "off" | "track" | "list";
 

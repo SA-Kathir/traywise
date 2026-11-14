@@ -10,6 +10,7 @@ import type { TileProps } from "..";
 const SUN = String.fromCodePoint(0xe706);
 const LAPTOP = String.fromCodePoint(0xe7f8);
 const MONITOR = String.fromCodePoint(0xe7f4);
+const REFRESH = String.fromCodePoint(0xe72c); // "Refresh"
 
 /** The Project icons, drawn: laptop, two overlapping screens, two side by side, a desktop monitor.
  *  The stroke stays 1.3 px at every size (non-scaling, see `.project-icon` in liquid.css). */
@@ -63,6 +64,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   const state = useDisplays();
   if (!state) return null;
   if (kind === "project") return <ProjectTile project={state.project} size={size} open={open} />;
+  if (kind === "refresh") return <RefreshTile displays={state.displays} size={size} open={open} />;
   const main = state.displays.find((d) => d.brightness !== null);
   if (!main) return <Tile size={size} icon={SUN} label="Brightness" detail="Can't change" onOpen={open} />;
   const level = main.brightness!;
@@ -148,6 +150,25 @@ function Bar({ display }: { display: Display }) {
         {SUN}
       </span>
     </div>
+  );
+}
+
+/** The first screen's refresh rate (the laptop's own, if it's on); a tap goes on to the next rate it offers. */
+function RefreshTile({ displays, size, open }: { displays: Display[]; size: TileProps["size"]; open: () => void }) {
+  const screen = displays.find((d) => d.refresh);
+  const refresh = screen?.refresh;
+  if (!screen || !refresh) return <Tile size={size} icon={REFRESH} label="Refresh rate" detail="Can't change" onOpen={open} />;
+  const { now, rates } = refresh;
+  const next = rates[(rates.indexOf(now) + 1) % rates.length];
+  return (
+    <Tile
+      size={size}
+      icon={REFRESH}
+      label="Refresh rate"
+      detail={`${now} Hz`}
+      onToggle={rates.length > 1 ? () => commands.displaysSetRefresh(screen.id, next) : undefined}
+      onOpen={open}
+    />
   );
 }
 
@@ -239,6 +260,18 @@ export default function Panel() {
             {d.brightness === null ? <span className="tile-detail">Can't change</span> : <Num text={String(d.brightness)} />}
           </div>
           {d.brightness !== null && <Bar display={d} />}
+          {d.refresh && d.refresh.rates.length > 1 && (
+            <div className="refresh-row">
+              <span>Refresh rate</span>
+              <div className="segmented" role="group" aria-label={`${d.name} refresh rate`}>
+                {d.refresh.rates.map((hz) => (
+                  <button key={hz} className={hz === d.refresh!.now ? "on" : ""} onClick={() => commands.displaysSetRefresh(d.id, hz)}>
+                    <Num text={`${hz} Hz`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
       {state.displays.some((d) => !d.internal && d.brightness === null) && (

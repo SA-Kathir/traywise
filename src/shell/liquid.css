@@ -2657,6 +2657,16 @@ section > .setting:last-child {
 .display-row .vol-bar {
   margin-top: 4px;
 }
+/* The refresh rate choices on their own line, so a rate like "165 Hz" never wraps. */
+.refresh-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.refresh-row .segmented button {
+  white-space: nowrap;
+}
 .tile-detail.block {
   display: block;
 }
