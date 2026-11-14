@@ -23,6 +23,15 @@ pub struct Settings {
     pub preset: Preset,
     /// Dot: the accent colour.
     pub accent: Accent,
+    /// Glass: the accent colour (its own choice, so Dot's default red doesn't leak in; blue by default).
+    #[serde(default = "glass_accent_default")]
+    pub glass_accent: Accent,
+    /// Glass: no blur behind the panel; only the tiles, the header and the tab bar are glass, floating over the desktop.
+    #[serde(default)]
+    pub glass_clear: bool,
+    /// Glass: Vivid (accent rims, tinted lit tiles, shadows) instead of the default Soft.
+    #[serde(default)]
+    pub glass_vivid: bool,
     /// Dot: a plain gradient behind the tiles instead of the dot grid.
     pub plain_background: bool,
     /// Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M".
@@ -124,6 +133,10 @@ pub struct BoardTile {
     pub readings: Option<[Reading; 2]>,
 }
 
+fn glass_accent_default() -> Accent {
+    Accent::Blue
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -133,6 +146,9 @@ impl Default for Settings {
             single_hue: true,
             preset: Preset::Ocean,
             accent: Accent::Red,
+            glass_accent: Accent::Blue,
+            glass_clear: false,
+            glass_vivid: false,
             plain_background: true,
             mic_shortcut: "Ctrl+Alt+M".into(),
             lower_volume_on_unplug: false,
@@ -178,6 +194,8 @@ pub enum Look {
     Liquid,
     /// Flat, like Windows 11's own flyouts, following Windows' light or dark mode.
     Windows,
+    /// Frosted glass: Windows blurs the desktop behind a transparent panel (`shell/glass.rs`).
+    Glass,
 }
 
 /// Background colour preset (Liquid look): one muted hue each. The colours are in `src/shell/liquid.css`.
@@ -286,7 +304,7 @@ pub fn set_settings(
     // panel, so don't do it for every other save (like each tile moved on the home board).
     let reframe = {
         let mut current = state.current.lock().unwrap();
-        let reframe = current.look != settings.look || current.transparent != settings.transparent;
+        let reframe = current.look != settings.look || current.transparent != settings.transparent || current.glass_clear != settings.glass_clear;
         *current = settings;
         reframe
     };
@@ -330,6 +348,9 @@ mod tests {
             single_hue: false,
             preset: Preset::Graphite,
             accent: Accent::Blue,
+            glass_accent: Accent::Violet,
+            glass_clear: true,
+            glass_vivid: true,
             plain_background: true,
             mic_shortcut: "Ctrl+Shift+F9".into(),
             lower_volume_on_unplug: true,

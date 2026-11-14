@@ -1,0 +1,254 @@
+/* The Glass look's volume and brightness widgets (src/shell/Dial.tsx, structure in liquid.css): the
+   1×1 ring and stepper, the 2×2 dial and faders. Kept apart from glass.css. Fills are the accent as
+   translucent glass with a soft glow; rims light up in the accent on hover, like a selected tile. */
+
+/* The arc: a glass track, an accent fill that glows, a white knob (hover only, as in every look). */
+.look-glass .dial-track {
+  stroke: rgb(255 255 255 / 0.14);
+}
+.look-glass .dial-fill {
+  stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+}
+.look-glass .dial-thumb {
+  fill: #fff;
+}
+.look-glass .dial.off .dial-icon,
+.look-glass .dial.off .dial-big {
+  color: var(--tw-glass-text-3);
+}
+
+/* 1×1: the − and + are small glass pills with the lit lip; the value is light text. */
+.look-glass .dial-step {
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28);
+}
+.look-glass .dial-step:hover {
+  background: color-mix(in srgb, var(--tw-glass-blue) 20%, transparent);
+  color: var(--tw-glass-accent);
+}
+.look-glass .dial-value {
+  color: var(--tw-glass-text);
+}
+
+/* 2×2 faders: a glass track, the fill is frosted accent glass lit along its top edge, and the main
+   one is outlined in the accent with a glow. */
+.look-glass .fader-track {
+  background: var(--tw-glass-slab-track);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.look-glass .fader-fill {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tw-glass-accent) 85%, transparent),
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tw-glass-accent) 55%, #fff);
+}
+/* No outline on the main fader: it was more than the tile needs. */
+.look-glass .fader.main {
+  border-color: transparent;
+}
+.look-glass .fader-value {
+  color: var(--tw-glass-text);
+}
+
+/* The analogue clock in lines: fine ticks, solid glass hands, the minute hand lit with the accent. */
+.look-glass .face-dots {
+  display: none;
+}
+.look-glass .face-lines {
+  display: inline;
+}
+.look-glass .ltick,
+.look-glass .lmajor,
+.look-glass .lhand,
+.look-glass .lminute {
+  stroke-linecap: round;
+  fill: none;
+}
+.look-glass .ltick {
+  stroke: rgb(255 255 255 / 0.3);
+  stroke-width: 1;
+}
+.look-glass .lmajor {
+  stroke: rgb(255 255 255 / 0.75);
+  stroke-width: 1.8;
+}
+.look-glass .lhand {
+  stroke: rgb(255 255 255 / 0.95);
+  stroke-width: 3.4;
+}
+.look-glass .lminute {
+  stroke: var(--tw-glass-accent);
+  stroke-width: 2.4;
+}
+.look-glass .lcap {
+  fill: var(--tw-glass-accent);
+}
+
+/* Battery: a glass cell filled with the accent, glowing; amber when low, orange when critical. */
+.look-glass .gauge {
+  fill: none;
+  color: rgb(255 255 255 / 0.55);
+}
+.look-glass .gauge-dots {
+  display: none;
+}
+.look-glass .gauge-bar {
+  display: inline;
+  fill: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+}
+.look-glass :is(.low, .critical) .gauge-bar {
+  fill: currentColor;
+}
+.look-glass .battery-big .num,
+.look-glass .battery .num {
+  font-weight: 300;
+}
+
+/* ---- Keep awake and Focus ------------------------------------------------------------------- */
+
+/* Focus has two phase colours: the accent while focusing and a clearly different one for a break
+   (soft green; blue when the accent is green). */
+.look-glass {
+  --pomo-focus: var(--tw-glass-accent);
+  --pomo-rest: #8fe3c0;
+  --pomo-rest-deep: #2fc58a;
+}
+.look-glass.accent-green {
+  --pomo-rest: #8ec1ff;
+  --pomo-rest-deep: #3d8bff;
+}
+.look-glass .pomo {
+  --glow: var(--tw-glass-blue);
+}
+.look-glass .pomo.rest {
+  --glow: var(--pomo-rest-deep);
+}
+
+/* The Keep awake ring and the Focus arc: smooth glass instead of dots. The track is a faint glass
+   line; the fill is frosted colour with a glow. */
+.look-glass :is(.awake-ring, .pomo-arc) .dots {
+  display: none;
+}
+.look-glass :is(.awake-ring, .pomo-arc) .smooth {
+  display: inline;
+}
+.look-glass :is(.awake-ring, .pomo-arc) :is(.smooth-track, .smooth-fill) {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 5;
+}
+.look-glass :is(.awake-ring, .pomo-arc) .smooth-track {
+  stroke: rgb(255 255 255 / 0.14);
+}
+.look-glass .awake-ring .smooth-fill {
+  stroke: color-mix(in srgb, var(--tw-glass-accent) 85%, transparent);
+}
+.look-glass .pomo-arc .smooth-fill {
+  stroke: color-mix(in srgb, var(--focus) 88%, transparent);
+}
+/* Keep awake's quick buttons are glass chips already (plain buttons); the lit one is the accent. */
+.look-glass .awake-quick button {
+  border-radius: 10px;
+}
+
+/* Focus's hourglass and rounds: the phase colour, glowing; the sand of a break takes the break colour. */
+.look-glass .pomo-glass {
+}
+.look-glass .pomo-glass .dim {
+  opacity: 0.7;
+}
+.look-glass .pomo-rounds .cur {
+  background: var(--focus);
+  
+}
+.look-glass .pomo-rounds .done {
+  background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
+}
+.look-glass .pomo-read .num,
+.look-glass .awake-state .num {
+  font-weight: 300;
+}
+/* Lit (on): the phase colour for the time, so a break reads differently from a focus round. */
+.look-glass .pomo.on {
+  color: var(--focus);
+}
+/* `html .panel` outranks liquid.css's rules for a filled tile, which paint these in the dark on-accent
+   colour (invisible on glass). */
+html .panel.look-glass .pomo.on :is(.pomo-glass, .pomo-arc) {
+  fill: rgb(255 255 255 / 0.3);
+}
+html .panel.look-glass .pomo.on .pomo-glass :is(.sand, .grain, .dim),
+html .panel.look-glass .pomo.on .lit {
+  fill: var(--focus);
+}
+html .panel.look-glass .pomo.on .pile {
+  fill: color-mix(in srgb, var(--focus) 60%, transparent);
+}
+html .panel.look-glass .pomo.on .pomo-rounds i {
+  background: rgb(255 255 255 / 0.35);
+}
+html .panel.look-glass .pomo.on .pomo-rounds .cur {
+  background: var(--focus);
+}
+html .panel.look-glass .pomo.on .pomo-rounds .done {
+  background: color-mix(in srgb, var(--focus) 70%, #fff 30%);
+}
+.look-glass .awake.on {
+  color: var(--tw-glass-accent);
+}
+/* A break lights the whole tile in the break colour too: rim, glow and body. */
+.look-glass .tile.pomo.rest.on {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 15%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
+    var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+}
+
+/* 1×1 stepper: − and + clear of the round corners, centred in their pills, with room before a two or
+   three digit value. */
+.look-glass .dial-row {
+  inset: auto 9px 10px;
+}
+.look-glass .dial-step {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  /* The − and + glyphs sit a little above the middle of their line: this brings them to the middle. */
+  padding-bottom: 3px;
+  border-radius: 8px;
+}
+.look-glass .dial-value {
+  position: relative;
+  top: -1px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.look-glass .dial:hover .dial-ring {
+  translate: -50% calc(-50% - 12px);
+}
+
+/* Power mode and other icon-only segments: the glyphs are drawn large for their box, so they get a
+   smaller size and a bit more room in the pill. */
+.look-glass .segmented.icons button {
+  padding: 5px 4px;
+}
+.look-glass .segmented.icons button .icon {
+  font-size: 11.5px;
+  line-height: 1;
+}
+/* Muted: the word is longer than a number, so it is a little smaller to fit between − and +. */
+.look-glass .dial.off .dial-value {
+  font-size: 9.5px;
+}

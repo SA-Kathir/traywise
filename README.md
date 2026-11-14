@@ -13,6 +13,7 @@ Pick a look when you first start it, and change it any time in Settings:
 - **Dot** (the default): monochrome tiles on a plain background, dot-matrix numbers and one accent colour (red, amber, violet, blue or green), following Windows' light or dark mode.
 - **Tint**: tiles tinted in one of six colours, on a deep shade of the same colour.
 - **Windows**: flat, like Windows 11's own flyouts, following Windows' light or dark mode.
+- **Glass**: Windows blurs the desktop behind a transparent panel, and the tiles are dark translucent glass with a lit rim and one soft accent colour (blue, green, amber, violet or red). Always dark, in Windows' light mode too. A **Style** choice, **Soft** (the default: no shadows, a gentle tint on lit tiles) or **Vivid** (accent rims and shadows), and a **Clear** background option drops the blur and the panel, leaving the tiles, the header and the tab bar floating over the desktop. While Windows' Energy saver is on, Windows draws no blur, so the panel shows a solid frosted grey instead.
 
 ## Modules
 
@@ -54,7 +55,7 @@ To uninstall, use **Settings → Apps → Installed apps → Traywise**.
 
 Traywise works locally. It has no accounts, no telemetry and no analytics.
 
-- It doesn't look at your screen or wallpaper, with one small exception: with a **Transparent** background, as the panel opens it measures how bright the area behind it is (shrunk to 8 × 8 pixels and averaged into one number), so the glass can be more solid over dark wallpapers. The sample is deleted at once; nothing is saved or sent.
+- It doesn't look at your screen or wallpaper, with one small exception: with a **Transparent** Dot background or the **Glass** look, as the panel opens it measures how bright the area behind it is (shrunk to 8 × 8 pixels and averaged into one number), so the glass can be more solid over bright or dark wallpapers. The sample is deleted at once; nothing is saved or sent.
 - The **Wi-Fi** module shows network names, which Windows 11 counts as location use: you'll see Windows' location icon while it reads them, and it only can if location is on for desktop apps.
 
 The only thing it sends over the network is the update check: a request to GitHub for the latest version's details, and a download if you choose to install. You can turn this off in Settings.

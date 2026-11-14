@@ -92,9 +92,13 @@ function Gauge({ percent }: { percent: number }) {
     <svg className="gauge" viewBox="0 0 44 18" aria-hidden>
       <rect x="0.5" y="0.5" width="39" height="17" rx="4" fill="none" stroke="currentColor" />
       <rect x="41" y="6" width="2.5" height="6" rx="1" fill="currentColor" />
-      {Array.from({ length: 16 }, (_, i) => (
-        <circle key={i} cx={5.5 + (i % 8) * 4.1} cy={i < 8 ? 6.5 : 11.5} r="1.4" className={i % 8 < lit ? "lit" : undefined} />
-      ))}
+      <g className="gauge-dots">
+        {Array.from({ length: 16 }, (_, i) => (
+          <circle key={i} cx={5.5 + (i % 8) * 4.1} cy={i < 8 ? 6.5 : 11.5} r="1.4" className={i % 8 < lit ? "lit" : undefined} />
+        ))}
+      </g>
+      {/* The Glass look fills the cell instead of lighting dots. */}
+      <rect className="gauge-bar" x="2" y="2" width={Math.max(3, (percent / 100) * 36)} height="14" rx="2.5" />
     </svg>
   );
 }

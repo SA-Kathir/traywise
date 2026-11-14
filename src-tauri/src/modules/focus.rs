@@ -428,6 +428,11 @@ fn publish(app: &AppHandle, on: Option<bool>, cycle: Option<Cycle>, works: bool)
     }
 }
 
+/// Whether a focus/rest cycle is running.
+pub fn running(app: &AppHandle) -> bool {
+    app.try_state::<Shared>().is_some_and(|s| s.state.lock().unwrap().phase.is_some())
+}
+
 /// The latest state. Default (off, unavailable) while the module is switched off.
 #[tauri::command]
 #[specta::specta]

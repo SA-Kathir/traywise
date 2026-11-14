@@ -1816,6 +1816,9 @@ button.clock-main:hover {
 .clock.size-1x1 .clock-over {
   letter-spacing: 0;
 }
+.face-lines {
+  display: none;
+}
 .clock-face .tick {
   fill: rgb(var(--ink) / 0.35);
 }
@@ -2633,6 +2636,10 @@ section > .setting:last-child {
 .gauge .lit {
   fill: rgb(var(--ink));
 }
+.gauge-bar,
+.smooth {
+  display: none;
+}
 .battery.size-1x1 {
   display: flex;
   flex-direction: column;
@@ -2711,6 +2718,17 @@ section > .setting:last-child {
 .segmented.icons button {
   min-width: 0;
   padding: 0 4px;
+}
+/* An icon on its own: no gap on its right (`.icon` leaves room for a label) and no baseline drop, so it is
+   centred in its pill. */
+.segmented.icons button .icon {
+  margin: 0;
+  vertical-align: baseline;
+}
+/* The gauge glyph (Balanced) is drawn high in its box: nudge it down to sit in the middle of the pill. */
+.segmented.icons button:nth-child(2) .icon {
+  position: relative;
+  top: 2px;
 }
 .project-icon * {
   vector-effect: non-scaling-stroke;

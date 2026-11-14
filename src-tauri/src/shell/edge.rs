@@ -413,6 +413,13 @@ pub fn accent_rgb(settings: &Settings) -> u32 {
             Preset::Rose => 0xf0_bf_d4,
         },
         Look::Windows => 0x4c_c2_ff,
+        Look::Glass => match settings.glass_accent {
+            Accent::Red => 0xff_9a_9a,
+            Accent::Amber => 0xf6_cf_8b,
+            Accent::Violet => 0xc3_a7_ff,
+            Accent::Blue => 0x8e_c1_ff,
+            Accent::Green => 0x8f_e3_c0,
+        },
     }
 }
 

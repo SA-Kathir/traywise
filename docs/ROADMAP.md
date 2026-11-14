@@ -15,7 +15,7 @@ Details: `CHANGELOG.md`. Releases: https://github.com/SA-Kathir/traywise/release
 
 ## In progress
 
-**Glass look:** a fourth look, with real blur behind the panel (Windows' host backdrop brush; a throwaway test proved it works on the panel's window setup) and Apple-style translucent cards. The design is done in Figma and the build starts once 0.3.1 is on `dev`. Open question: its tint adapts to how bright the screen behind it is, which would extend the one narrow "never read the desktop" exception in CLAUDE.md; the owner decides.
+**Glass look:** a fourth look, with real blur behind the panel (Windows' host backdrop brush; a throwaway test proved it works on the panel's window setup) and Apple-style translucent cards. The design is done in Figma and the build starts once 0.3.1 is on `dev`. Its tint adapts to how bright the screen behind it is, using the one narrow brightness sample (extended to Glass by the owner on 2026-11-08; see CLAUDE.md and the README's privacy notes).
 
 Otherwise nothing. Work goes on a `feature/<name>` or `fix/<name>` branch from `dev` and is merged by pull request; when several run at once, each gets its own git worktree (a sibling folder like `../tw-<name>`), removed once its branch is merged.
 

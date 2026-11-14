@@ -18,6 +18,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             shell::panel::close_panel,
             shell::panel::quit,
             shell::panel::hide_panel,
+            shell::panel::glass_shapes,
             settings::get_settings,
             settings::set_settings,
             settings::get_autostart,
@@ -133,6 +134,7 @@ pub fn run() {
             app.manage(modules);
             app.manage(updater::UpdateState::default());
             updater::check(app.handle());
+            modules::power::watch_energy_saver();
             shell::panel::create(app)?;
             shell::edge::apply(app.handle(), &app.state::<settings::SettingsState>().get());
             let keys = app.state::<settings::SettingsState>().get().panel_shortcut;

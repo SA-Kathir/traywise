@@ -15,6 +15,9 @@ import { Setup } from "./shell/Setup";
 import { UpdateNotice, WhatsNew } from "./shell/UpdateNotice";
 import "./shell/liquid.css";
 import "./shell/dot.css";
+import "./shell/glass.css";
+import "./shell/glass-widgets.css";
+import { trackGlassShapes } from "./shell/glassShapes";
 import "./shell/island.css";
 import { Pending, settled } from "./shell/useLive";
 
@@ -93,9 +96,12 @@ function App() {
     const back = () => clearTimeout(leave);
     const root = document.documentElement;
     const unlisten = events.panelShown.listen((e) => {
-      const { backdrop, hover } = e.payload;
+      const { backdrop, hover, no_blur } = e.payload;
+      // Glass: Energy saver took the blur away (until the app restarts), so the tint goes solid.
+      if (no_blur) root.dataset.solid = "1";
       // Transparent looks: how bright it is behind the panel (0–1), for the glass's strength.
       if (backdrop !== null) root.style.setProperty("--backdrop", String(backdrop / 100));
+      window.dispatchEvent(new Event("tw-opened"));
       clearTimeout(leave);
       clicked = false;
       root.removeEventListener("mouseleave", left);
@@ -150,10 +156,14 @@ function App() {
   // html, so the page behind the panel (the scrollbar's strip) gets the same background.
   const lookClass =
     settings &&
-    `look-${settings.look} bg-${settings.preset} accent-${settings.accent}${settings.transparent && settings.look === "dot" && !(view === "home" && editing) ? " clear" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
+    `look-${settings.look} bg-${settings.preset} accent-${settings.look === "glass" ? settings.glassAccent : settings.accent}${settings.transparent && settings.look === "dot" && !(view === "home" && editing) ? " clear" : ""}${settings.look === "glass" && settings.glassClear ? " glass-clear" : ""}${settings.look === "glass" && settings.glassVivid ? " glass-vivid" : ""}${settings.singleHue ? " flat" : ""}${settings.plainBackground ? " plain" : ""}${view === "home" && editing ? " editing" : ""}`;
   useEffect(() => {
     document.documentElement.className = lookClass ?? "";
   }, [lookClass]);
+
+  // Glass, Clear: blur only under the tiles (shell/glassShapes.ts).
+  const glassClear = settings?.look === "glass" && settings.glassClear;
+  useEffect(() => (glassClear ? trackGlassShapes() : undefined), [glassClear]);
 
   const { save, error } = useSave({ settings: settings!, onChange: setSettings });
 

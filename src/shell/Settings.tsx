@@ -9,6 +9,7 @@ const LOOKS: { id: Look; label: string }[] = [
   { id: "dot", label: "Dot" },
   { id: "liquid", label: "Tint" },
   { id: "windows", label: "Windows" },
+  { id: "glass", label: "Glass" },
 ];
 
 const SIDES: { id: EdgeSide; label: string }[] = [
@@ -102,6 +103,51 @@ export function SettingsPage(props: Props) {
         <Row label="Look" stacked>
           <Pick label="Look" options={LOOKS} value={settings.look} onChange={(look) => save({ ...settings, look })} />
         </Row>
+        {settings.look === "glass" && (
+          <Row label="Background" stacked>
+            <Pick
+              label="Background"
+              options={[
+                { id: "blur", label: "Blurred" },
+                { id: "clear", label: "Clear" },
+              ]}
+              value={settings.glassClear ? "clear" : "blur"}
+              onChange={(b) => save({ ...settings, glassClear: b === "clear" })}
+            />
+          </Row>
+        )}
+        {settings.look === "glass" && (
+          <Row label="Style" stacked>
+            <Pick
+              label="Style"
+              options={[
+                { id: "soft", label: "Soft" },
+                { id: "vivid", label: "Vivid" },
+              ]}
+              value={settings.glassVivid ? "vivid" : "soft"}
+              onChange={(v) => save({ ...settings, glassVivid: v === "vivid" })}
+            />
+          </Row>
+        )}
+        {settings.look === "glass" && (
+          <Row label="Accent">
+            <div className="colour-pick" role="radiogroup" aria-label="Accent">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.id}
+                  role="radio"
+                  aria-checked={settings.glassAccent === a.id}
+                  aria-label={a.label}
+                  title={a.label}
+                  className={settings.glassAccent === a.id ? "on" : ""}
+                  onClick={() => save({ ...settings, glassAccent: a.id })}
+                >
+                  <span className={`swatch glass-swatch accent-${a.id}`} aria-hidden />
+                </button>
+              ))}
+            </div>
+          </Row>
+        )}
         {settings.look === "dot" && (
           <>
             <Row label="Accent">

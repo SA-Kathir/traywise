@@ -36,7 +36,7 @@ function Arc({ level, dots }: { level: number; dots: number }) {
   );
 }
 
-/** Scrolling over `root`: one step per 50 px of wheel, and whatever it sits in doesn't scroll. */
+/** Scrolling over `root`: one step per 50 px of wheel, and whatever it sits in doesn't scroll. Sideways scrolling is left alone, so swiping to another page works over these tiles. */
 function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: number) => void) {
   const now = useRef(level);
   now.current = level;
@@ -44,6 +44,8 @@ function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: 
   useEffect(() => {
     const el = root.current!;
     const wheel = (e: WheelEvent) => {
+      // A sideways swipe (or Shift + wheel) is the page's: it carries on to the pages' own scrolling.
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
       tick.current -= e.deltaY / 50;
       const step = Math.trunc(tick.current);
@@ -55,6 +57,43 @@ function useWheel(root: RefObject<HTMLElement | null>, level: number, send: (v: 
     el.addEventListener("wheel", wheel, { passive: false });
     return () => el.removeEventListener("wheel", wheel);
   }, [root, send]);
+}
+
+/** Press-and-hold for a − or + button: one step at once, then repeating, faster and faster. Keyboard
+ *  activation (a click with no pointer) steps once. `base` is the level to step from while not holding. */
+function useHold(base: number, send: (v: number) => void) {
+  const timer = useRef(0);
+  const target = useRef(base);
+  const holding = useRef(false);
+  const stop = () => {
+    clearTimeout(timer.current);
+    holding.current = false;
+  };
+  useEffect(() => stop, []);
+  const step = (by: number) => {
+    target.current = clamp((holding.current ? target.current : base) + by);
+    send(target.current);
+  };
+  return (by: number) => ({
+    onPointerDown: () => {
+      holding.current = true;
+      target.current = base;
+      step(by);
+      let wait = 380;
+      const tick = () => {
+        step(by);
+        wait = Math.max(60, wait * 0.8);
+        timer.current = window.setTimeout(tick, wait);
+      };
+      timer.current = window.setTimeout(tick, wait);
+    },
+    onPointerUp: stop,
+    onPointerCancel: stop,
+    onPointerLeave: stop,
+    onClick: (e: { detail: number }) => {
+      if (e.detail === 0) step(by);
+    },
+  });
 }
 
 /** A volume or brightness tile at 1×1 or 2×2. `onToggle` (mute) is optional: without it, clicking
@@ -99,7 +138,7 @@ export function DialTile({
     setDragged(clamp(v));
     send(clamp(v));
   };
-  const step = (by: number) => send(clamp(level + by));
+  const hold = useHold(level, send);
   const text = off ? "Muted" : `${shown}%`;
   const label = off ? `${noun} muted (click to unmute)` : `${noun} ${shown}`;
 
@@ -113,11 +152,11 @@ export function DialTile({
           </span>
         </button>
         <div className="dial-row">
-          <button className="dial-step" aria-label={`Lower ${noun}`} onClick={() => step(-5)}>
+          <button className="dial-step" aria-label={`Lower ${noun}`} {...hold(-5)}>
             −
           </button>
           <span className="dial-value">{off ? text : <Num text={text} />}</span>
-          <button className="dial-step" aria-label={`Raise ${noun}`} onClick={() => step(5)}>
+          <button className="dial-step" aria-label={`Raise ${noun}`} {...hold(5)}>
             +
           </button>
         </div>

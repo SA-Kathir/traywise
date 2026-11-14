@@ -18,11 +18,12 @@ use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode, StretchBlt,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetCursorPos, GetForegroundWindow, GetWindowRect, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
+    GetCursorPos, GetForegroundWindow, GetWindowLongPtrW, GetWindowRect, GWL_STYLE, SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SetWindowLongPtrW, WS_CAPTION, IsIconic, IsWindowVisible, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE, SWP_NOZORDER,
     SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SetWindowPos, ShowWindow, SystemParametersInfoW,
 };
 use windows::core::BOOL;
 
+use super::glass::{self, Glass};
 use super::webview;
 use crate::module::Modules;
 use crate::settings::{EdgeSide, Look, Settings, SettingsState};
@@ -57,10 +58,19 @@ pub struct PanelState {
     anim: AtomicU32,
     /// While the page waits to come in: the UI says (`panel_ready`) once its tiles have their data.
     ready: Mutex<Option<std::sync::mpsc::Sender<()>>>,
+    /// The Glass look's blur, while that look is on.
+    glass: Mutex<Option<Glass>>,
+    /// Energy saver was on when the app started: Windows draws no blur for the whole run (made anew
+    /// or not, it stays a solid fill), so the UI paints a solid tint. (Turning it on later leaves the
+    /// blur alone.) Once it's off again the app restarts when the panel hides (`hide_now`).
+    no_blur: AtomicBool,
 }
 
 pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(PanelState::default());
+    if crate::modules::power::energy_saver_state() == Some(true) {
+        app.state::<PanelState>().no_blur.store(true, Ordering::Relaxed);
+    }
     let win = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::default())
         .title("Traywise")
         .inner_size(WIDTH, HEIGHT)
@@ -76,6 +86,7 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
         .shadow(false)
         .build()?;
     frame(&win, framed(&app.state::<SettingsState>().get()));
+    sync_glass(&win);
     // Windows fades a window in and out when it's shown or hidden: that fade would play on the empty
     // frame around the tiny bar (it lingered for about half a second after closing). The panel
     // animates itself.
@@ -222,6 +233,7 @@ fn show(win: &WebviewWindow) {
     webview::set_active(win, true);
     let hover = win.state::<PanelState>().hover.load(Ordering::Relaxed);
     place(win, hover);
+    sync_glass(win);
     // Before showing it, so the sample is of what's behind the panel, not the panel.
     let settings = win.state::<SettingsState>().get();
     let backdrop = if framed(&settings) { None } else { win.hwnd().ok().and_then(backdrop_brightness) };
@@ -262,7 +274,8 @@ fn show(win: &WebviewWindow) {
         page_state(win, None);
     }
     win.state::<Modules>().panel_visible(true);
-    let _ = PanelShown { backdrop, hover }.emit(win);
+    let no_blur = win.state::<PanelState>().no_blur.load(Ordering::Relaxed);
+    let _ = PanelShown { backdrop, hover, no_blur }.emit(win);
 }
 
 /// Sent to the UI each time the panel opens.
@@ -273,6 +286,8 @@ pub struct PanelShown {
     pub backdrop: Option<u8>,
     /// Opened from the screen's edge: the UI closes it when the mouse leaves.
     pub hover: bool,
+    /// The Glass look has no blur to show (see `PanelState::no_blur`).
+    pub no_blur: bool,
 }
 
 /// How bright the screen is where the panel will appear: Windows shrinks that area to an 8 × 8
@@ -356,6 +371,23 @@ fn hide_now(win: &WebviewWindow) {
     win.state::<Modules>().panel_visible(false);
     *win.state::<PanelState>().last_hidden.lock().unwrap() = Some(Instant::now());
     crate::updater::check(win.app_handle());
+    restart_for_blur(win);
+}
+
+/// The blur is lost for the whole run when Energy saver was on at launch. When it has since been
+/// switched off, restart (the panel has just closed) to get the blur back, unless a Focus cycle or
+/// Keep awake is running, which a restart would end.
+fn restart_for_blur(win: &WebviewWindow) {
+    let app = win.app_handle();
+    if win.state::<PanelState>().no_blur.load(Ordering::Relaxed)
+        && win.state::<SettingsState>().get().look == Look::Glass
+        && !win.state::<SettingsState>().get().glass_clear
+        && crate::modules::power::energy_saver_state() == Some(false)
+        && !crate::modules::focus::running(app)
+        && !crate::modules::keep_awake::running(app)
+    {
+        app.restart();
+    }
 }
 
 /// How long the tiles take to come in (the last one starts about 0.5 s in), and to blur away.
@@ -458,6 +490,9 @@ fn place(win: &WebviewWindow, edge: bool) {
     let area = monitor.work_area();
     let margin = (12.0 * scale) as i32;
     let max_height = area.size.height as i32 - 2 * margin;
+    // Glass: the window is bigger than the panel by a clear margin all round, where the panel's shadow
+    // falls; the panel itself stays where it always was.
+    let pad = if win.state::<SettingsState>().get().look == Look::Glass { (GLASS_PAD * scale).round() as i32 } else { 0 };
     let set = |width: i32, height: i32| {
         let height = height.min(max_height);
         // An edge-opened panel sits at the edge it opened from.
@@ -471,7 +506,7 @@ fn place(win: &WebviewWindow, edge: bool) {
         } else {
             area.position.y + area.size.height as i32 - height - margin
         };
-        let _ = unsafe { SetWindowPos(hwnd, None, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE) };
+        let _ = unsafe { SetWindowPos(hwnd, None, x - pad, y - pad, width + 2 * pad, height + 2 * pad, SWP_NOZORDER | SWP_NOACTIVATE) };
     };
     let (width, height) = ((WIDTH * scale).round() as i32, (HEIGHT * scale).ceil() as i32);
     set(width, height);
@@ -503,6 +538,7 @@ pub fn refresh_frame(app: &AppHandle) {
         let had_focus = win.is_focused().unwrap_or(false) || win.hwnd().is_ok_and(|h| unsafe { GetForegroundWindow() } == h);
         frame(&win, framed(&app.state::<SettingsState>().get()));
         place(&win, state.hover.load(Ordering::Relaxed));
+        sync_glass(&win);
         // Tauri's frame change hides a window it didn't show itself (the edge shows it with
         // ShowWindow, so Tauri thinks it's hidden): show it again, still without taking the keyboard.
         if was_open && !is_open(&win) && let Ok(hwnd) = win.hwnd() {
@@ -521,11 +557,107 @@ fn just_reframed(win: &WebviewWindow) -> bool {
     win.state::<PanelState>().reframed_at.lock().unwrap().is_some_and(|t| t.elapsed() < REFRAME_GUARD)
 }
 
+/// A piece of the clear variant in the page's pixels: a tile, the header or the tab bar.
+#[derive(Clone, Copy, serde::Deserialize, specta::Type)]
+pub struct ShapeRect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    radius: f64,
+    opacity: f64,
+}
+
+/// The clear variant has no blur behind the panel, only under its tiles: the page says where they are
+/// (and again whenever they move), an empty list removes it all.
+#[tauri::command]
+#[specta::specta]
+pub fn glass_shapes(app: AppHandle, shapes: Vec<ShapeRect>) {
+    let Some(win) = app.get_webview_window(LABEL) else { return };
+    let w = win.clone();
+    let _ = win.run_on_main_thread(move || {
+        let state = w.state::<PanelState>();
+        let mut glass = state.glass.lock().unwrap();
+        let Some(g) = glass.as_mut() else {
+            eprintln!("glass shapes: no blur made yet");
+            return;
+        };
+        let scale = w.scale_factor().unwrap_or(1.0) as f32;
+        let list: Vec<glass::Shape> = shapes
+            .iter()
+            .map(|s| glass::Shape {
+                x: s.x as f32 * scale,
+                y: s.y as f32 * scale,
+                width: s.width as f32 * scale,
+                height: s.height as f32 * scale,
+                radius: s.radius as f32 * scale,
+                opacity: s.opacity as f32,
+            })
+            .collect();
+        if let Err(e) = g.set_shapes(&list) {
+            eprintln!("glass shapes failed: {e}");
+        }
+    });
+}
+
 /// Whether the window gets Windows 11's frame: every look except transparent Dot, whose cards
-/// float over the desktop, where a frame would outline empty space. (Only Dot can be transparent;
-/// an old Tint file may still say so.)
+/// float over the desktop, where a frame would outline empty space, and Glass, which draws its own
+/// rim over the blur. (Only Dot can be transparent; an old Tint file may still say so.)
 fn framed(settings: &Settings) -> bool {
-    settings.look != Look::Dot || !settings.transparent
+    match settings.look {
+        Look::Dot => !settings.transparent,
+        Look::Glass => false,
+        _ => true,
+    }
+}
+
+/// Glass look's corner radius, in logical pixels (the CSS uses the same).
+const GLASS_RADIUS: f32 = 32.0;
+/// Glass look: the clear margin round the panel, in logical pixels, for its shadow (`html.look-glass body`
+/// in glass.css has the same number).
+const GLASS_PAD: f64 = 16.0;
+
+/// The Glass look's blur exists while that look is on, and fills the window. It has to be made on
+/// the thread that owns the window, hence the main thread.
+fn sync_glass(win: &WebviewWindow) {
+    let w = win.clone();
+    let _ = win.run_on_main_thread(move || {
+        let state = w.state::<PanelState>();
+        let mut glass = state.glass.lock().unwrap();
+        let settings = w.state::<SettingsState>().get();
+        // The blur is made once and then only shown or hidden (see `Glass::set_visible`): hidden for the
+        // other looks, and for the clear variant, where the tiles float straight over the desktop.
+        if settings.look != Look::Glass || settings.glass_clear {
+            if let Some(g) = glass.as_mut() {
+                let _ = g.set_visible(false);
+                if settings.look != Look::Glass {
+                    let _ = g.set_shapes(&[]);
+                }
+            }
+            // Made at start-up even when clear, so switching to the blur later has one to show.
+            if glass.is_some() || settings.look != Look::Glass {
+                return;
+            }
+        }
+        let (Ok(hwnd), Ok(size), Ok(scale)) = (w.hwnd(), w.inner_size(), w.scale_factor()) else { return };
+        let rect = glass::inset(size.width as f32, size.height as f32, GLASS_PAD as f32 * scale as f32, GLASS_RADIUS * scale as f32);
+        match glass.as_mut() {
+            Some(g) => {
+                let _ = g.set_rect(rect);
+                let _ = g.set_visible(!settings.glass_clear);
+                if !settings.glass_clear {
+                    let _ = g.set_shapes(&[]);
+                }
+            }
+            None => match Glass::attach(hwnd, rect) {
+                Ok(g) => {
+                    let _ = g.set_visible(!settings.glass_clear);
+                    *glass = Some(g);
+                }
+                Err(e) => eprintln!("glass blur failed: {e}"),
+            },
+        }
+    });
 }
 
 /// Windows 11's rounded corners, 1 px border and drop shadow, like Windows' own flyouts, or none
@@ -533,6 +665,15 @@ fn framed(settings: &Settings) -> bool {
 fn frame(win: &WebviewWindow, framed: bool) {
     let _ = win.set_shadow(framed);
     let Ok(hwnd) = win.hwnd() else { return };
+    if !framed {
+        // Windows draws a title bar for any window with this style bit, and the window library can leave
+        // it set on a borderless window (it was seen on a cold start with the Glass look).
+        unsafe {
+            let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+            SetWindowLongPtrW(hwnd, GWL_STYLE, style & !(WS_CAPTION.0 as isize));
+            let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        }
+    }
     let corners = if framed { DWMWCP_ROUND } else { DWMWCP_DONOTROUND };
     let color = if framed { DWMWA_COLOR_DEFAULT } else { DWMWA_COLOR_NONE };
     unsafe {
