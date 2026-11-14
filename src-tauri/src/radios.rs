@@ -43,6 +43,39 @@ pub fn set_radio(kind: RadioKind, on: bool) -> Result<(), String> {
     set().map_err(|e| e.to_string()).and_then(|r| r)
 }
 
+/// Airplane mode as Windows means it: every radio (Wi-Fi, Bluetooth, mobile) is off. None if this
+/// PC has no radios, or Windows won't say.
+pub fn airplane_mode() -> Option<bool> {
+    mta();
+    let radios = Radio::GetRadiosAsync().ok()?.join().ok()?;
+    let mut any = false;
+    for r in radios {
+        any = true;
+        if r.State() == Ok(RadioState::On) {
+            return Some(false);
+        }
+    }
+    any.then_some(true)
+}
+
+/// Turns airplane mode on (every radio off) or off (every radio on), like Windows' own toggle.
+pub fn set_airplane_mode(on: bool) -> Result<(), String> {
+    let set = || -> windows::core::Result<Result<(), String>> {
+        if Radio::RequestAccessAsync()?.join()? != RadioAccessStatus::Allowed {
+            return Ok(Err("Windows won't let apps switch radios (Settings › Privacy › Radios)".into()));
+        }
+        for r in Radio::GetRadiosAsync()?.join()? {
+            let status = r.SetStateAsync(if on { RadioState::Off } else { RadioState::On })?.join()?;
+            if status != RadioAccessStatus::Allowed {
+                return Ok(Err(format!("Windows refused ({status:?})")));
+            }
+        }
+        Ok(Ok(()))
+    };
+    mta();
+    set().map_err(|e| e.to_string()).and_then(|r| r)
+}
+
 /// This PC's first radio of a kind, if it has one.
 fn radio(kind: RadioKind) -> windows::core::Result<Option<Radio>> {
     mta();

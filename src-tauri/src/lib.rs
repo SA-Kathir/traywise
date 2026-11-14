@@ -52,6 +52,8 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::quick_toggles::quick_toggles_set_dark,
             modules::quick_toggles::quick_toggles_set_desktop_icons,
             modules::quick_toggles::quick_toggles_lock,
+            modules::quick_toggles::quick_toggles_set_airplane,
+            modules::quick_toggles::quick_toggles_set_hotspot,
             modules::now_playing::now_playing_state,
             modules::now_playing::now_playing_control,
             modules::wifi::wifi_state,

@@ -106,6 +106,7 @@ pub enum Reading {
     Memory,
     Download,
     Upload,
+    Gpu,
 }
 
 /// How the clock tile draws the time.
