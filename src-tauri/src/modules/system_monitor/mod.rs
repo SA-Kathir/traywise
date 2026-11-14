@@ -1,8 +1,9 @@
-//! System monitor: CPU, memory, network, battery and free disk space.
+//! System monitor: CPU, memory, GPU, network, battery and free disk space.
 //!
 //! Sampled once a second, and only while the panel is open. While it's closed the thread sleeps
 //! and nothing is measured, so hidden CPU use doesn't change with this module on.
 
+mod gpu;
 mod worker;
 
 pub(crate) use worker::battery;
@@ -32,6 +33,9 @@ pub struct SystemSample {
     pub cpu: Option<u8>,
     /// The processor's current clock speed in MHz, as Task Manager's "Speed".
     pub cpu_mhz: Option<u32>,
+    /// Percent of the busiest GPU engine, as Task Manager. Only measured while a GPU reading is on the
+    /// board; None otherwise (and for the first second after opening).
+    pub gpu: Option<u8>,
     /// MiB.
     pub memory_used: u32,
     pub memory_total: u32,
@@ -65,6 +69,8 @@ pub struct Battery {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, specta::Type)]
 pub struct Point {
     pub cpu: u8,
+    /// Percent, 0 when the GPU isn't being measured.
+    pub gpu: u8,
     /// Memory in use, percent.
     pub memory: u8,
     /// Bytes a second.
@@ -179,7 +185,7 @@ mod tests {
     fn history_keeps_the_last_60() {
         let mut history = VecDeque::new();
         for cpu in 0..=70 {
-            push_history(&mut history, Point { cpu, memory: 0, download: 0, upload: 0 });
+            push_history(&mut history, Point { cpu, gpu: 0, memory: 0, download: 0, upload: 0 });
         }
         assert_eq!(history.len(), 60);
         assert_eq!(history.front().unwrap().cpu, 11);
