@@ -19,22 +19,22 @@ Pick a look when you first start it, and change it any time in Settings:
 
 Each module can be switched on or off in **Settings → Modules**. A module that's off doesn't run at all.
 
-- **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume.
+- **Volume mixer**: the volume and mute of each app that's playing sound, plus the master volume, on tiles that are a ring, a dial or a set of sliders.
 - **Now playing**: what any app is playing (Spotify, a browser tab, a video player), with its cover art, play/pause, skip, a seek bar, shuffle and repeat. The Sound tab lists every app with media.
 - **Audio devices**: pick the default speakers or headphones, and the default microphone, in one click, and mute every microphone at once (also with a shortcut, Ctrl+Alt+M by default, set in **Settings → Shortcuts**). Optionally lowers the speakers when your headphones disconnect.
-- **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, or while plugged in. Can keep the screen on too.
-- **System monitor**: CPU, memory, network speed (and totals since the PC started), your local IP (hidden until you click it), battery and free disk space, with a 60-second graph. It only measures while the panel is open.
+- **Keep awake**: stop the PC from sleeping, until you turn it off, for a set time, while plugged in, or while an external screen is connected (Docked). Can keep the screen on too.
+- **System monitor**: CPU, memory, GPU, network speed (and totals since the PC started), your local IP (hidden until you click it), battery and free disk space, with a 60-second graph. It only measures while the panel is open.
 - **Wi-Fi**: switch it on or off, see the network you're on, and join another (a new network's password goes straight to Windows). Showing network names counts as location use in Windows 11.
 - **Bluetooth**: switch it on or off, see your paired devices, and connect or disconnect headphones and speakers.
-- **Quick toggles**: switch light/dark mode, show or hide desktop icons, and lock the screen.
-- **Displays**: a brightness slider for each screen, and **Project**: PC screen only, Duplicate, Extend or Second screen only.
+- **Quick toggles**: switch light/dark mode, show or hide desktop icons, lock the screen, and turn Airplane mode and the Mobile hotspot on or off.
+- **Displays**: a brightness slider for each screen, its refresh rate, and **Project**: PC screen only, Duplicate, Extend or Second screen only.
 - **Power**: Windows' power mode, the battery with time left, and whether Energy saver is on.
 - **Clock**: the time and date as a digital or analogue tile, with an optional second time zone.
 - **Focus**: Do not disturb with a Pomodoro-style cycle of focus and rest rounds, shown as an arc or an hourglass, with an optional chime.
 
-Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel (Esc closes it too). Right-click the tray icon for Settings, mute microphones, Keep awake and Quit. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
+Left-click the tray icon or press **Ctrl+Alt+T** to open or close the panel (Esc closes it too); it opens on the screen the mouse is on. Right-click the tray icon for Settings, mute microphones, Keep awake and Quit. You can also switch on **Settings → Opening → Open from the screen edge**: rest the mouse on the middle of the screen's left or right edge and the panel comes in.
 
-**Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
+**Home** is a board of tiles you arrange yourself: tap the pencil (or hold a tile) to move, resize, remove or add tiles in sizes from 1×1 to 4×2. Adding or resizing a tile shows it as it really looks, to swipe through its sizes and variants. The other tabs (Sound, System, Connect) hold each module's full controls. Settings and Quit are at the top of the panel; you can also right-click the tray icon to quit.
 
 ## Install
 
