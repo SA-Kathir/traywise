@@ -21,7 +21,7 @@ Decisions with the owner:
 | Words | **OCR-A** (public domain, bundled, one weight, no faux bold), a size smaller than the Segoe ramp because it's wide. |
 | Modes | **Dark and light**, following Windows' app mode. |
 | Glass | **Every tile and card is frosted** (level-2 glass), the owner's pick after seeing it in the app. |
-| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent samples an 8 × 8 brightness once as the panel opens, then deletes it. |
+| Background | **Plain** (default), **Dots** or **Transparent** (Settings › Background). It's never read from the desktop, with one exception: Transparent (and the Glass look) samples an 8 × 8 brightness once as the panel opens, then deletes it. |
 | On tiles | **Inverted plate** (white in dark, black in light) with a 6 px accent "live" dot. Red stays rare. |
 | Danger | **Orange-red, separate from the accent**, so an error never looks like "on". |
 | Board pages (0.3) | As built: **plain dots** at the panel bottom, a **page bar** in edit mode, and tiles move by **dropping them on a page's dot**. (The owner kept their own picks over the Figma pill and Move to bar.) |
@@ -302,6 +302,21 @@ The same layouts and sizes in Tint and Windows. What changes:
 - **Accent:** "on" tiles and selections fill with the look's accent (the Tint preset's, or Windows blue #4CC2FF).
 - **Page dots and page bar:** the same plain dots and bar in every look (ink at 30 %, the current page full); the drop target uses the look's accent.
 - **Analogue clock:** line ticks and solid hands instead of dots.
+
+### Glass look
+
+Figma: v0.4 › Glass look. Styles in `src/shell/glass.css` and `glass-widgets.css`; the blur is `src-tauri/src/shell/glass.rs`.
+
+- **Always dark.** One dark look in Windows' light and dark mode.
+- **The window** is 16 px bigger than the panel all round (`GLASS_PAD` in `shell/panel.rs`), clear, so the panel can cast a shadow; the panel stays where it always was.
+- **The panel:** Windows blurs the desktop behind it (a host backdrop brush); the page adds a light dark tint (20 %), a dark 1.5 px outline with a soft inner shadow, a 1.5 px rim lit with the accent at the top left and bottom right over an even thin edge, a 32 px radius and the same drop shadow the tiles have.
+- **Tiles and cards:** a dark translucent sheet (36 % of #0E1116), 24 px radius, a 1 px gradient rim lit at the top left and bottom right, a light lip just inside it and a deep drop shadow (`0 12 24 -6`); no blur of their own and no white fill or glare. The tab bar and the round buttons at the top carry the same shadows.
+- **Selected or on:** the accent in the rim (hot at the two lit corners), the text and icons; the body is the same dark glass with a trace of the accent. No glow behind it. Switches turn lit accent glass; slider fills are the accent as frosted glass.
+- **Style** (Settings › Appearance): **Soft** (default) has no drop shadow under tiles and no accent rim; a lit tile is tinted 15 % → 8 % with the accent, and its text and icons take it. **Vivid** has a deep drop shadow under every tile and lit tiles with a 2 px accent rim hottest at the two corners, a blue lip and a light tint (hover lights the corners the same way). `.glass-vivid` in `glass.css`.
+- **Clear background** (Settings › Appearance): no blur, tint, outline or panel shadow. The tiles get a darker sheet, the name of the app and the header buttons share one big pill, the tab bar is a pill, and settings cards are nearly solid so text behind them can't show through.
+- **Accent:** its own choice in Settings (blue by default; green, amber, violet, red). `--tw-glass-accent` is the soft colour for text and rims, `--tw-glass-blue` the deeper one for lit glass. Focus's break phase takes a second colour.
+- **Bright desktops:** the one 8 × 8 brightness sample (also used by transparent Dot) darkens the Clear tiles and the tile text's shadow over bright wallpapers. See the privacy note in CLAUDE.md.
+- **Energy saver:** Windows draws no blur while it's on, so the page switches to a solid frosted grey. Windows decides this when the app starts: Traywise restarts itself when it's switched off again (when the panel closes, and not while a Focus cycle or Keep awake is running).
 
 ## Open questions
 

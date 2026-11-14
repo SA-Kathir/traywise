@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { commands, events, type Display, type Project } from "../../bindings";
+import { DialTile, FaderTile } from "../../shell/Dial";
 import { Slider } from "../../shell/Slider";
 import { Num, Tile, TileCard } from "../../shell/Tile";
 import { useLive } from "../../shell/useLive";
@@ -9,6 +10,7 @@ import type { TileProps } from "..";
 const SUN = String.fromCodePoint(0xe706);
 const LAPTOP = String.fromCodePoint(0xe7f8);
 const MONITOR = String.fromCodePoint(0xe7f4);
+const REFRESH = String.fromCodePoint(0xe72c); // "Refresh"
 
 /** The Project icons, drawn: laptop, two overlapping screens, two side by side, a desktop monitor.
  *  The stroke stays 1.3 px at every size (non-scaling, see `.project-icon` in liquid.css). */
@@ -62,21 +64,30 @@ export function Tiles({ kind, size, open }: TileProps) {
   const state = useDisplays();
   if (!state) return null;
   if (kind === "project") return <ProjectTile project={state.project} size={size} open={open} />;
+  if (kind === "refresh") return <RefreshTile displays={state.displays} size={size} open={open} />;
   const main = state.displays.find((d) => d.brightness !== null);
   if (!main) return <Tile size={size} icon={SUN} label="Brightness" detail="Can't change" onOpen={open} />;
   const level = main.brightness!;
-  if (size === "1x1")
-    return (
-      <button className="tile vol size-1x1" style={{ "--level": `${level}%` } as CSSProperties} title={`Brightness: ${level}`} onClick={open}>
-        <Num text={String(level)} />
-        <span className="vol-icon" aria-hidden>
-          {SUN}
-        </span>
-      </button>
-    );
   const changeable = state.displays.filter((d) => d.brightness !== null);
-  // 4×2 with one screen: the 2×2 layout, wider, rather than one row and a gap.
-  const big = size === "2x2" || (size === "4x2" && changeable.length === 1);
+  // The sliders variant: a slider for each screen (three fit).
+  if (kind === "brightness-sliders")
+    return (
+      <FaderTile
+        items={changeable.slice(0, 3).map((d) => ({
+          key: d.id,
+          name: d.name,
+          icon: <span className="dial-icon">{d.internal ? LAPTOP : MONITOR}</span>,
+          level: d.brightness!,
+          onChange: setBrightness(d),
+        }))}
+      />
+    );
+  if (size === "1x1" || size === "2x2")
+    return (
+      <DialTile size={size} noun="Brightness" icon={SUN} level={level} detail={main.name} onChange={setBrightness(main)} open={open} />
+    );
+  // 4×2 with one screen: the old 2×2 layout, wider, rather than one row and a gap.
+  const big = size === "4x2" && changeable.length === 1;
   if (size !== "4x2" || big)
     return (
       <div className={`tile vol size-${size}`}>
@@ -139,6 +150,25 @@ function Bar({ display }: { display: Display }) {
         {SUN}
       </span>
     </div>
+  );
+}
+
+/** The first screen's refresh rate (the laptop's own, if it's on); a tap goes on to the next rate it offers. */
+function RefreshTile({ displays, size, open }: { displays: Display[]; size: TileProps["size"]; open: () => void }) {
+  const screen = displays.find((d) => d.refresh);
+  const refresh = screen?.refresh;
+  if (!screen || !refresh) return <Tile size={size} icon={REFRESH} label="Refresh rate" detail="Can't change" onOpen={open} />;
+  const { now, rates } = refresh;
+  const next = rates[(rates.indexOf(now) + 1) % rates.length];
+  return (
+    <Tile
+      size={size}
+      icon={REFRESH}
+      label="Refresh rate"
+      detail={`${now} Hz`}
+      onToggle={rates.length > 1 ? () => commands.displaysSetRefresh(screen.id, next) : undefined}
+      onOpen={open}
+    />
   );
 }
 
@@ -230,6 +260,18 @@ export default function Panel() {
             {d.brightness === null ? <span className="tile-detail">Can't change</span> : <Num text={String(d.brightness)} />}
           </div>
           {d.brightness !== null && <Bar display={d} />}
+          {d.refresh && d.refresh.rates.length > 1 && (
+            <div className="refresh-row">
+              <span>Refresh rate</span>
+              <div className="segmented" role="group" aria-label={`${d.name} refresh rate`}>
+                {d.refresh.rates.map((hz) => (
+                  <button key={hz} className={hz === d.refresh!.now ? "on" : ""} onClick={() => commands.displaysSetRefresh(d.id, hz)}>
+                    <Num text={`${hz} Hz`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
       {state.displays.some((d) => !d.internal && d.brightness === null) && (

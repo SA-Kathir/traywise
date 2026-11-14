@@ -109,10 +109,11 @@ export function shift(tiles: Placed[], id: string, by: -1 | 1): Placed[] {
   return tiles;
 }
 
-export function resize(tiles: Placed[], id: string, w: number, h: number, auto: boolean): Placed[] {
+/** Gives tile `id` a new size, and optionally another id (swapping it for a variant of itself). */
+export function resize(tiles: Placed[], id: string, w: number, h: number, auto: boolean, newId = id): Placed[] {
   const t = tiles.find((t) => t.id === id);
   if (!t) return tiles;
-  const resized = clampX({ ...t, w, h });
+  const resized = clampX({ ...t, id: newId, w, h });
   if (auto) return pack(tiles.map((o) => (o === t ? resized : o)));
   return settle([resized], tiles.filter((o) => o !== t));
 }

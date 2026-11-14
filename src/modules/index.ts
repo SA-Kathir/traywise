@@ -34,6 +34,11 @@ export type TileProps = {
   readings?: [Reading, Reading] | null;
 };
 
+/** A tile a module offers. `group` marks a variant of another tile (that tile's kind): the Add
+ *  tiles gallery shows a tile and its variants together. `notes` say, in a few words, what each size
+ *  is: they caption the gallery. */
+export type TileInfo = { name: string; sizes: Size[]; group?: string; notes?: Partial<Record<Size, string>> };
+
 /** What the shell needs to show a module. The components are lazy: a disabled module's code never loads. */
 export type ModuleUi = {
   name: string;
@@ -45,8 +50,8 @@ export type ModuleUi = {
   /** What it does while nothing is happening, after "Idle: " on the Modules page. */
   idle: string;
   /** The tiles it offers for the home board, by kind: a name, and the sizes it comes in, smallest
-   *  first (resizing cycles through them). Plain data, so listing them doesn't load the module. */
-  tiles: Record<string, { name: string; sizes: Size[] }>;
+   *  first (the gallery swipes through them). Plain data, so listing them doesn't load the module. */
+  tiles: Record<string, TileInfo>;
   /** Draws one of its tiles. */
   Tiles: LazyExoticComponent<ComponentType<TileProps>>;
   /** Its own page, opened from its tiles. Quick toggles has none. */

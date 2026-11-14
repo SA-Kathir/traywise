@@ -8,10 +8,17 @@ const ARC = 19;
 export function Arc({ lit }: { lit: number }) {
   return (
     <svg className="pomo-arc" viewBox="0 0 116 60" aria-hidden>
-      {Array.from({ length: ARC }, (_, i) => {
-        const a = Math.PI + (i / (ARC - 1)) * Math.PI;
-        return <circle key={i} cx={58 + 52 * Math.cos(a)} cy={57 + 52 * Math.sin(a)} r={2.5} className={i < lit ? "lit" : undefined} />;
-      })}
+      <g className="dots">
+        {Array.from({ length: ARC }, (_, i) => {
+          const a = Math.PI + (i / (ARC - 1)) * Math.PI;
+          return <circle key={i} cx={58 + 52 * Math.cos(a)} cy={57 + 52 * Math.sin(a)} r={2.5} className={i < lit ? "lit" : undefined} />;
+        })}
+      </g>
+      {/* The Glass look draws a smooth arc instead of the dots. */}
+      <g className="smooth">
+        <path className="smooth-track" d="M6 57A52 52 0 0 1 110 57" pathLength={100} />
+        {lit > 0 && <path className="smooth-fill" d="M6 57A52 52 0 0 1 110 57" pathLength={100} strokeDasharray={`${(lit / ARC) * 100} 100`} />}
+      </g>
     </svg>
   );
 }

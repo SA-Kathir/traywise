@@ -564,21 +564,74 @@
   top: 50%;
   translate: 0 -50%;
 }
-.look-dot :is(.vol-bar .vol-icon, .vol.size-1x1 > *) {
+.look-dot .vol-bar .vol-icon {
   color: #fff;
   mix-blend-mode: difference;
-}
-.look-dot .vol.size-1x1::before {
-  background: var(--tw-control-fill);
 }
 .look-dot .vol .num {
   font-size: 20px;
 }
-.look-dot .vol.size-1x1 .num {
-  font-size: 24px;
-}
 .look-dot .vol-big .num {
   font-size: 48px;
+}
+/* The dials: dots instead of a solid arc; hovering grows the leading dot into the drag handle. */
+.look-dot .dial-solid {
+  display: none;
+}
+.look-dot .dial-dots {
+  display: inline;
+}
+.look-dot .dial-dots circle {
+  fill: var(--tw-control-track);
+}
+.look-dot .dial-dots circle.lit {
+  fill: var(--tw-control-fill);
+}
+.look-dot .dial:hover .dial-dots circle.lead {
+  r: 6.5;
+  fill: var(--tw-accent-base);
+}
+.look-dot .dial.size-2x2 .dial-dots circle {
+  r: 2.8;
+}
+.look-dot .dial .num {
+  font-size: 14px;
+}
+/* Faders in Dot: a column of dots, lit from the bottom, the lead dot growing on hover. */
+.look-dot .fader.main {
+  border-color: var(--tw-accent-base);
+}
+.look-dot .fader-track {
+  overflow: visible;
+  background: none;
+}
+.look-dot .fader-fill {
+  display: none;
+}
+.look-dot .fader-dots {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 3px 0;
+}
+.look-dot .fader-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tw-control-track);
+  transition: scale 0.15s;
+}
+.look-dot .fader-dots i.lit {
+  background: var(--tw-control-fill);
+}
+.look-dot .fader:hover .fader-dots i.lead {
+  background: var(--tw-accent-base);
+  scale: 1.9;
+}
+.look-dot .dial-big .num {
+  font-size: 34px;
 }
 .look-dot .vol .tile-title .tile-detail {
   color: var(--tw-text-tertiary);
@@ -1356,4 +1409,27 @@
 /* A thin accent ring (the panel's own accent edge is in liquid.css, for every look). */
 .look-dot .board:not(.editing) .tile:hover {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-accent-base) 55%, transparent);
+}
+
+/* The tile gallery: monochrome, the button inverted like a selected pill. */
+.look-dot .gallery-stage {
+  background: var(--tw-glass-tile);
+  border: 1px solid var(--tw-glass-edge);
+}
+.look-dot .gallery-current {
+  background: var(--tw-accent-tint);
+  border-color: var(--tw-accent-base);
+}
+.look-dot .gallery-dots i {
+  background: var(--tw-control-track);
+}
+.look-dot .gallery-dots i.on {
+  background: var(--tw-control-fill);
+}
+.look-dot .gallery-note {
+  color: var(--tw-text-secondary);
+}
+.look-dot .gallery-action {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
 }

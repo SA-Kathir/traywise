@@ -7,6 +7,8 @@
 
 use std::ffi::c_void;
 use std::ptr;
+use std::sync::atomic::{AtomicU8, Ordering};
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
@@ -14,7 +16,7 @@ use tauri_specta::Event;
 use windows::Win32::Foundation::{HANDLE, HLOCAL, LocalFree};
 use windows::Win32::System::Registry::{HKEY_LOCAL_MACHINE, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::System::Power::{
-    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, EFFECTIVE_POWER_MODE, EFFECTIVE_POWER_MODE_V2, HPOWERNOTIFY,
+    DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS, EFFECTIVE_POWER_MODE, EFFECTIVE_POWER_MODE_V2, EffectivePowerModeBatterySaver, HPOWERNOTIFY,
     PowerGetActiveScheme, PowerReadDCValueIndex, PowerRegisterForEffectivePowerModeNotifications, PowerSettingRegisterNotification,
     PowerSettingUnregisterNotification, PowerUnregisterFromEffectivePowerModeNotifications,
 };
@@ -90,7 +92,53 @@ fn read() -> PowerState {
         };
         (read == 0).then_some(percent.min(100) as u8)
     });
-    PowerState { mode: plan.and_then(mode), energy_saver: saver_on(switched_on(), battery.as_ref(), at), battery, energy_saver_at: at }
+    PowerState { mode: plan.and_then(mode), energy_saver: energy_saver_from(battery.as_ref(), at), battery, energy_saver_at: at }
+}
+
+/// What Windows itself says the power mode is: Energy saver shows up as a mode of its own, and that is
+/// the real state (the guesses below can't tell "switched off by hand" from "turns on by itself on
+/// battery"). 0: not heard yet, 1: Energy saver off, 2: on.
+static SAVER: AtomicU8 = AtomicU8::new(0);
+
+unsafe extern "system" fn on_effective_mode(mode: EFFECTIVE_POWER_MODE, _: *const c_void) {
+    SAVER.store(if mode == EffectivePowerModeBatterySaver { 2 } else { 1 }, Ordering::Relaxed);
+}
+
+/// Starts listening for it for as long as the app runs (the Glass look needs it even with the Power
+/// module off). Windows answers right away; this waits a moment for that first answer.
+pub fn watch_energy_saver() {
+    let mut handle = ptr::null_mut();
+    // shortcut: never unregistered; it lives as long as the app does.
+    let registered = unsafe { PowerRegisterForEffectivePowerModeNotifications(EFFECTIVE_POWER_MODE_V2, Some(on_effective_mode), None, &mut handle) };
+    if registered.is_ok() {
+        for _ in 0..150 {
+            if SAVER.load(Ordering::Relaxed) != 0 {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+
+/// What Windows itself last said about Energy saver, or None before it has said anything. The Glass
+/// look decides by this alone: a guess (battery level) could be wrong and restart the app for nothing.
+pub fn energy_saver_state() -> Option<bool> {
+    match SAVER.load(Ordering::Relaxed) {
+        // Not Battery saver mode, but Energy saver can still be on: switching it by hand doesn't
+        // change the effective mode on every PC (it stays "Best power efficiency", say), so Windows
+        // sends no notice either way. The switch itself is the answer then.
+        1 => Some(switched_on()),
+        2 => Some(true),
+        _ => None,
+    }
+}
+
+fn energy_saver_from(battery: Option<&Battery>, at: Option<u8>) -> bool {
+    match SAVER.load(Ordering::Relaxed) {
+        1 => false,
+        2 => true,
+        _ => saver_on(switched_on(), battery, at),
+    }
 }
 
 /// Whether Energy saver is on: switched on by hand, or on battery at or below the level it turns
@@ -222,7 +270,9 @@ unsafe extern "system" fn on_setting(context: *const c_void, _: u32, _: *const c
     0
 }
 
-unsafe extern "system" fn on_mode(_: EFFECTIVE_POWER_MODE, context: *const c_void) {
+unsafe extern "system" fn on_mode(mode: EFFECTIVE_POWER_MODE, context: *const c_void) {
+    // Up to date before the state is read and sent (the other listener may not have run yet).
+    unsafe { on_effective_mode(mode, ptr::null()) };
     publish(unsafe { &*(context as *const AppHandle) });
 }
 

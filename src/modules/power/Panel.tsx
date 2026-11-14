@@ -13,6 +13,13 @@ const MODES: { mode: PowerMode; label: string; short: string; icon: string }[] =
   { mode: "performance", label: "Performance", short: "Max", icon: BOLT },
 ];
 
+/** The Power mode tile's own icon (the design's gauge), so it never looks like the Battery's charging bolt. */
+const MODE_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden>
+    <path d="M4 16a8 8 0 0 1 16 0M12 16l4-5" />
+  </svg>
+);
+
 const usePower = () => useLive(commands.powerState, events.powerChanged);
 
 /** "4h 10m", "35m", "Charging": the battery's second line, short enough for a 2×1 tile. */
@@ -69,7 +76,7 @@ export function Tiles({ kind, size, open }: TileProps) {
   return (
     <Tile
       size={size}
-      icon={(current ?? MODES[1]).icon}
+      icon={MODE_ICON}
       label="Power mode"
       detail={current ? (size === "1x1" ? current.short : current.label) : "None"}
       onToggle={next && !state.energySaver ? () => commands.powerSetMode(next.mode) : undefined}
@@ -85,9 +92,13 @@ function Gauge({ percent }: { percent: number }) {
     <svg className="gauge" viewBox="0 0 44 18" aria-hidden>
       <rect x="0.5" y="0.5" width="39" height="17" rx="4" fill="none" stroke="currentColor" />
       <rect x="41" y="6" width="2.5" height="6" rx="1" fill="currentColor" />
-      {Array.from({ length: 16 }, (_, i) => (
-        <circle key={i} cx={5.5 + (i % 8) * 4.1} cy={i < 8 ? 6.5 : 11.5} r="1.4" className={i % 8 < lit ? "lit" : undefined} />
-      ))}
+      <g className="gauge-dots">
+        {Array.from({ length: 16 }, (_, i) => (
+          <circle key={i} cx={5.5 + (i % 8) * 4.1} cy={i < 8 ? 6.5 : 11.5} r="1.4" className={i % 8 < lit ? "lit" : undefined} />
+        ))}
+      </g>
+      {/* The Glass look fills the cell instead of lighting dots. */}
+      <rect className="gauge-bar" x="2" y="2" width={Math.max(3, (percent / 100) * 36)} height="14" rx="2.5" />
     </svg>
   );
 }

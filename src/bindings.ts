@@ -25,6 +25,11 @@ export const commands = {
 	 *  it was opened from, say): false then, and the UI asks again a moment later.
 	 */
 	hidePanel: () => __TAURI_INVOKE<boolean>("hide_panel"),
+	/**
+	 *  The clear variant has no blur behind the panel, only under its tiles: the page says where they are
+	 *  (and again whenever they move), an empty list removes it all.
+	 */
+	glassShapes: (shapes: ShapeRect[]) => __TAURI_INVOKE<void>("glass_shapes", { shapes }),
 	getSettings: () => __TAURI_INVOKE<Settings>("get_settings"),
 	/**  Saves the settings, then starts or stops modules to match. */
 	setSettings: (settings: Settings) => typedError<null, string>(__TAURI_INVOKE("set_settings", { settings })),
@@ -78,12 +83,16 @@ export const commands = {
 	displaysState: () => __TAURI_INVOKE<DisplaysState>("displays_state"),
 	/**  Percent. Sent as the slider moves; the worker keeps up by skipping to the latest value. */
 	displaysSetBrightness: (id: string, percent: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_brightness", { id, percent })),
+	/**  Switches a screen to another refresh rate it offers, at the same resolution. */
+	displaysSetRefresh: (id: string, hz: number) => typedError<null, string>(__TAURI_INVOKE("displays_set_refresh", { id, hz })),
 	displaysSetProject: (project: Project) => typedError<null, string>(__TAURI_INVOKE("displays_set_project", { project })),
 	quickTogglesState: () => __TAURI_INVOKE<QuickTogglesState>("quick_toggles_state"),
 	/**  Switches apps and Windows itself between dark and light, like Settings > Personalization > Colors. */
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	quickTogglesSetAirplane: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_airplane", { on })),
+	quickTogglesSetHotspot: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_hotspot", { on })),
 	/**  The latest state. Empty while the module is switched off. */
 	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
 	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
@@ -230,6 +239,11 @@ export type Display = {
 	internal: boolean,
 	/**  Percent. None when it can't be changed from here (a monitor without DDC/CI, or with it off). */
 	brightness: number | null,
+	/**
+	 *  The screen's refresh rate and the ones it offers at its current resolution. None if Windows
+	 *  won't say.
+	 */
+	refresh: Refresh | null,
 };
 
 /**  Sent when the panel opens (once the screens have been read) and after the Project choice changes. */
@@ -300,7 +314,10 @@ export type KeepAwakeState = {
 	mode: Mode,
 	/**  Also keep the display on. */
 	display: boolean,
-	/**  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery. */
+	/**
+	 *  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery, or
+	 *  `whileExternalDisplay` mode with no external screen.
+	 */
 	active: boolean,
 	/**  Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`). */
 	endsAt: number | null,
@@ -309,6 +326,8 @@ export type KeepAwakeState = {
 	 *  so only keeping the display on keeps it awake.
 	 */
 	screenOffSleeps: boolean,
+	/**  The external screens found, by name: what Docked mode goes by. */
+	external: string[],
 };
 
 export type Level = {
@@ -327,7 +346,9 @@ export type Look =
 /**  Glass cards over a colour preset's background. */
 "liquid" | 
 /**  Flat, like Windows 11's own flyouts, following Windows' light or dark mode. */
-"windows";
+"windows" | 
+/**  Frosted glass: Windows blurs the desktop behind a transparent panel (`shell/glass.rs`). */
+"glass";
 
 export type MediaAction = "playPause" | "next" | "previous" | 
 /**  Jump to this many milliseconds into the track. */
@@ -381,7 +402,9 @@ export type Mode = "off" |
 /**  For this many minutes, then off. */
 { minutes: number } | 
 /**  Only while the PC runs on mains power. */
-"whilePluggedIn";
+"whilePluggedIn" | 
+/**  Only while an external screen is connected (a docked laptop). */
+"whileExternalDisplay";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
 export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
@@ -405,6 +428,8 @@ export type PanelShown = {
 	backdrop: number | null,
 	/**  Opened from the screen's edge: the UI closes it when the mouse leaves. */
 	hover: boolean,
+	/**  The Glass look has no blur to show (see `PanelState::no_blur`). */
+	no_blur: boolean,
 };
 
 /**  Which part of the cycle is running. */
@@ -414,6 +439,8 @@ export type Phase = "focus" | "rest" |
 
 export type Point = {
 	cpu: number,
+	/**  Percent, 0 when the GPU isn't being measured. */
+	gpu: number,
 	/**  Memory in use, percent. */
 	memory: number,
 	/**  Bytes a second. */
@@ -454,10 +481,27 @@ export type QuickTogglesState = {
 	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
 	dark: boolean,
 	desktopIcons: boolean,
+	/**
+	 *  Every radio off. None until first read (it waits on Windows, so it comes a moment after the
+	 *  rest), or if this PC has no radios.
+	 */
+	airplane: boolean | null,
+	/**
+	 *  Windows' Mobile hotspot, shared from the internet connection. None until read, or if this PC
+	 *  can't share one.
+	 */
+	hotspot: boolean | null,
 };
 
 /**  A reading the system monitor graphs. */
-export type Reading = "cpu" | "memory" | "download" | "upload";
+export type Reading = "cpu" | "memory" | "download" | "upload" | "gpu";
+
+export type Refresh = {
+	/**  Hz. */
+	now: number,
+	/**  Hz, lowest first. Always includes `now`. */
+	rates: number[],
+};
 
 export type Repeat = "off" | "track" | "list";
 
@@ -471,6 +515,12 @@ export type Settings = {
 	preset: Preset,
 	/**  Dot: the accent colour. */
 	accent: Accent,
+	/**  Glass: the accent colour (its own choice, so Dot's default red doesn't leak in; blue by default). */
+	glassAccent?: Accent,
+	/**  Glass: no blur behind the panel; only the tiles, the header and the tab bar are glass, floating over the desktop. */
+	glassClear?: boolean,
+	/**  Glass: Vivid (accent rims, tinted lit tiles, shadows) instead of the default Soft. */
+	glassVivid?: boolean,
 	/**  Dot: a plain gradient behind the tiles instead of the dot grid. */
 	plainBackground: boolean,
 	/**  Global shortcut that mutes or unmutes every microphone (Audio devices), like "Ctrl+Alt+M". */
@@ -535,6 +585,16 @@ export type SettingsPage =
 /**  Power & battery › Energy saver, which apps can read but not switch. */
 "energySaver";
 
+/**  A piece of the clear variant in the page's pixels: a tile, the header or the tab bar. */
+export type ShapeRect = {
+	x: number | null,
+	y: number | null,
+	width: number | null,
+	height: number | null,
+	radius: number | null,
+	opacity: number | null,
+};
+
 export type ShortcutStatus = {
 	/**  Like "Ctrl+Alt+M". */
 	keys: string,
@@ -551,6 +611,11 @@ export type SystemSample = {
 	cpu: number | null,
 	/**  The processor's current clock speed in MHz, as Task Manager's "Speed". */
 	cpuMhz: number | null,
+	/**
+	 *  Percent of the busiest GPU engine, as Task Manager. Only measured while a GPU reading is on the
+	 *  board; None otherwise (and for the first second after opening).
+	 */
+	gpu: number | null,
 	/**  MiB. */
 	memoryUsed: number,
 	memoryTotal: number,

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0 (2026-11-14)
+
+Two big things: the **Glass** look, and widgets that are nicer to use (dials, sliders, and a gallery for choosing a tile's size and look). Plus GPU, refresh rate, hotspot and airplane tiles, and Traywise now works on every screen.
+
+- **Glass look.** A fourth look: Windows blurs the desktop behind a transparent panel, with dark translucent tiles, a lit rim and one soft accent colour you choose (blue, green, amber, violet or red), always dark, in Windows' light mode too. A **Style** choice (**Soft**, the default, or **Vivid** with accent rims and shadows) and a **Clear** background option drop the blur and the panel, leaving only the tiles, the header and the tab bar floating over the desktop. While Energy saver is on, Windows draws no blur, so the panel shows a frosted grey instead, and Traywise restarts itself once it's off (when the panel closes, and not while Focus or Keep awake is running). Like transparent Dot, it measures how bright the area behind the panel is (8 × 8 pixels, averaged, deleted at once) so text stays readable over bright wallpapers.
+- **Volume and Brightness, redesigned.**
+  - **1×1** is a small ring. Hover it and it slides up to show − 62 % +; scroll over it to change the level, and click the Volume ring to mute.
+  - **2×2** is a big arc you drag, with the level in the middle and the device under it; scroll works here too, and clicking the Volume number mutes. The drag handle only shows while the pointer is over the tile. Dot draws the arc as dots, with the lead dot growing into the handle.
+  - **Sliders** (a second 2×2 for each): one slider per audio app (plus the main volume), or one per screen. The first is outlined as the main one; each drags and scrolls on its own, and the levels show as you hover (the sliders slide down a little to make room).
+- **A gallery for adding and resizing tiles.** In Add tiles, picking a tile shows it as it really looks, live, with ‹ › to swipe through its sizes and variants and a caption saying what each is. The resize button on a tile in edit mode opens the same gallery on what the tile is now (marked Current), and **Apply** swaps it in place. Gone: the row of size buttons, and resizing by cycling through every size.
+- **Power mode has its own icon**, a gauge, so it no longer looks like the Battery tile's charging bolt.
+- **GPU usage** in the System monitor: a GPU tile (1×1, 2×1, 2×2) and "GPU" as a choice for the wide tile's two readings, measured like Task Manager (the busiest GPU engine). It is only measured while the panel is open and a GPU reading is on the board.
+- **Refresh rate.** A Refresh rate tile in Displays (1×1, 2×1): a tap goes to the next rate your screen offers at its current resolution. The Displays page has the choices for each screen.
+- **Airplane mode and Mobile hotspot** tiles (1×1, 2×1) in Quick toggles. Airplane mode turns every radio off or on, and the hotspot starts or stops Windows' Mobile hotspot on the connection you use for the internet. They show a dash where the PC can't do it.
+- **Keep awake while docked.** A new **Docked** mode keeps the PC awake only while an external screen is connected, and lets it sleep when you undock. Windows tells Traywise when a screen is plugged in or out, so nothing polls; virtual displays (remote desktop, screen sharing) don't count, and the page names the screens it found. The timer's start button now carries the accent until the timer runs.
+- **Every screen.** The panel opens in the corner of the screen the mouse is on (from the tray icon, the shortcut or the edge), sized for that screen, and the edge handle appears on every screen's outer edge (not where another screen is beside it, so crossing between screens doesn't open the panel). Plugging a screen in or out updates it.
+- **Edit mode.** The remove (−) and resize badges sit on the tile's corners in every look, as they did in Dot.
+- **Power.** Energy saver is now read from Windows' own power mode instead of guessed from the battery level, so it no longer shows as on after you've switched it off while on battery.
+
 ## 0.3.1 (2026-11-07)
 
 A round of quality-of-life changes: a fuller tray, a smarter Focus, and a lot of small polish.

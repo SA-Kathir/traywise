@@ -1,0 +1,603 @@
+/* The Glass look: frosted glass over a blurred desktop. Windows draws the blur behind the transparent
+   panel (src-tauri/src/shell/glass.rs); this file paints only what sits on top of it: a thin tint,
+   lit rims, soft shadows. Tokens are the Figma file's "Glass" variables (the dark set, in every Windows mode), and
+   follow Windows' mode. Tiles can't blur the desktop themselves (the page has nothing behind it),
+   so they are translucent sheets over the panel's blur. */
+
+.look-glass {
+  /* The drop shadow every tile, card, bar and pill has: none for now (a transparent one keeps the lists valid). */
+  --tw-glass-drop: 0 0 0 0 transparent;
+  /* Panel. A fixed tint, never adapted to the desktop: the app doesn't read it. */
+  --tw-glass-frost: rgb(14 17 22 / 0.2);
+  /* The same panel without blur (Energy saver): a frosted grey, nearly solid. */
+  --tw-glass-frost-solid: rgb(34 38 46 / 0.95);
+  /* Tile sheets (the translucent fill of a tile, and a lit or active one). */
+  --tw-glass-slab: rgb(14 17 22 / 0.36);
+  --tw-glass-slab-on: rgb(255 255 255 / 0.15);
+  --tw-glass-slab-fill: rgb(255 255 255 / 0.3);
+  --tw-glass-slab-track: rgb(255 255 255 / 0.14);
+  /* A recessed well (the tab bar, segmented controls). */
+  --tw-glass-well: rgb(0 0 0 / 0.22);
+  /* The one soft accent, and the wash an active tile takes. */
+  --tw-glass-accent: #8ec1ff;
+  --tw-glass-accent-wash: rgb(142 193 255 / 0.2);
+  /* A deeper, more saturated blue for lit glass bodies and rims, so the blue itself pops. */
+  --tw-glass-blue: #3d8bff;
+  /* The lit rim: a 1 px gradient edge, bright at the top left and bottom right. */
+  --tw-glass-rim-0: rgb(255 255 255 / 0.55);
+  --tw-glass-rim-1: rgb(255 255 255 / 0.1);
+  --tw-glass-rim-2: rgb(255 255 255 / 0.05);
+  --tw-glass-rim-3: rgb(255 255 255 / 0.28);
+  --tw-glass-shadow: rgb(0 0 0 / 0.34);
+  --tw-glass-text: #f7f8fa;
+  --tw-glass-text-2: rgb(255 255 255 / 0.78);
+  --tw-glass-text-3: rgb(255 255 255 / 0.62);
+  /* The shared variables liquid.css is built on. */
+  --ink: 255 255 255;
+  --accent: var(--tw-glass-accent);
+  --on-accent: #0b1626;
+  color-scheme: dark;
+}
+
+
+/* ---- The panel ----------------------------------------------------------------------------- */
+
+/* The classes are on html too, so its two pseudo-elements frame the whole window: the tint under
+   everything, and the lit rim (a 1 px gradient edge, cut out with a mask) over it. The window itself
+   is transparent; Windows draws the blur behind the tint. 32px matches GLASS_RADIUS in panel.rs. */
+html.look-glass::before,
+html.look-glass::after {
+  content: "";
+  position: fixed;
+  inset: 16px;
+  border-radius: 32px;
+  pointer-events: none;
+}
+html.look-glass::before {
+  z-index: -1;
+  background: var(--tw-glass-frost);
+}
+/* Energy saver took the blur away (until the app restarts): a solid frosted grey instead. */
+html.look-glass[data-solid]::before {
+  background: var(--tw-glass-frost-solid);
+}
+html.look-glass::after {
+  z-index: 100;
+  padding: 1.5px;
+  /* The same neutral rim the tiles have: light at the top left and bottom right, fading between, over
+     a thin even edge all round so the outline never disappears into the blur. */
+  background:
+    linear-gradient(135deg, var(--tw-glass-rim-0), var(--tw-glass-rim-1) 30%, var(--tw-glass-rim-2) 70%, var(--tw-glass-rim-3)),
+    linear-gradient(rgb(255 255 255 / 0.18) 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.panel.look-glass {
+  color: var(--tw-glass-text);
+}
+.look-glass h1 {
+  color: var(--tw-glass-text);
+}
+.look-glass :is(.hint, .tile-detail, .module-desc, .stat-chip-label) {
+  color: var(--tw-glass-text-2);
+}
+
+/* ---- Cards and tiles ----------------------------------------------------------------------- */
+
+/* A translucent sheet. The lit rim is the same 1 px gradient edge as the panel's (bright only at the
+   top left and bottom right, fading between), cut out with a mask; no white fill, no glow. */
+.look-glass :is(section, .tile, .stats) {
+  border: none;
+  border-radius: 24px;
+  /* As in the design: a 7% sheet, no blur and no gloss of its own (it sits on the panel's blur), a
+     soft lift shadow, and the rim below. */
+  background: var(--tw-glass-slab);
+  /* The glass lip: a soft, thicker light along the top-left and bottom-right edges only, where light
+     would catch the thickness of the glass (the references' clear glass), and a faint glow inside. */
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    0 0 16px -6px rgb(255 255 255 / 0.2),
+    var(--tw-glass-drop);
+}
+.look-glass :is(section, .tile, .stats)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* Switched on: the accent as glass, with an accent rim and glyph. */
+.look-glass :is(.tile.on, .tabs button.on, .segmented button.on) {
+  /* Lit blue glass, for everything that is switched on or picked: the blue is in the edge, the lip, the
+     glow and the text; the body is the same dark glass as the rest, with only a trace of blue. */
+  position: relative;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tw-glass-blue) 15%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 8%, transparent)
+    ),
+    var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+  color: color-mix(in srgb, var(--tw-glass-accent) 85%, #fff 15%);
+}
+/* No accent rim: a lit tile keeps the neutral rim every tile has; the tint carries the colour. */
+.look-glass .tile.on .tile-detail {
+  color: color-mix(in srgb, var(--tw-glass-accent) 80%, transparent);
+}
+
+/* ---- Controls ------------------------------------------------------------------------------ */
+
+/* Buttons: small pieces of glass, like a tile: a faint sheet and a light lip at the top left and
+   bottom right. :where keeps this at plain `button` strength, so the tiles' own parts (titles, rows,
+   the arrow) that are buttons too keep their transparent look. */
+:where(.look-glass) button {
+  border: none;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+:where(.look-glass) button:hover {
+  background: rgb(255 255 255 / 0.13);
+}
+:where(.look-glass) button:active {
+  background: rgb(255 255 255 / 0.04);
+}
+/* The tab bar and segmented controls sit in a recessed well; their buttons are flat until picked. */
+.look-glass :is(.tabs, .segmented) {
+  background: var(--tw-glass-well);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-2);
+}
+.look-glass :is(.tabs, .segmented) button:not(.on) {
+  background: transparent;
+  box-shadow: none;
+}
+.look-glass :is(.tabs, .segmented) button:not(.on):hover {
+  background: transparent;
+}
+.look-glass .icon-button {
+  border-radius: 50%;
+}
+/* The main button of a card (Connect, Start): lit like a selected tile, with a glow. */
+.look-glass button.primary {
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent);
+}
+.look-glass button.primary:hover {
+  background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
+}
+
+/* Sliders: a thin track, filled with the accent as frosted glass, a white knob that glows. */
+.look-glass input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--tw-glass-accent) 80%, transparent) var(--fill, 0%),
+    var(--tw-glass-slab-track) var(--fill, 0%)
+  );
+}
+.look-glass input[type="range"]::-webkit-slider-thumb,
+.look-glass input[type="range"]:hover::-webkit-slider-thumb {
+  background: #fff;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+/* Switches: dark glass when off; lit accent glass when on, with a glow; a white knob. */
+.look-glass input[type="checkbox"] {
+  background: var(--tw-glass-well);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.18);
+}
+.look-glass input[type="checkbox"]::before {
+  background: #fff;
+}
+.look-glass input[type="checkbox"]:checked {
+  background: color-mix(in srgb, var(--tw-glass-blue) 38%, transparent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent);
+}
+.look-glass input[type="checkbox"]:checked::before {
+  background: #fff;
+}
+
+/* ---- Legibility on a bright desktop ------------------------------------------------------- */
+
+/* The header sits on the lightly tinted panel, not on a tile: a soft shadow keeps its text readable
+   over white. */
+.look-glass .panel > header h1,
+.look-glass h1 {
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.4);
+}
+
+/* ---- Accent colours ------------------------------------------------------------------------ */
+
+/* The accent is its own choice for this look (Settings › Appearance). --tw-glass-accent is the soft
+   colour for text and rims, --tw-glass-blue the deeper one for lit glass (the names are from when blue
+   was the only one). */
+.look-glass.accent-green { --tw-glass-accent: #8fe3c0; --tw-glass-blue: #2fc58a; --tw-glass-accent-wash: rgb(143 227 192 / 0.2); }
+.look-glass.accent-amber { --tw-glass-accent: #f6cf8b; --tw-glass-blue: #f2a33a; --tw-glass-accent-wash: rgb(246 207 139 / 0.2); }
+.look-glass.accent-violet { --tw-glass-accent: #c3a7ff; --tw-glass-blue: #8a63ff; --tw-glass-accent-wash: rgb(195 167 255 / 0.2); }
+.look-glass.accent-red { --tw-glass-accent: #ff9a9a; --tw-glass-blue: #f0524f; --tw-glass-accent-wash: rgb(255 154 154 / 0.2); }
+/* Settings' round swatches show the soft colour. */
+.glass-swatch.accent-blue { background: #8ec1ff; }
+.glass-swatch.accent-green { background: #8fe3c0; }
+.glass-swatch.accent-amber { background: #f6cf8b; }
+.glass-swatch.accent-violet { background: #c3a7ff; }
+.glass-swatch.accent-red { background: #ff9a9a; }
+
+/* ---- Add tiles and the gallery ------------------------------------------------------------- */
+
+/* The Add tiles tray floats over the board: it blurs the tiles under it (they are page content, so
+   this one the page can do) and is darker, so a sheet never sits half-seen on another. */
+.look-glass .tray {
+  background: rgb(14 17 22 / 0.78);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+/* The gallery: the live tile sits in a recessed well, "Current" is a lit chip, and the pick button is
+   lit like a primary button. */
+.look-glass .gallery-stage {
+  border-radius: 18px;
+  background: var(--tw-glass-well);
+  box-shadow: inset 0 0 0 1px var(--tw-glass-rim-2);
+}
+.look-glass .gallery-current {
+  color: var(--tw-glass-accent);
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  border: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 55%, transparent);
+}
+.look-glass .gallery-dots i.on {
+  background: var(--tw-glass-accent);
+  
+}
+.look-glass .gallery-action {
+  background: color-mix(in srgb, var(--tw-glass-blue) 14%, transparent);
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 35%, transparent);
+}
+.look-glass .gallery-action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tw-glass-blue) 24%, transparent);
+}
+
+/* ---- Hover ---------------------------------------------------------------------------------- */
+
+/* A tile's whole-area buttons (the title, the arrow, the main button) show no box when hovered; the tile
+   itself says it can be clicked, below. */
+.look-glass :is(.tile-main, .tile-title, .tile-more, .clock-main, .media-text, .vol-icon, .awake-main, .pomo-main, .dial-ring, .dial-center, .fader-icon):hover {
+  background: transparent;
+}
+.look-glass .tile-more:hover {
+  color: var(--tw-glass-accent);
+}
+/* Hovering any tile lights its rim in the accent with a soft glow, whatever state it is in. */
+.look-glass .tile:hover:not(.on) {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+}
+.look-glass .tile:hover::after {
+  opacity: 1;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
+    var(--tw-glass-accent)
+  );
+}
+
+/* ---- The rest of the sweep ---------------------------------------------------------------- */
+
+/* The 2×2 tiles' own switch: the same glass switch as the others. */
+.look-glass .tile-switch {
+  background: var(--tw-glass-well);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.18);
+}
+.look-glass .tile-switch::before,
+.look-glass .tile-switch.on::before {
+  background: #fff;
+}
+.look-glass .tile-switch.on {
+  background: color-mix(in srgb, var(--tw-glass-blue) 38%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 45%, transparent);
+}
+/* Edit mode: the dashed outline and the badges are glass too, not solid accent. */
+.look-glass .board.editing .board-tile {
+  border-radius: 24px;
+  outline-color: color-mix(in srgb, var(--tw-glass-accent) 45%, transparent);
+}
+.look-glass .board-slot.dragging .board-tile,
+.look-glass .board.editing .board-slot:focus-visible .board-tile {
+  outline-color: var(--tw-glass-accent);
+}
+.look-glass .board .tile-badge,
+.look-glass .panel .page-remove {
+  background: color-mix(in srgb, var(--tw-glass-blue) 35%, rgb(14 17 22 / 0.8));
+  color: var(--tw-glass-accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tw-glass-blue) 60%, transparent);
+}
+
+/* ---- Room for the round corners ----------------------------------------------------------- */
+
+/* The tiles' corners are rounder (24 px) than the padding was drawn for, so names and the arrow sat
+   too close to the curve. A little more room on the left and top. */
+.look-glass .board {
+  --tile-pad: 12px 16px;
+}
+.look-glass .tile-more {
+  top: 9px;
+  right: 10px;
+}
+.look-glass :is(section, .stats) {
+  padding: 16px 18px;
+}
+
+/* ---- The window's margin, the panel's shadow and a defined edge --------------------------------- */
+
+/* The window is 16 px bigger than the panel all round (GLASS_PAD in panel.rs), clear, for the panel's
+   shadow. Everything lives inside that margin. */
+html.look-glass body {
+  box-sizing: border-box;
+  padding: 16px;
+}
+/* The same shadow the tiles have, round the whole panel; and a dark outline and soft inner shadow on
+   its own edge, so it stays defined against any desktop. */
+html.look-glass::before {
+  box-shadow:
+    0 8px 18px -6px rgb(0 0 0 / 0.6),
+    0 2px 5px rgb(0 0 0 / 0.3);
+}
+html.look-glass::after {
+  inset: 17.5px;
+  border-radius: 30.5px;
+}
+/* Tiles, the tab bar and the round buttons at the top lift off the panel with deeper shadows. */
+.look-glass :is(section, .tile, .stats) {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+}
+.look-glass .tabs {
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px var(--tw-glass-rim-2),
+    var(--tw-glass-drop);
+}
+.look-glass .icon-button {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28),
+    0 6px 12px -4px rgb(0 0 0 / 0.55),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+/* The Add tiles tray and its dimmer sit inside the panel, not the margin. */
+.look-glass .scrim {
+  inset: 16px;
+  border-radius: 32px;
+}
+.look-glass .tray {
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+}
+
+/* ---- Clear variant: no panel, only glass floating over the desktop ------------------------------- */
+
+/* No tint, no outline and no shadow for the panel itself; the tiles carry the look, a little darker
+   (and darker still over a bright desktop, from the one brightness sample) so they stay readable
+   without a blur behind them. */
+html.look-glass.glass-clear::before,
+html.look-glass.glass-clear::after {
+  display: none;
+}
+.look-glass.glass-clear {
+  --tw-glass-slab: rgb(14 17 22 / calc(0.5 + var(--backdrop, 0) * 0.3));
+}
+/* The name of the app and the buttons share one big pill, like the tab bar below it. */
+.glass-clear.panel > header {
+  position: relative;
+  padding: 5px 6px 5px 18px;
+  border-radius: 999px;
+  background: var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+}
+.glass-clear.panel > header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-rim-0),
+    var(--tw-glass-rim-1) 30%,
+    var(--tw-glass-rim-2) 70%,
+    var(--tw-glass-rim-3)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.glass-clear.panel > header .icon-button {
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.45),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.28);
+}
+.glass-clear.panel .tabs {
+  background: var(--tw-glass-slab);
+}
+/* The tray's dimmer has nothing to dim in a clear window. */
+.look-glass.glass-clear .scrim {
+  background: transparent;
+}
+
+/* ---- The accent edge and the page dots -------------------------------------------------------- */
+
+/* liquid.css draws an accent glow along the top and bottom of the window for the other looks. Here the
+   window has a clear margin round the panel, so it floated in the margin: Glass has its own rim. */
+html.look-glass body::after {
+  display: none;
+}
+/* The page dots sit in a small glass pill, so they don't float over nothing. */
+.look-glass .page-dots {
+  position: relative;
+  align-self: center;
+  width: fit-content;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--tw-glass-slab);
+  box-shadow:
+    inset 1.5px 1.5px 3px -1.5px rgb(255 255 255 / 0.5),
+    inset -1.5px -1.5px 3px -1.5px rgb(255 255 255 / 0.3),
+    var(--tw-glass-drop);
+}
+.look-glass .page-dots::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(135deg, var(--tw-glass-rim-0), var(--tw-glass-rim-1) 30%, var(--tw-glass-rim-2) 70%, var(--tw-glass-rim-3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* ---- Vivid: the brighter style ------------------------------------------------------------------ */
+
+/* Soft (the default) has no shadow under the tiles, no accent rim and a gentle tint on lit ones. Vivid is
+   the look from before the design's thin edge: a deep drop shadow under every tile, and lit tiles with a
+   2 px accent rim, hottest at the two corners, a blue lip and a light tint. Hover is the same full accent ring as in Soft. */
+.look-glass.glass-vivid {
+  --tw-glass-drop: 0 12px 24px -6px rgb(0 0 0 / 0.6), 0 2px 5px rgb(0 0 0 / 0.3);
+}
+.glass-vivid :is(.tile.on, .tabs button.on, .segmented button.on) {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tw-glass-blue) 9%, transparent),
+      color-mix(in srgb, var(--tw-glass-blue) 3%, transparent)
+    ),
+    var(--tw-glass-slab);
+  box-shadow:
+    inset 2px 2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 55%, #fff),
+    inset -2px -2px 4px -2px color-mix(in srgb, var(--tw-glass-blue) 85%, #fff 15%),
+    inset 0 0 22px -6px color-mix(in srgb, var(--tw-glass-blue) 18%, transparent),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+.glass-vivid :is(.tile.on, .tabs button.on, .segmented button.on)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 1;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff),
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 20%,
+    color-mix(in srgb, var(--tw-glass-blue) 22%, transparent) 50%,
+    color-mix(in srgb, var(--tw-glass-blue) 55%, transparent) 80%,
+    color-mix(in srgb, var(--tw-glass-accent) 70%, #fff)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.glass-vivid .tile.pomo.rest.on {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent), color-mix(in srgb, var(--pomo-rest-deep) 8%, transparent)),
+    var(--tw-glass-slab);
+}
+.glass-vivid .tile.pomo.rest.on::after {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff),
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 20%,
+    color-mix(in srgb, var(--pomo-rest-deep) 22%, transparent) 50%,
+    color-mix(in srgb, var(--pomo-rest-deep) 55%, transparent) 80%,
+    color-mix(in srgb, var(--pomo-rest) 70%, #fff)
+  );
+}
+
+/* ---- Hover on the tab bar --------------------------------------------------------------------- */
+
+/* A tab lights with the accent ring when hovered, like a tile, instead of a dimming fill that is hard to
+   see over a dark desktop. */
+.look-glass .tabs button {
+  position: relative;
+}
+.look-glass .tabs button:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    var(--tw-glass-accent),
+    color-mix(in srgb, var(--tw-glass-accent) 55%, transparent) 35%,
+    color-mix(in srgb, var(--tw-glass-accent) 50%, transparent) 70%,
+    var(--tw-glass-accent)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

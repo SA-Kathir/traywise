@@ -14,6 +14,7 @@ const MODES: { mode: Mode; label: string }[] = [
   { mode: "off", label: "Off" },
   { mode: "on", label: "On" },
   { mode: "whilePluggedIn", label: "Plugged in" },
+  { mode: "whileExternalDisplay", label: "Docked" },
 ];
 
 /** Timer lengths the − and + buttons step through, in minutes. */
@@ -35,10 +36,14 @@ export function Tiles({ size, open }: TileProps) {
         ? size === "1x1"
           ? clock(left)
           : `${clock(left)} left`
-        : state.mode === "whilePluggedIn"
+        : state.mode === "whilePluggedIn" || state.mode === "whileExternalDisplay"
           ? state.active
-            ? "While plugged in"
-            : "Paused on battery"
+            ? state.mode === "whilePluggedIn"
+              ? "While plugged in"
+              : "While docked"
+            : state.mode === "whilePluggedIn"
+              ? "Paused on battery"
+              : "No external screen"
           : state.active
             ? "On"
             : size === "1x1"
@@ -161,7 +166,7 @@ function Controls({ state }: { state: KeepAwakeState }) {
           −
         </button>
         <button
-          className={left !== null ? "on" : ""}
+          className={left !== null ? "on" : "start"}
           onClick={() => commands.keepAwakeSetMode(left === null ? { minutes } : "off")}
           title={left === null ? "Start the timer" : "Stop the timer"}
         >
@@ -177,6 +182,8 @@ function Controls({ state }: { state: KeepAwakeState }) {
 
 function status(state: KeepAwakeState) {
   if (state.mode === "whilePluggedIn" && !state.active) return "On battery: your PC can sleep until it's plugged in.";
+  if (state.mode === "whileExternalDisplay")
+    return state.active ? `Docked to ${state.external.join(", ")}: your PC won't go to sleep.` : "No external screen: your PC can sleep until one is connected.";
   return state.active ? "Your PC won't go to sleep." : "Your PC sleeps as usual.";
 }
 

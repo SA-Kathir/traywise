@@ -6,6 +6,7 @@ export const READING_CHOICES = [
   ["memory", "RAM"],
   ["download", "Download"],
   ["upload", "Upload"],
+  ["gpu", "GPU"],
 ] as const;
 
 type Pair = [Reading, Reading];

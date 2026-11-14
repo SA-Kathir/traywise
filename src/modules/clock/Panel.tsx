@@ -98,14 +98,30 @@ function Face({ date, zone }: { date: Date; zone?: string }) {
     Array.from({ length: dots }, (_, i) => (
       <circle key={`${dots}-${i}`} {...at(degrees, (i + 1) * 5)} r={2.2} className={tip && i === dots - 1 ? "tip" : "hand"} />
     ));
+  const line = (degrees: number, from: number, to: number, className: string) => {
+    const a = at(degrees, from);
+    const b = at(degrees, to);
+    return <line key={`${className}-${degrees}-${to}`} x1={a.cx} y1={a.cy} x2={b.cx} y2={b.cy} className={className} />;
+  };
   return (
     <svg className="clock-face" viewBox="0 0 100 100" aria-hidden>
-      {Array.from({ length: TICKS }, (_, i) => (
-        <circle key={i} {...at(i * 6, 45)} r={i % 5 ? 1.3 : 2} className={i % 5 ? "tick" : "tick major"} />
-      ))}
-      <circle cx={50} cy={50} r={2.2} className="hand" />
-      {hand(angle.hour, 4, false)}
-      {hand(angle.minute, 7, true)}
+      <g className="face-dots">
+        {Array.from({ length: TICKS }, (_, i) => (
+          <circle key={i} {...at(i * 6, 45)} r={i % 5 ? 1.3 : 2} className={i % 5 ? "tick" : "tick major"} />
+        ))}
+        <circle cx={50} cy={50} r={2.2} className="hand" />
+        {hand(angle.hour, 4, false)}
+        {hand(angle.minute, 7, true)}
+      </g>
+      {/* The Glass look draws the same time as lines instead: fine ticks, solid hands. */}
+      <g className="face-lines">
+        {Array.from({ length: TICKS }, (_, i) =>
+          i % 5 ? line(i * 6, 43, 46, "ltick") : line(i * 6, 40.5, 46.5, "lmajor"),
+        )}
+        {line(angle.hour, 0, 24, "lhand")}
+        {line(angle.minute, 0, 36, "lminute")}
+        <circle cx={50} cy={50} r={3} className="lcap" />
+      </g>
     </svg>
   );
 }
