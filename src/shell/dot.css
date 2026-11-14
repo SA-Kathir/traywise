@@ -564,21 +564,41 @@
   top: 50%;
   translate: 0 -50%;
 }
-.look-dot :is(.vol-bar .vol-icon, .vol.size-1x1 > *) {
+.look-dot .vol-bar .vol-icon {
   color: #fff;
   mix-blend-mode: difference;
-}
-.look-dot .vol.size-1x1::before {
-  background: var(--tw-control-fill);
 }
 .look-dot .vol .num {
   font-size: 20px;
 }
-.look-dot .vol.size-1x1 .num {
-  font-size: 24px;
-}
 .look-dot .vol-big .num {
   font-size: 48px;
+}
+/* The dials: dots instead of a solid arc; hovering grows the leading dot into the drag handle. */
+.look-dot .dial-solid {
+  display: none;
+}
+.look-dot .dial-dots {
+  display: inline;
+}
+.look-dot .dial-dots circle {
+  fill: var(--tw-control-track);
+}
+.look-dot .dial-dots circle.lit {
+  fill: var(--tw-control-fill);
+}
+.look-dot .dial:hover .dial-dots circle.lead {
+  r: 6.5;
+  fill: var(--tw-accent-base);
+}
+.look-dot .dial.size-2x2 .dial-dots circle {
+  r: 2.8;
+}
+.look-dot .dial .num {
+  font-size: 14px;
+}
+.look-dot .dial-big .num {
+  font-size: 34px;
 }
 .look-dot .vol .tile-title .tile-detail {
   color: var(--tw-text-tertiary);
