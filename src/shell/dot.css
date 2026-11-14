@@ -1410,3 +1410,26 @@
 .look-dot .board:not(.editing) .tile:hover {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tw-accent-base) 55%, transparent);
 }
+
+/* The tile gallery: monochrome, the button inverted like a selected pill. */
+.look-dot .gallery-stage {
+  background: var(--tw-glass-tile);
+  border: 1px solid var(--tw-glass-edge);
+}
+.look-dot .gallery-current {
+  background: var(--tw-accent-tint);
+  border-color: var(--tw-accent-base);
+}
+.look-dot .gallery-dots i {
+  background: var(--tw-control-track);
+}
+.look-dot .gallery-dots i.on {
+  background: var(--tw-control-fill);
+}
+.look-dot .gallery-note {
+  color: var(--tw-text-secondary);
+}
+.look-dot .gallery-action {
+  background: var(--tw-control-fill);
+  color: var(--tw-text-inverse);
+}

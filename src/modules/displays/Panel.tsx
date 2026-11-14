@@ -67,8 +67,8 @@ export function Tiles({ kind, size, open }: TileProps) {
   if (!main) return <Tile size={size} icon={SUN} label="Brightness" detail="Can't change" onOpen={open} />;
   const level = main.brightness!;
   const changeable = state.displays.filter((d) => d.brightness !== null);
-  // 2×2 with several screens: a fader each (three fit) instead of the dial.
-  if (size === "2x2" && changeable.length > 1)
+  // The sliders variant: a slider for each screen (three fit).
+  if (kind === "brightness-sliders")
     return (
       <FaderTile
         items={changeable.slice(0, 3).map((d) => ({

@@ -23,7 +23,7 @@ const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
 
 /** Home tile, as in the design: the master volume as a number and a bar (1×1: the whole tile
  *  fills to it), the output device's name from 4×1 up, and at 4×2 the apps playing beside it. */
-export function Tiles({ size, open }: TileProps) {
+export function Tiles({ kind, size, open }: TileProps) {
   const state = useMixer();
   if (!state) return null;
   const master = state.master;
@@ -32,9 +32,9 @@ export function Tiles({ size, open }: TileProps) {
   const level = master.muted ? 0 : master.volume;
   const mute = () => commands.mixerSetMute("master", !master.muted);
   const device = state.device && shortName(state.device);
-  // 2×2 with apps playing: faders (the master and up to two apps) instead of the dial.
-  const playing = state.apps.filter((a) => !a.systemSounds).slice(0, 2);
-  if (size === "2x2" && playing.length > 0)
+  // The sliders variant: the main volume and up to two playing apps, a slider each.
+  if (kind === "mixer-sliders") {
+    const playing = state.apps.filter((a) => !a.systemSounds).slice(0, 2);
     return (
       <FaderTile
         items={[
@@ -59,6 +59,7 @@ export function Tiles({ size, open }: TileProps) {
         ]}
       />
     );
+  }
   if (size === "1x1" || size === "2x2")
     return (
       <DialTile
