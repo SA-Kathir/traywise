@@ -17,12 +17,16 @@ use windows::Win32::System::Performance::{
 use windows::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
 use windows::core::{HSTRING, PCWSTR, w};
 
+use crate::settings::{Reading, Settings, SettingsState};
+
+use super::gpu::Gpu;
 use super::{Battery, Msg, Point, Shared, SystemSample, SystemSampled, mib, per_second, push_history};
 
 pub fn run(app: AppHandle, rx: Receiver<Msg>) {
     let mut sampler = Sampler {
         system: System::new(),
         cpu: None,
+        gpu: None,
         networks: Networks::new(),
         last: Instant::now(),
         history: VecDeque::new(),
@@ -33,15 +37,21 @@ pub fn run(app: AppHandle, rx: Receiver<Msg>) {
         let sample = match msg {
             Ok(Msg::PanelVisible(true)) => {
                 visible = true;
+                sampler.set_gpu(wants_gpu(&app.state::<SettingsState>().get()));
                 sampler.begin()
             }
             Ok(Msg::PanelVisible(false)) => {
                 visible = false;
-                sampler.cpu = None; // closes the counter: nothing is measured while hidden
+                sampler.cpu = None; // closes the counters: nothing is measured while hidden
+                sampler.gpu = None;
                 sampler.history.clear();
                 SystemSample::default()
             }
-            Err(RecvTimeoutError::Timeout) => sampler.sample(),
+            Err(RecvTimeoutError::Timeout) => {
+                // A GPU reading may have been added to (or taken off) the board since the last second.
+                sampler.set_gpu(wants_gpu(&app.state::<SettingsState>().get()));
+                sampler.sample()
+            }
             Ok(Msg::Stop) | Err(RecvTimeoutError::Disconnected) => break,
         };
         let shared = app.state::<Shared>();
@@ -57,6 +67,8 @@ struct Sampler {
     system: System,
     /// Open only while the panel is.
     cpu: Option<Cpu>,
+    /// Open only while the panel is and a GPU reading is on the board: opening it takes a moment.
+    gpu: Option<Gpu>,
     networks: Networks,
     /// When CPU and network counters were last read; rates are measured from here.
     last: Instant,
@@ -73,8 +85,18 @@ impl Sampler {
         self.read(None, None, None)
     }
 
+    /// Opens or closes the GPU counter to match whether anything on the board shows the GPU.
+    fn set_gpu(&mut self, wanted: bool) {
+        match (wanted, self.gpu.is_some()) {
+            (true, false) => self.gpu = Gpu::open(),
+            (false, true) => self.gpu = None,
+            _ => {}
+        }
+    }
+
     fn sample(&mut self) -> SystemSample {
         let (cpu, cpu_mhz) = self.cpu.as_ref().map_or((None, None), Cpu::read);
+        let gpu = self.gpu.as_mut().and_then(Gpu::read);
         self.networks.refresh(true);
         let elapsed = self.last.elapsed();
         self.last = Instant::now();
@@ -84,8 +106,9 @@ impl Sampler {
         let (download, upload) = (per_second(received, elapsed), per_second(sent, elapsed));
         let mut sample = self.read(cpu, Some(download), Some(upload));
         sample.cpu_mhz = cpu_mhz;
+        sample.gpu = gpu;
         let memory = (u64::from(sample.memory_used) * 100 / u64::from(sample.memory_total.max(1))) as u8;
-        push_history(&mut self.history, Point { cpu: cpu.unwrap_or(0), memory, download, upload });
+        push_history(&mut self.history, Point { cpu: cpu.unwrap_or(0), gpu: gpu.unwrap_or(0), memory, download, upload });
         sample.history = self.history.clone();
         sample
     }
@@ -96,6 +119,7 @@ impl Sampler {
         SystemSample {
             cpu,
             cpu_mhz: None,
+            gpu: None,
             memory_used: mib(self.system.used_memory()),
             memory_total: mib(self.system.total_memory()),
             download,
@@ -109,6 +133,12 @@ impl Sampler {
             history: self.history.clone(),
         }
     }
+}
+
+/// Whether the GPU is shown anywhere: a GPU tile on the board, or a wide tile reading it.
+fn wants_gpu(settings: &Settings) -> bool {
+    settings.monitor_readings.contains(&Reading::Gpu)
+        || settings.pages.iter().flatten().flatten().any(|t| t.id == "system-monitor/gpu" || t.readings.is_some_and(|r| r.contains(&Reading::Gpu)))
 }
 
 /// An adapter with a real address (not just loopback or link-local), so it's a connection and not a leftover.
@@ -221,4 +251,29 @@ fn system_drive_space() -> (u32, u32) {
         eprintln!("system-monitor: couldn't read free space on {drive}: {e}");
     }
     (mib(free), mib(total))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::settings::BoardTile;
+
+    fn tile(id: &str, readings: Option<[Reading; 2]>) -> BoardTile {
+        BoardTile { id: id.into(), w: 1, h: 1, x: 0, y: 0, readings }
+    }
+
+    #[test]
+    fn the_gpu_is_only_measured_when_shown() {
+        let mut s = Settings::default();
+        assert!(!wants_gpu(&s), "not by default");
+        s.pages = Some(vec![vec![tile("system-monitor/cpu", None)], vec![tile("system-monitor/monitor", Some([Reading::Cpu, Reading::Memory]))]]);
+        assert!(!wants_gpu(&s));
+        s.pages.as_mut().unwrap()[1][0].readings = Some([Reading::Cpu, Reading::Gpu]);
+        assert!(wants_gpu(&s), "a wide tile on page 2 reads it");
+        s.pages = Some(vec![vec![tile("system-monitor/gpu", None)]]);
+        assert!(wants_gpu(&s), "a GPU tile");
+        s.pages = None;
+        s.monitor_readings = [Reading::Gpu, Reading::Memory];
+        assert!(wants_gpu(&s), "the default pair, for wide tiles without their own");
+    }
 }

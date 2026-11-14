@@ -86,6 +86,8 @@ export const commands = {
 	quickTogglesSetDark: (dark: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_dark", { dark })),
 	quickTogglesSetDesktopIcons: (show: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_desktop_icons", { show })),
 	quickTogglesLock: () => typedError<null, string>(__TAURI_INVOKE("quick_toggles_lock")),
+	quickTogglesSetAirplane: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_airplane", { on })),
+	quickTogglesSetHotspot: (on: boolean) => typedError<null, string>(__TAURI_INVOKE("quick_toggles_set_hotspot", { on })),
 	/**  The latest state. Empty while the module is switched off. */
 	nowPlayingState: () => __TAURI_INVOKE<NowPlayingState>("now_playing_state"),
 	/**  Play/pause, skip, seek, shuffle or repeat in one app (`key` is a session's key). */
@@ -307,7 +309,10 @@ export type KeepAwakeState = {
 	mode: Mode,
 	/**  Also keep the display on. */
 	display: boolean,
-	/**  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery. */
+	/**
+	 *  Whether Windows is being kept awake right now. False in `whilePluggedIn` mode on battery, or
+	 *  `whileExternalDisplay` mode with no external screen.
+	 */
 	active: boolean,
 	/**  Timed mode only: when it turns off, in milliseconds since 1970 (like JavaScript's `Date.now()`). */
 	endsAt: number | null,
@@ -316,6 +321,8 @@ export type KeepAwakeState = {
 	 *  so only keeping the display on keeps it awake.
 	 */
 	screenOffSleeps: boolean,
+	/**  The external screens found, by name: what Docked mode goes by. */
+	external: string[],
 };
 
 export type Level = {
@@ -388,7 +395,9 @@ export type Mode = "off" |
 /**  For this many minutes, then off. */
 { minutes: number } | 
 /**  Only while the PC runs on mains power. */
-"whilePluggedIn";
+"whilePluggedIn" | 
+/**  Only while an external screen is connected (a docked laptop). */
+"whileExternalDisplay";
 
 /**  Every built-in module. The UI has a matching entry for each one in `src/modules/index.ts`. */
 export type ModuleId = "volume-mixer" | "keep-awake" | "audio-devices" | "system-monitor" | "quick-toggles" | "now-playing" | "wifi" | "bluetooth" | "power" | "displays" | "clock" | "focus";
@@ -421,6 +430,8 @@ export type Phase = "focus" | "rest" |
 
 export type Point = {
 	cpu: number,
+	/**  Percent, 0 when the GPU isn't being measured. */
+	gpu: number,
 	/**  Memory in use, percent. */
 	memory: number,
 	/**  Bytes a second. */
@@ -461,10 +472,20 @@ export type QuickTogglesState = {
 	/**  Apps and Windows itself (taskbar, Start) in dark mode. */
 	dark: boolean,
 	desktopIcons: boolean,
+	/**
+	 *  Every radio off. None until first read (it waits on Windows, so it comes a moment after the
+	 *  rest), or if this PC has no radios.
+	 */
+	airplane: boolean | null,
+	/**
+	 *  Windows' Mobile hotspot, shared from the internet connection. None until read, or if this PC
+	 *  can't share one.
+	 */
+	hotspot: boolean | null,
 };
 
 /**  A reading the system monitor graphs. */
-export type Reading = "cpu" | "memory" | "download" | "upload";
+export type Reading = "cpu" | "memory" | "download" | "upload" | "gpu";
 
 export type Refresh = {
 	/**  Hz. */
@@ -565,6 +586,11 @@ export type SystemSample = {
 	cpu: number | null,
 	/**  The processor's current clock speed in MHz, as Task Manager's "Speed". */
 	cpuMhz: number | null,
+	/**
+	 *  Percent of the busiest GPU engine, as Task Manager. Only measured while a GPU reading is on the
+	 *  board; None otherwise (and for the first second after opening).
+	 */
+	gpu: number | null,
 	/**  MiB. */
 	memoryUsed: number,
 	memoryTotal: number,

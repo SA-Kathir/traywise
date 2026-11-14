@@ -30,10 +30,12 @@ webview2-com = "0.39.1"
 windows = { version = "0.62", features = [
     "ApplicationModel",
     "Devices_Bluetooth",
+    "Win32_Devices_DeviceAndDriverInstallation",
     "Devices_Enumeration",
     "Devices_Radios",
     "Devices_WiFi",
     "Networking_Connectivity",
+    "Networking_NetworkOperators",
     "Security_Credentials",
     "Win32_Media_KernelStreaming",
     "Foundation",

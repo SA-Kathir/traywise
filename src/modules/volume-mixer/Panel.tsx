@@ -1,5 +1,6 @@
-import { Fragment, useState, type CSSProperties } from "react";
+import { Fragment, useState } from "react";
 import { commands, events, type AppAudio, type AudioDevice, type Target } from "../../bindings";
+import { DialTile, FaderTile } from "../../shell/Dial";
 import { Num, Tile } from "../../shell/Tile";
 import { Slider as VolumeSlider } from "../../shell/Slider";
 import { useLive } from "../../shell/useLive";
@@ -22,7 +23,7 @@ const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "") || name;
 
 /** Home tile, as in the design: the master volume as a number and a bar (1×1: the whole tile
  *  fills to it), the output device's name from 4×1 up, and at 4×2 the apps playing beside it. */
-export function Tiles({ size, open }: TileProps) {
+export function Tiles({ kind, size, open }: TileProps) {
   const state = useMixer();
   if (!state) return null;
   const master = state.master;
@@ -30,22 +31,50 @@ export function Tiles({ size, open }: TileProps) {
     return <Tile size={size} icon={MUTED} label="Volume" detail="No device" onOpen={open} />;
   const level = master.muted ? 0 : master.volume;
   const mute = () => commands.mixerSetMute("master", !master.muted);
-  if (size === "1x1")
-    return (
-      <button
-        className="tile vol size-1x1"
-        style={{ "--level": `${level}%` } as CSSProperties}
-        title={master.muted ? "Volume: muted (click to unmute)" : `Volume: ${master.volume} (click to mute)`}
-        onClick={mute}
-      >
-        <Num text={String(level)} />
-        <span className="vol-icon" aria-hidden>
-          {master.muted ? MUTED : SPEAKER}
-        </span>
-      </button>
-    );
   const device = state.device && shortName(state.device);
-  const big = size === "2x2" || size === "4x2";
+  // The sliders variant: the main volume and up to two playing apps, a slider each.
+  if (kind === "mixer-sliders") {
+    const playing = state.apps.filter((a) => !a.systemSounds).slice(0, 2);
+    return (
+      <FaderTile
+        items={[
+          {
+            key: "master",
+            name: "Volume",
+            icon: <span className="dial-icon">{master.muted ? MUTED : SPEAKER}</span>,
+            level: master.volume,
+            off: master.muted,
+            onChange: (v) => commands.mixerSetVolume("master", v),
+            onToggle: mute,
+          },
+          ...playing.map((app) => ({
+            key: app.pid,
+            name: app.name,
+            icon: app.icon ? <img className="fader-img" src={app.icon} alt="" /> : <span className="dial-icon">{APP}</span>,
+            level: app.volume,
+            off: app.muted,
+            onChange: (v: number) => commands.mixerSetVolume({ app: app.pid }, v),
+            onToggle: () => commands.mixerSetMute({ app: app.pid }, !app.muted),
+          })),
+        ]}
+      />
+    );
+  }
+  if (size === "1x1" || size === "2x2")
+    return (
+      <DialTile
+        size={size}
+        noun="Volume"
+        icon={master.muted ? MUTED : SPEAKER}
+        level={master.volume}
+        off={master.muted}
+        detail={device || undefined}
+        onChange={(v) => commands.mixerSetVolume("master", v)}
+        onToggle={mute}
+        open={open}
+      />
+    );
+  const big = size === "4x2";
   const head = (
     <>
       <button className="tile-title" title="Details" onClick={open}>

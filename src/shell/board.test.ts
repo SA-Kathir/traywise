@@ -1,5 +1,6 @@
 // Run with `pnpm test` (Node runs TypeScript directly). Boards are drawn as text, rows separated by
 // spaces: each cell is its tile's id, "." is empty.
+import type { Reading } from "../bindings.ts";
 import { cycle, pairOrDefault } from "../modules/system-monitor/readings.ts";
 import { add, compact, move, moveToPage, pack, remove, resize, shift, type Placed } from "./board.ts";
 
@@ -28,6 +29,9 @@ const tile = (id: string, w: number, h: number): Placed => ({ id, w, h, x: 0, y:
 const board = pack([tile("a", 1, 1), tile("b", 4, 2), tile("c", 1, 1), tile("d", 2, 2)]);
 check("pack", board, "ac.. bbbb bbbb dd.. dd..");
 check("pack is stable", pack(board), "ac.. bbbb bbbb dd.. dd..");
+
+// A variant swap keeps the place (and takes the new size).
+check("resize as another id, ids", resize(board, "d", 2, 2, true, "e"), "ac.. bbbb bbbb ee.. ee..");
 
 // Auto-arrange: dropping d on a's cell puts d first in the order.
 check("move, auto", move(board, "d", 0, 0, true), "ddac dd.. bbbb bbbb");
@@ -80,12 +84,12 @@ check("to page, free", moveToPage([board, topRight], "e", 0, 1, false)[0], "ac..
 const same = (name: string, got: string, expected: string) => {
   if (got !== expected) throw new Error(`${name}: expected "${expected}", got "${got}"`);
 };
-// A wide tile's readings: cycling a side ten times keeps exactly two, and moves only that side.
-let pairNow: ["cpu" | "memory" | "download" | "upload", "cpu" | "memory" | "download" | "upload"] = ["cpu", "memory"];
-for (let i = 0; i < 10; i++) pairNow = cycle(pairNow, 1);
+// A wide tile's readings: cycling a side eight times keeps exactly two, and moves only that side.
+let pairNow: [Reading, Reading] = ["cpu", "memory"];
+for (let i = 0; i < 8; i++) pairNow = cycle(pairNow, 1);
 same("cycle keeps two", String(pairNow.length), "2");
-same("cycle one side", pairNow.join(), "cpu,upload");
+same("cycle one side", pairNow.join(), "cpu,gpu");
 same("bad pair ignored", pairOrDefault(["cpu", "cpu", "cpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
-same("unknown reading ignored", pairOrDefault(["cpu", "gpu"] as never, ["upload", "cpu"]).join(), "upload,cpu");
+same("unknown reading ignored", pairOrDefault(["cpu", "fan"] as never, ["upload", "cpu"]).join(), "upload,cpu");
 
 console.log("board: all checks passed");

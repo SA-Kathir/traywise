@@ -434,14 +434,14 @@ button.tile-title:hover {
 .board .tile-badge {
   position: absolute;
   z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
   border-radius: 50%;
   font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
-  font-size: 9px;
-  line-height: 20px;
+  font-size: 10px;
+  line-height: 24px;
   text-align: center;
   background: var(--accent);
   color: var(--on-accent);
@@ -454,9 +454,10 @@ button.tile-title:hover {
   opacity: 1;
   pointer-events: auto;
 }
+/* The remove and resize badges sit centred 6 px in from the tile's corners, as in the Dot look. */
 .tile-remove {
-  top: 4px;
-  left: 4px;
+  top: -6px;
+  left: -6px;
 }
 /* The wide system monitor tile's pills: one under each half, showing what that side reads. */
 .board .tile-reading {
@@ -476,8 +477,8 @@ button.tile-title:hover {
   transform: translateX(-50%);
 }
 .tile-resize {
-  right: 4px;
-  bottom: 4px;
+  right: -6px;
+  bottom: -6px;
 }
 /* The tray of tiles to add: a card over the bottom of the board, above a dimmed board. */
 .scrim {
@@ -506,6 +507,78 @@ button.tile-title:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+/* The gallery in the Add tiles and Change trays: the live tile between two arrows, dots for where
+   you are, what it is called and a button. */
+.gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.gallery-stage {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 184px;
+  padding: 0 4px;
+  border-radius: 14px;
+  background: rgb(var(--ink) / 0.04);
+}
+.gallery-fit {
+  position: relative;
+}
+.gallery-board {
+  width: max-content;
+  transform: scale(var(--fit));
+  transform-origin: 0 0;
+}
+.gallery-current {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  padding: 1px 8px;
+  font-size: 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border: 1px solid var(--accent);
+}
+.gallery-dots {
+  display: flex;
+  gap: 5px;
+}
+.gallery-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--ink) / 0.3);
+}
+.gallery-dots i.on {
+  background: rgb(var(--ink));
+}
+.gallery-name {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+.gallery-note {
+  margin: 0;
+  font-size: 12px;
+  color: rgb(var(--ink) / 0.65);
+  text-align: center;
+}
+.gallery-action {
+  align-self: stretch;
+  margin-top: 4px;
+  padding: 9px 0;
+  font-weight: 600;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+.gallery-action:disabled {
+  opacity: 0.4;
 }
 .tray .link-row > .grow {
   display: flex;
@@ -773,6 +846,11 @@ button.on {
 .segmented.timer button:last-child {
   flex: none;
   width: 40px;
+}
+/* Not started yet: the middle button is what starts the timer, so it carries the accent. */
+.segmented.timer button.start {
+  color: var(--tw-accent-text, var(--accent));
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .segmented.timer button {
   font-variant-numeric: tabular-nums;
@@ -1278,26 +1356,235 @@ button.media-text:hover {
 button.vol-icon:hover {
   background: none;
 }
-.vol.size-1x1 {
+
+/* ---- Volume and brightness dials -------------------------------------------------------- */
+
+/* 1×1: a ring that, on hover, slides up to show − 55 % +. 2×2: a big arc you drag, the level in the
+   middle. The drag handle only shows on hover. The Dot look swaps the solid arc for dots. */
+.dial {
   position: relative;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  border: none;
+  overflow: hidden;
 }
-.vol.size-1x1::before {
-  content: "";
+.dial-arc {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.dial-track,
+.dial-fill {
+  fill: none;
+  stroke-width: 8;
+}
+.dial-track {
+  stroke: rgb(var(--ink) / 0.16);
+}
+.dial-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+.dial-thumb {
+  fill: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.dial:hover .dial-thumb {
+  opacity: 1;
+}
+.dial-dots {
+  display: none;
+}
+.dial-dots circle {
+  r: 3.2;
+  fill: rgb(var(--ink) / 0.16);
+  transition: r 0.15s;
+}
+.dial-dots circle.lit {
+  fill: rgb(var(--ink));
+}
+.dial-icon {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  line-height: 1;
+}
+.dial button {
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+.dial.off .dial-fill,
+.dial.off .dial-thumb {
+  display: none;
+}
+.dial.size-1x1 .dial-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  translate: -50% -50%;
+  transition: translate 0.18s ease;
+}
+.dial.size-1x1 .dial-arc {
+  position: absolute;
+  inset: 0;
+}
+.dial.size-1x1 .dial-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+.dial.size-1x1 .dial-dots circle {
+  r: 4.4;
+}
+.dial.size-1x1 .dial-track,
+.dial.size-1x1 .dial-fill {
+  stroke-width: 10;
+}
+.dial-row {
+  position: absolute;
+  inset: auto 4px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity 0.15s,
+    translate 0.18s ease;
+}
+.dial-step {
+  width: 18px;
+  height: 18px;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 6px;
+}
+.dial-step:hover {
+  background: rgb(var(--ink) / 0.14);
+}
+.dial:hover .dial-ring {
+  translate: -50% calc(-50% - 11px);
+}
+.dial:hover .dial-row {
+  opacity: 1;
+  translate: 0 0;
+}
+.dial.size-2x2 {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 4px;
+  padding: var(--tile-pad);
+  justify-items: center;
+}
+.dial.size-2x2 .tile-title {
+  justify-self: start;
+}
+.dial-hit {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: pointer;
+}
+.dial-center {
+  position: absolute;
+  inset: 22%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.dial-big {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+}
+.dial-muted {
+  font-size: 14px;
+  font-weight: 400;
+}
+.dial.size-2x2 .tile-detail {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 2×2 with several apps or screens: a fader each, the first (main) one outlined; the level shows
+   above a fader while the pointer is over it. */
+.dial.faders {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: stretch;
+  padding: 14px 8px;
+}
+/* At rest the faders sit centred; hovering the tile slides them down to make room for the levels. */
+.dial.faders:hover .fader {
+  translate: 0 7px;
+}
+.fader {
+  position: relative;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0 6px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  transition: translate 0.18s ease;
+}
+.fader.main {
+  border-color: var(--accent);
+}
+.fader.off {
+  opacity: 0.55;
+}
+.fader-value {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.dial.faders:hover .fader-value {
+  opacity: 1;
+}
+.fader-track {
+  position: relative;
+  flex: 1;
+  width: 18px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgb(var(--ink) / 0.16);
+  touch-action: none;
+  cursor: pointer;
+}
+.fader-fill {
   position: absolute;
   inset: auto 0 0;
-  height: var(--level);
-  background: rgb(var(--ink) / 0.18);
-  pointer-events: none;
+  background: var(--accent);
 }
-.vol.size-1x1 > * {
-  position: relative;
+.fader-dots {
+  display: none;
 }
-.vol.size-1x1 .vol-icon {
-  order: 0;
+.fader-icon {
+  display: grid;
+  place-items: center;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+}
+.fader-img {
+  width: 16px;
+  height: 16px;
 }
 
 /* ---- Keep awake 2×2 -------------------------------------------------------------------- */
