@@ -19,7 +19,10 @@ use windows::Win32::Devices::Display::{
     SDC_TOPOLOGY_INTERNAL, SetDisplayConfig, SetVCPFeature,
 };
 use windows::Win32::Foundation::{HANDLE, LPARAM, RECT};
-use windows::Win32::Graphics::Gdi::{EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR, MONITORINFO, MONITORINFOEXW};
+use windows::Win32::Graphics::Gdi::{
+    CDS_UPDATEREGISTRY, ChangeDisplaySettingsExW, DEVMODEW, DISP_CHANGE_SUCCESSFUL, DM_DISPLAYFREQUENCY, ENUM_CURRENT_SETTINGS,
+    ENUM_DISPLAY_SETTINGS_MODE, EnumDisplayMonitors, EnumDisplaySettingsW, GetMonitorInfoW, HDC, HMONITOR, MONITORINFO, MONITORINFOEXW,
+};
 use windows::Win32::System::Com::{
     CLSCTX_INPROC_SERVER, CoCreateInstance, CoSetProxyBlanket, EOAC_NONE, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE,
 };
@@ -28,9 +31,9 @@ use windows::Win32::System::Wmi::{
     IWbemClassObject, IWbemLocator, IWbemServices, WBEM_FLAG_FORWARD_ONLY, WBEM_FLAG_RETURN_IMMEDIATELY,
     WBEM_FLAG_RETURN_WBEM_COMPLETE, WBEM_INFINITE, WbemLocator,
 };
-use windows::core::{BOOL, BSTR, PCWSTR, Result, w};
+use windows::core::{BOOL, BSTR, HSTRING, PCWSTR, Result, w};
 
-use super::{Display, DisplaysChanged, DisplaysState, Msg, Project, Shared, coalesce, from_percent, to_percent};
+use super::{Display, DisplaysChanged, DisplaysState, Msg, Project, Refresh, Shared, coalesce, from_percent, rates_at, to_percent};
 use crate::audio::with_com;
 
 /// The VCP code for brightness (DDC/CI's "luminance").
@@ -50,6 +53,15 @@ pub fn run(app: AppHandle, rx: Receiver<Msg>) {
                             screens.set(&id, percent);
                             remember(&app, &id, percent);
                         }
+                    }
+                    Msg::Refresh(id, hz) => {
+                        if let Some(screens) = &screens {
+                            screens.set_refresh(&id, hz);
+                            // shortcut: the screen blanks for a moment while it switches; a short fixed
+                            // wait before reading again, instead of listening for display changes.
+                            std::thread::sleep(Duration::from_millis(700));
+                        }
+                        screens = Some(refresh(&app));
                     }
                     Msg::Project(project) => {
                         drop(screens.take()); // the handles are about to go stale
@@ -93,11 +105,13 @@ struct Screens {
     external: HashMap<String, (HANDLE, u32)>,
     /// Every handle Windows gave out, to give back.
     physical: Vec<PHYSICAL_MONITOR>,
+    /// Each screen's GDI name (like DISPLAY1), for its refresh rate.
+    sources: HashMap<String, String>,
 }
 
 impl Screens {
     fn read() -> (Self, DisplaysState) {
-        let mut screens = Screens { internal: None, external: HashMap::new(), physical: Vec::new() };
+        let mut screens = Screens { internal: None, external: HashMap::new(), physical: Vec::new(), sources: HashMap::new() };
         let mut displays = Vec::new();
         let monitors = monitors();
         // Targets (screens) grouped by source (what Windows draws): in Duplicate, two screens share one.
@@ -138,12 +152,33 @@ impl Screens {
                     (false, false) => t.name,
                     (false, true) => format!("Display {}", displays.len() + 1),
                 };
-                displays.push(Display { id: t.id, name, internal: t.internal, brightness });
+                screens.sources.insert(t.id.clone(), source.clone());
+                let refresh = refresh_rates(&source);
+                displays.push(Display { id: t.id, name, internal: t.internal, brightness, refresh });
             }
         }
         displays.sort_by_key(|d| !d.internal);
         let project = (connected_screens() > 1).then(topology).flatten();
         (screens, DisplaysState { displays, project })
+    }
+
+    fn set_refresh(&self, id: &str, hz: u32) {
+        let Some(source) = self.sources.get(id) else { return };
+        // Only a rate the screen offers at this resolution (the UI only sends those).
+        if !refresh_rates(source).is_some_and(|r| r.rates.contains(&hz)) {
+            return;
+        }
+        let device = HSTRING::from(source.as_str());
+        let mut mode = DEVMODEW { dmSize: size_of::<DEVMODEW>() as u16, ..Default::default() };
+        if !unsafe { EnumDisplaySettingsW(&device, ENUM_CURRENT_SETTINGS, &mut mode) }.as_bool() {
+            return;
+        }
+        mode.dmDisplayFrequency = hz;
+        mode.dmFields = DM_DISPLAYFREQUENCY;
+        let result = unsafe { ChangeDisplaySettingsExW(&device, Some(&mode), None, CDS_UPDATEREGISTRY, None) };
+        if result != DISP_CHANGE_SUCCESSFUL {
+            eprintln!("displays: {source} wouldn't switch to {hz} Hz ({result:?})");
+        }
     }
 
     fn set(&self, id: &str, percent: u8) {
@@ -167,6 +202,27 @@ impl Drop for Screens {
             let _ = unsafe { DestroyPhysicalMonitors(&self.physical) };
         }
     }
+}
+
+/// A screen's refresh rate now and the ones it offers at its current resolution.
+fn refresh_rates(source: &str) -> Option<Refresh> {
+    let device = HSTRING::from(source);
+    let mut current = DEVMODEW { dmSize: size_of::<DEVMODEW>() as u16, ..Default::default() };
+    if !unsafe { EnumDisplaySettingsW(&device, ENUM_CURRENT_SETTINGS, &mut current) }.as_bool() {
+        return None;
+    }
+    let modes = (0..).map_while(|i| {
+        let mut m = DEVMODEW { dmSize: size_of::<DEVMODEW>() as u16, ..Default::default() };
+        unsafe { EnumDisplaySettingsW(&device, ENUM_DISPLAY_SETTINGS_MODE(i), &mut m) }
+            .as_bool()
+            .then_some((m.dmPelsWidth, m.dmPelsHeight, m.dmBitsPerPel, m.dmDisplayFrequency))
+    });
+    let mut rates = rates_at((current.dmPelsWidth, current.dmPelsHeight, current.dmBitsPerPel), modes);
+    if current.dmDisplayFrequency > 1 && !rates.contains(&current.dmDisplayFrequency) {
+        rates.push(current.dmDisplayFrequency);
+        rates.sort_unstable();
+    }
+    (current.dmDisplayFrequency > 1).then_some(Refresh { now: current.dmDisplayFrequency, rates })
 }
 
 /// (current, maximum) brightness over DDC/CI, or None if the monitor doesn't answer.

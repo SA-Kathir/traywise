@@ -47,6 +47,7 @@ fn bindings() -> tauri_specta::Builder<tauri::Wry> {
             modules::power::power_set_mode,
             modules::displays::displays_state,
             modules::displays::displays_set_brightness,
+            modules::displays::displays_set_refresh,
             modules::displays::displays_set_project,
             modules::quick_toggles::quick_toggles_state,
             modules::quick_toggles::quick_toggles_set_dark,
